@@ -89,6 +89,39 @@
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
+</addon><addon id="repository.jurialmunkey" name="jurialmunkey Alpha Repository" version="1.2" provider-name="jurialmunkey">
+    <extension point="xbmc.addon.repository" name="jurialmunkey Alpha Repository">
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/jurialmunkey/repository.jurialmunkey/master/zips/</datadir>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>jurialmunkey Alpha Repository</summary>
+        <description>A repository for alpha releases of jurialmunkey's skins.</description>
+        <disclaimer />
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+        </assets>
+    </extension>
+</addon><addon id="repository.repoil.club" name="[COLOR white]Repo IL[/COLOR] [COLOR FF1864ab]Club[/COLOR]" version="1.0.0" provider-name="RepoIL.Club">
+	<requires>
+		<import addon="xbmc.addon" version="12.0.0" />
+	</requires>
+	<extension point="xbmc.addon.repository" name="Repo IL Club">
+		<dir>
+			<info>https://raw.githubusercontent.com/repoil/club/master/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/repoil/club/master/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/repoil/club/master/</datadir>
+		</dir>
+	</extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>Repo IL Club</summary>
+        <description>All new addons you need</description>
+        <platform>all</platform>
+    </extension>
 </addon><addon id="repository.smoothstreams" name="SmoothStreams.tv" version="2.0.9" provider-name="Smoothstreams">
 	<requires>
 		<import addon="xbmc.addon" version="12.0.0" />
@@ -112,4 +145,14 @@
 		<description>This repository contains addons for various wowza servers.</description>
 		<platform>all</platform>
 	</extension>
+</addon><addon id="repository.zachmorris" name="Zach Morris Add-ons" version="1.0.0" provider-name="zachmorris">
+    <extension point="xbmc.addon.repository" name="Zach Morris Add-ons">
+        <info compressed="true">https://github.com/zach-morris/repository.zachmorris/raw/master/addons.xml</info>
+        <checksum>https://github.com/zach-morris/repository.zachmorris/raw/master/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/zach-morris/repository.zachmorris/master/</datadir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>Zach Morris Add-ons</summary>
+        <platform>all</platform>
+    </extension>
 </addon></addons>
