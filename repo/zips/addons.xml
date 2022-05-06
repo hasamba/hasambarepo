@@ -1,5 +1,49 @@
 <?xml version='1.0' encoding='utf-8'?>
-<addons><addon id="repository.apollo" name="[COLOR white]Apollo[/COLOR] [COLOR FF028ddd]Group[/COLOR] [COLOR white]Repo[/COLOR]" version="1.1.0" provider-name="ApolloGroup.TV">
+<addons><addon id="repository.Kpoodle19" name="Poodle 19 Add-ons Repository" version="1.0.0" provider-name="Poodle">
+    <requires>
+        <import addon="xbmc.addon" version="12.0.0" />
+    </requires>
+    <extension point="xbmc.addon.repository" name="Poodle 19 Add-ons Repository">
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/Kpoodle/Repo19/master/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/Kpoodle/Repo19/master/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/Kpoodle/Repo19/master/zips</datadir>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en" />
+        <description lang="en" />
+        <disclaimer lang="en" />
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.png</fanart>
+        </assets>
+        <news />
+    </extension>
+</addon><addon id="repository.PoodleWiz" name="PoodleWiz Repository" version="1.0.0" provider-name="Poodle">
+    <requires>
+        <import addon="xbmc.addon" version="12.0.0" />
+    </requires>
+    <extension point="xbmc.addon.repository" name="PoodleWiz Repository">
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/Kpoodle/Repo1/master/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/Kpoodle/Repo1/master/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/Kpoodle/Repo1/master/zips</datadir>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en" />
+        <description lang="en" />
+        <disclaimer lang="en" />
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.png</fanart>
+        </assets>
+        <news />
+    </extension>
+</addon><addon id="repository.apollo" name="[COLOR white]Apollo[/COLOR] [COLOR FF028ddd]Group[/COLOR] [COLOR white]Repo[/COLOR]" version="1.1.0" provider-name="ApolloGroup.TV">
 	<requires>
 		<import addon="xbmc.addon" version="12.0.0" />
 	</requires>
@@ -45,4 +89,27 @@
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
+</addon><addon id="repository.smoothstreams" name="SmoothStreams.tv" version="2.0.9" provider-name="Smoothstreams">
+	<requires>
+		<import addon="xbmc.addon" version="12.0.0" />
+	</requires>
+	<extension point="xbmc.addon.repository" name="SmooothStreams.tv">
+		<dir maxversion="18.9.0">
+			<info compressed="false">https://kodi.smoothstreams.tv/repos/k17/addons.xml</info>
+			<checksum>https://kodi.smoothstreams.tv/repos/k17/addons.xml.md5</checksum>
+			<datadir>https://kodi.smoothstreams.tv/repos/k17/</datadir>
+			<hashes>false</hashes>
+		</dir>
+		<dir minversion="18.9.0">
+			<info compressed="false">https://kodi.smoothstreams.tv/repos/k19/addons.xml</info>
+			<checksum>https://kodi.smoothstreams.tv/repos/k19/addons.xml.md5</checksum>
+			<datadir>https://kodi.smoothstreams.tv/repos/k19/</datadir>
+			<hashes>false</hashes>
+		</dir>
+	</extension>
+	<extension point="xbmc.addon.metadata">
+		<summary>SmoothStreams Addons</summary>
+		<description>This repository contains addons for various wowza servers.</description>
+		<platform>all</platform>
+	</extension>
 </addon></addons>
