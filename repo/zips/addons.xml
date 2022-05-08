@@ -1,12 +1,59 @@
 <?xml version='1.0' encoding='utf-8'?>
-<addons><addon id="repository.Kpoodle19" name="Poodle 19 Add-ons Repository" version="1.0.0" provider-name="Poodle">
+<addons><addon id="plugin.video.CHICCO" name="ציקו" version="6.5.2" provider-name="CHICCO">
+	   <requires>
+    <import addon="script.module.resolveurl" version="5.0.00" />
+	<import addon="script.module.requests" />
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">סרטים/סדרות</summary>
+    <description lang="en">סרטים/סדרות...</description>
+    <platform>all</platform>
+	<assets>
+        <icon>icon.png</icon>
+        <fanart>fanart.jpg</fanart>
+        <screenshot />
+        <screenshot />
+        <screenshot />
+    </assets>
+    </extension>
+</addon><addon id="repository.Chameleon" name="[COLOR red]Chame[/COLOR][COLOR blue]leon[/COLOR] [COLOR yellow]TV[/COLOR] [COLOR green] Repository [/COLOR] " version="5.0.1" provider-name="Chameleon">
+        <extension point="xbmc.addon.repository" name="CPTV">
+                <info compressed="false">http://cha1m.com/oper1/addons.xml</info>
+                <checksum>http://cha1m.com/oper1/addons.xml.md5</checksum>
+                <datadir zip="true">http://cha1m.com/oper1/zips</datadir>
+        </extension>
+        <extension point="xbmc.addon.metadata">
+                <summary />
+                <description lang="he" />
+                <disclaimer />
+                <platform>all</platform>
+        </extension>
+</addon><addon id="repository.KodiCat.Add-ons" name="[B]KodiCat Add-ons Repository[/B]" version="1.0.1" provider-name="KodiCat">
+	<extension point="xbmc.addon.repository" name="[B]KodiCat Add-ons Repository[/B]">
+        <info>https://rock.seedhost.eu/kcat123/Repo/zips-Add-ons-Matrix/addons.xml</info>
+        <checksum>https://rock.seedhost.eu/kcat123/Repo/zips-Add-ons-Matrix/addons.xml.md5</checksum>
+        <datadir zip="true">https://rock.seedhost.eu/kcat123/Repo/zips-Add-ons-Matrix/</datadir>
+	</extension>
+	<extension point="xbmc.addon.metadata">
+		<summary />
+		<description />
+		<platform>all</platform>
+		<assets>
+			<icon>icon.png</icon>
+			<fanart>fanart.jpg</fanart>
+		</assets>
+	</extension>
+</addon><addon id="repository.Kpoodle19" name="[B][COLOR red]Poodle[/COLOR] [COLOR white]19[/COLOR] [COLOR yellow]Add-ons[/COLOR] [COLOR green]Repository[/COLOR][/B]" version="1.0.1" provider-name="Poodle">
     <requires>
         <import addon="xbmc.addon" version="12.0.0" />
     </requires>
-    <extension point="xbmc.addon.repository" name="Poodle 19 Add-ons Repository">
+    <extension point="xbmc.addon.repository" name="[B][COLOR red]Poodle[/COLOR] [COLOR white]19[/COLOR] [COLOR yellow]Add-ons[/COLOR] [COLOR green]Repository[/COLOR][/B]">
         <dir>
-            <info compressed="false">https://raw.githubusercontent.com/Kpoodle/Repo19/master/addons.xml</info>
-            <checksum>https://raw.githubusercontent.com/Kpoodle/Repo19/master/addons.xml.md5</checksum>
+            <info compressed="false">https://raw.githubusercontent.com/Kpoodle/Repo19/master/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/Kpoodle/Repo19/master/zips/addons.xml.md5</checksum>
             <datadir zip="true">https://raw.githubusercontent.com/Kpoodle/Repo19/master/zips</datadir>
         </dir>
     </extension>
@@ -155,4 +202,91 @@
         <summary>Zach Morris Add-ons</summary>
         <platform>all</platform>
     </extension>
+</addon><addon id="script.common.plugin.cache" name="Common plugin cache" provider-name="anxdpanic, TheCollective" version="2.6.3+matrix.1">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+  </requires>
+  <extension point="xbmc.service" library="resources/lib/entry_point.py" />
+  <extension point="xbmc.python.module" library="resources/lib/storage_server/" />
+  <extension point="xbmc.addon.metadata">
+    <news>
+[fix] use xbmcvfs.translatePath when available, xbmc.translatePath deprecated(Matrix) and removed(Nexus) |contrib: Gujal00|
+        </news>
+    <assets>
+      <icon>icon.png</icon>
+    </assets>
+    <platform>all</platform>
+    <license>GPL-3.0-only</license>
+    <source>https://github.com/anxdpanic/script.common.plugin.cache</source>
+    <summary lang="en_GB">A common caching API for Kodi add-ons.</summary>
+    <description lang="en_GB">A common caching API for Kodi add-ons.</description>
+  </extension>
+</addon><addon id="script.module.chardet" name="chardet" version="4.0.0+matrix.1" provider-name="Character Encoding Detector">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+  </requires>
+  <extension point="xbmc.python.module" library="lib" />
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en_GB">The Universal Character Encoding Detector</summary>
+    <description lang="en_GB">The Universal Character Encoding Detector</description>
+    <license>LGPL-2.1</license>
+    <platform>all</platform>
+    <website>https://chardet.readthedocs.io/en/latest/</website>
+    <source>https://github.com/chardet/chardet</source>
+    <assets>
+      <icon>resources/icon.png</icon>
+    </assets>
+  </extension>
+</addon><addon id="script.module.requests" name="requests" version="2.25.1+matrix.1" provider-name="Python Software Foundation">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+    <import addon="script.module.certifi" version="2020.12.05+matrix.1" />
+    <import addon="script.module.chardet" version="4.0.0+matrix.1" />
+    <import addon="script.module.idna" version="2.10.0+matrix.1" />
+    <import addon="script.module.urllib3" version="1.26.4+matrix.1" />
+  </requires>
+  <extension point="xbmc.python.module" library="lib" />
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en_GB">Requests is an elegant and simple HTTP library for Python, built for human beings.</summary>
+    <description lang="en_GB">Requests is an elegant and simple HTTP library for Python, built for human beings.</description>
+    <license>Apache-2.0</license>
+    <platform>all</platform>
+    <website>https://requests.readthedocs.io/</website>
+    <source>https://github.com/psf/requests</source>
+    <assets>
+      <icon>resources/icon.png</icon>
+    </assets>
+  </extension>
+</addon><addon id="script.subskeys" name="מקשים לכתוביות" version="1.0.4" provider-name="Subs">
+  <requires>
+	<import addon="script.module.pyxbmct" version="1.1.4" />
+  </requires>
+	<extension point="xbmc.python.script" library="default.py">
+		<provides>executable</provides>
+	</extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">Keyboard map for subtitles</summary>
+    <language>en</language>
+    <description lang="en">Keyboard map for subtitles</description>
+     <platform>all</platform>
+  </extension>
+</addon><addon id="service.subtitles.All_Subs" name="All Subs Flash" version="2.5.3a" provider-name="Sbs">
+  <requires>
+    
+	<import addon="script.module.requests" version="2.9.1" />
+	<import addon="script.common.plugin.cache" version="2.5.5" />
+    <import addon="script.subskeys" version="1.0.1" />
+	<import addon="script.module.chardet" />
+  </requires>
+  <extension point="xbmc.service" library="autosub.py" start="startup" /> 
+  <extension point="xbmc.subtitle.module" library="service.py" />
+  <extension point="xbmc.addon.metadata">
+        <assets>
+            <icon>icon.png</icon>
+        </assets>
+    <summary lang="en">All sites Subs Super Speed</summary>
+    <description lang="en">All sites Subs. Subcenter.wizdom,subcene,opensubtitles. Thanks to:Catz,wizdom,manacker,amet</description>
+    <language>en</language>
+    <license>GNU GENERAL PUBLIC LICENSE. Version 2, June 1991</license>
+  </extension>
 </addon></addons>

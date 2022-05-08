@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+	<setting label="[COLOR aqua]הרץ קישור [/COLOR]" option="close" type="action" action="RunPlugin(plugin://plugin.video.base_master?mode=19&url=www)"/>
+<setting label="[COLOR aqua]נקה קאש [/COLOR]" option="close" type="action" action="RunPlugin(plugin://plugin.video.base_master?mode=99&url=www)"/>
+<setting id="max_per_page2" label="Max Per Page" type="number" default="300" />
+	<setting id="max_new" label="מספר פריטים בקטגורית התווספו לאחרונה" type="number" default="100" />
+	<setting type="lsep" label="כל כמה שעות לחדש את המידע? (לא מומלץ לשים על 0 עלול לגרום בעיות)" />
+	<setting id="save_data" label="חדש מידע כל (שעות)" type="number" default="3" />
+	<setting id="youtube" type="enum" label=" בחר נגן לYOUTUBE" values="Youtube|MyYoutube" default="0" />
+	<setting type="lsep" />
+	<setting id="pass" type="text" label="סיסמא" default=""/>
+	<setting id="action" type="action" label="קוד חומרה" action="RunPlugin(plugin://plugin.video.chanand.music/default.py?mode=9&url=clearCache)" option="close"/>
+	<setting type="lsep" />
+	<setting id="last_ep" type="bool" label="הצג פרקים שהתווספו לאחרונה" default="true" />
+	<setting id="Progress" label="הצג התקדמות" type="bool" default="false"/>
+	<setting id="new" label="הצג חלונית מה חדש" type="bool" default="false"/>
+	<setting id="subs" label="קוד כתוביות" type="number" default="0"/>
+	<setting id="auto_q" type="bool" label="בחירת איכות אוטומטית" default="true" />
+  <setting id="quality" type="enum" label="בחר איכות אוטומטית" values="1080p|720p|480p|360p" visible="eq(-1,true)" default="0" />
+	<setting id="vummo3" type="enum" label="בחר שיטת פתרון VUMMO" values="שיטה 1|שיטה 2|שיטה 3"  default="2" />
+	<setting id="strm" type="folder"  subsetting="true" label="תקייה לשמירת קבצי STRM" default="" />
+	<setting label="בדוק קישורי הרחבה" option="close" type="action" action="RunPlugin(plugin://plugin.video.base_master?mode=15&url=www)"/>
+	<setting id="lock_dis" type="bool" label="נעילת תצוגות" default="false" />
+</settings>

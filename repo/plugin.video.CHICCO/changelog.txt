@@ -1,0 +1,4 @@
+v6.1
+* new option for whats new window (enable- disable).
+* fixed database locked error.
+v1.0.0
