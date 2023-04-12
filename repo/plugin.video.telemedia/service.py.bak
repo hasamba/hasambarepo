@@ -1,0 +1,1301 @@
+#
+# Copyright Aliaksei Levin (levlam@telegram.org), Arseny Smirnov (arseny30@gmail.com),
+# Pellegrino Prevete (pellegrinoprevete@gmail.com)  2014-2019
+#
+# Distributed under the Boost Software License, Version 1.0. (See accompanying
+# file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+#
+import os,time
+from ctypes.util import find_library
+from ctypes import *
+import json
+import sys,logging
+from shutil import copyfile
+import platform
+import  threading,os
+try:
+    import xbmc,xbmcaddon,xbmcgui,xbmcvfs
+    Addon = xbmcaddon.Addon()
+    on_xbmc=True
+    if Addon.getSetting("debug")=='false':
+        reload(sys)  
+        sys.setdefaultencoding('utf8')
+    
+except:
+    on_xbmc=False
+
+global event,data_to_send,ready_data,stop_listen,create_dp_new,server,client,file_path,size,in_tans
+global post_box,send_login
+send_login=0
+global global_id,global_offset,global_end,global_path,global_size,wait_for_download,wait_for_download_photo,wait_for_download_complete,file_size,downn_path,global_f
+global_f=None
+downn_path={}
+file_size={}
+wait_for_download_photo=0
+global_id=0
+global_offset=0
+global_end=0
+global_path=0
+global_size=0
+wait_for_download=0
+wait_for_download_complete=0
+post_box={}
+in_tans=0
+server=0
+size=0
+file_path=''
+client=0
+create_dp_new=0
+if on_xbmc:
+    if Addon.getSetting("autologin")=='true':
+        stop_listen=0
+    else:
+        stop_listen=2
+else:
+    stop_listen=0
+ready_data=''
+data_to_send=''
+event=''
+class Thread(threading.Thread):
+    def __init__(self, target, *args):
+       
+        self._target = target
+        self._args = args
+        
+        
+        threading.Thread.__init__(self)
+        
+    def run(self):
+        
+        self._target(*self._args)
+        
+from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
+PORT_NUMBER = 5118
+import SocketServer
+import BaseHTTPServer
+import SimpleHTTPServer
+import os
+import posixpath
+import BaseHTTPServer
+import urllib
+import cgi,random
+import shutil
+import mimetypes
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
+
+
+
+
+
+__version__ = "0.1"
+def check_login(event):
+
+    if 'message' in event:
+        
+        if 'content' in event['message']:
+            if 'text' in event['message']['content']:
+                if 'Login code' in event['message']['content']['text']['text']:
+                    msg=event['message']['content']['text']['text'].split('.')
+                    xbmcgui.Dialog().ok('Telemedia Code',str(msg[0]))
+def check_name(id):
+        global post_box
+ 
+        
+        num=random.randint(0,60000)
+        td_send({'@type': 'getChat','chat_id':id, '@extra':num})
+        
+        
+  
+        event=wait_response_now(num,timeout=2)
+       
+        if event['notification_settings']['mute_for']>0:
+            return 'off','off'
+        chat_name='UNK'
+        f_name=str(event['id'])+'_small.jpg'
+        icon=os.path.join(logo_path,f_name)
+        if event:
+            
+            chat_name=event['title']
+            
+            if 'photo' in event:
+                if 'small' in event['photo']:
+                    icon_id=event['photo']['small']['id']
+                    f_name=str(event['id'])+'_small.jpg'
+                    icon=os.path.join(logo_path,f_name)
+            
+        
+        return chat_name,icon
+def check_notify(event):
+    
+    if 'message' in event:
+        
+        if 'content' in event['message']:
+        
+            if 'document' in event['message']['content']:
+                if 'file_name' in event['message']['content']['document']:
+                    logging.warning('Found send file')
+                    chat_source=event['message']['chat_id']
+                    chat_name,icon=check_name(chat_source)
+                    if chat_name=='off':
+                        return 0
+                    nm=event['message']['content']['document']['file_name']
+                    __icon__=icon
+                    
+                    xbmc.executebuiltin('Notification(%s, %s, %d, %s)'%('[COLOR yellow]'+chat_name+'[/COLOR]',nm, 5000, __icon__))
+                    
+def get_file_size(id):
+    global post_box
+    import random
+    num=random.randint(0,60000)
+    post_box[num]={'@type':'td_send','data':{'@type': 'getFile','file_id':int(id), '@extra': num},'status':'pending','responce':None}
+                
+    
+    print 'waiting_get_file'
+    event=wait_response(num)
+    
+    print event
+    return  event['size'],event['local']['path'],event['local']['downloaded_prefix_size']
+'''
+def download_buffer(id,offset,limit):
+            
+            print 'Download Buffer'
+            path=''
+            size=''
+            print 'Start:'+str(offset)
+            print 'End:'+str(limit)
+            num=random.randint(0,60000)
+            td_send({'@type': 'downloadFile','file_id':int(id), 'priority':1,'offset':offset,'limit':limit, '@extra': num})
+            print {'@type': 'downloadFile','file_id':int(id), 'priority':1,'offset':offset,'limit':limit, '@extra': num}
+            event=wait_response(999.999)
+            
+            logging.warning('Downloading id:'+str(id))
+           
+            
+           
+            while True:
+                
+                event = td_receive()
+                
+                
+                print 'Buffer:'+str(event)
+                
+                
+                if event:
+                    print event
+                    if event.get('@type') =='error':
+                        if on_xbmc:
+                            xbmcgui.Dialog().ok('Telemedia Error',str(event.get('message')))
+                        else:
+                            print str(event.get('message'))
+                        
+                        break
+                    
+                        
+                    
+                    if 'updateFile' in event['@type']:
+                        
+                        print "downloaded_size:"+str(event['file']['local']['downloaded_size'])
+                        if event['file']['local']['downloaded_prefix_size']>=(limit-offset):
+                            path=event['file']['local']['path']
+                            size=event['file']['size']
+                            
+                            break
+                time.sleep(0.1)
+            return path,size
+
+
+'''
+
+def wait_download_file_complete(id,start_range,end_range):
+    global global_id,global_offset,global_end,global_path,global_size,wait_for_download_complete
+    global_path=''
+    global_size=''
+    global_id=id
+    global_offset=start_range
+    global_end=end_range 
+    wait_for_download_complete=1
+    while(wait_for_download_complete>0):
+        time.sleep(0.001)
+    return global_path
+    
+def wait_download_file_photo(id,start_range,end_range):
+    global global_id,global_offset,global_end,global_path,global_size,wait_for_download_photo
+    global_path=''
+    global_size=''
+    global_id=id
+    global_offset=start_range
+    global_end=end_range 
+    wait_for_download_photo=1
+    while(wait_for_download_photo>0):
+        time.sleep(0.001)
+    return global_path
+def wait_download_file(id,start_range,end_range):
+    global global_id,global_offset,global_end,global_path,global_size,wait_for_download
+    global_path=''
+    global_size=''
+    global_id=id
+    global_offset=start_range
+    global_end=end_range 
+    wait_for_download=1
+    while(wait_for_download>0):
+        time.sleep(0.001)
+    return global_path,global_size
+def download_photo(id,offset,end,event):
+    
+    file_path=''
+    
+    if event:
+       
+        j_enent=(event)
+       
+        file='None'
+        
+                    
+        
+        
+        if 'id' in j_enent :
+            
+            if j_enent['id']==id:
+                file_path=j_enent['local']['path']
+        elif "@type" in j_enent:
+                    if 'updateFile' in j_enent['@type']:
+                        if "file"  in j_enent:
+                            if j_enent["file"]['id']==int(id):
+                                if j_enent["file"]['local']['is_downloading_completed']==True:
+                                    file_path=j_enent["file"]['local']['path']
+        if 'expected_size' in event :
+
+                    if len(event['local']['path'])>0 and (event['local']['is_downloading_completed']==True):
+                        
+                        path=event['local']['path']
+                      
+                        file_path=path
+    
+    return file_path
+def download_file_complete(id,offset,end,event):
+            global file_path
+            path=''
+            size=''
+            
+            
+    
+            if 1:
+
+                
+ 
+                if event:
+                    
+                    
+                   
+                    
+                    
+                    if 'updateFile' in event['@type']:
+                        
+                        
+                        if len(event['file']['local']['path'])>0 :
+                            path=event['file']['local']['path']
+                            size=event['file']['size']
+                            file_path=path
+                    if 'expected_size' in event :
+                        
+                            
+                            if len(event['local']['path'])>0  :
+                                logging.warning('Found Complete in buffer')
+                                path=event['local']['path']
+                                size=event['size']
+                                file_path=path
+                
+            return path,size
+def download_file_out(id,offset,end,event):
+            global file_path
+            path=''
+            size=''
+            
+            if (end-offset)>8000000:
+                buf=8000000
+            else:
+                buf=0x500
+    
+            if 1:
+
+                print event
+ 
+                if event:
+                    
+                    
+                   
+                    
+                    
+                    if 'updateFile' in event['@type']:
+                        
+                        
+                        if len(event['file']['local']['path'])>0 and (event['file']['local']['downloaded_prefix_size']>=buf):
+                            path=event['file']['local']['path']
+                            size=event['file']['size']
+                            file_path=path
+                    if 'expected_size' in event :
+                        
+                            
+                            if len(event['local']['path'])>0 and ((event['local']['downloaded_prefix_size']>=buf) or (event['local']['is_downloading_completed']==True)):
+                                logging.warning('Found Complete in buffer')
+                                path=event['local']['path']
+                                size=event['size']
+                                file_path=path
+                
+            return path,size
+class RangeHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+
+    """Simple HTTP request handler with GET and HEAD commands.
+
+    This serves files from the current directory and any of its
+    subdirectories.  The MIME type for files is determined by
+    calling the .guess_type() method.
+
+    The GET and HEAD requests are identical except that the HEAD
+    request omits the actual contents of the file.
+
+    """
+
+    server_version = "RangeHTTP/" + __version__
+    
+    def do_GET(self):
+        global in_tans
+        if stop_listen!=1:
+            self.send_response(200)
+            self.send_header('Content-type','text/html')
+            self.end_headers()
+            
+            
+           
+            self.wfile.write('Not Logged In')
+            return 0
+        """Serve a GET request."""
+        print 'GOTTTT REQUESTS'
+        
+        f, start_range, end_range = self.send_head()
+        if f:
+            logging.warning ("do_GET: Got (%d,%d)" % (start_range,end_range))
+            time.sleep(1)
+            f.seek(start_range, 0)
+            
+            chunk = 0x40000
+            total = 0
+            all_chunk=0
+            self.stop_now=0
+  
+            while chunk > 0:
+                
+            
+                if start_range + chunk > (end_range):
+                    chunk = end_range - start_range
+                    
+                
+                
+                try:
+                    a=f.read(chunk)
+                except Exception as e:
+                    logging.warning( 'ERRRRRRRRRRRR333333:'+str(e))
+                    pass
+                try:
+                    
+                    
+                    self.wfile.write(a)
+                except Exception as e:
+                    logging.warning( 'ERRRRRRRRRRRRRRRRRRRRRRR:'+str(e))
+                    break
+                    '''
+                    time.sleep(0.1)
+                    try:
+                        self.wfile.write(a)
+                    except Exception as e:
+                        logging.warning( 'ERRRRRRRRRRRRR2222222:'+str(e))
+                        break
+                    '''
+                total += chunk
+                #time.sleep(0.001)
+                start_range += chunk
+            f.close()
+            print 'Close This'
+            print total
+        else:
+            print 'not F'
+        
+    def do_POST(self):
+        global event,data_to_send,ready_data,stop_listen,create_dp_new,client,in_tans
+        global post_box,file_size,downn_path,send_login
+        
+        content_length = int(self.headers['Content-Length']) # <--- Gets the size of data
+        post_data = json.loads(self.rfile.read(content_length)) # <--- Gets the data itself
+        logging.warning(str(post_data))
+        if stop_listen==0 or stop_listen==2:
+            
+            if stop_listen==2:
+                
+                if post_data['type']=='login':
+                    
+                    if stop_listen>0:
+                    
+                        create_dp_new=0
+                        stop_listen=0
+                        send_login=1
+                        #td_json_client_destroy(client)
+                        #client = td_json_client_create()
+                    ready_data={'status':'Logging'}
+                else:
+                    if stop_listen==0:
+                        dt='Wait for loggin'
+                    else:
+                        dt='Needs to log from setting'
+                    ready_data={'status':dt,'stop':stop_listen}
+            else:
+                    print('Still on login')
+                    ready_data={'status':'Logging'}
+            self.send_response(200)
+            self.send_header('Content-type','text/html')
+            self.end_headers()
+            
+            
+           
+            self.wfile.write(json.dumps(ready_data))
+        elif stop_listen==1:
+        
+            
+            ready_data=''
+            if post_data['type']=='td_send':
+                #data_to_send=post_data['info']
+                
+                post_box[json.loads(post_data['info'])['@extra']]={'@type':'td_send','data':json.loads(post_data['info']),'status':'pending','responce':None}
+                logging.warning('TD Send Post')
+                
+                #td_send(json.loads(post_data['info']))
+                ready_data=wait_response(json.loads(post_data['info'])['@extra'])
+                
+            elif post_data['type']=='get_file_size':
+                if post_data['info'] not in file_size:
+                    logging.warning('Not in file size')
+                    file_size[post_data['info']]=0
+                    downn_path[post_data['info']]=''
+                ready_data={'path':downn_path[post_data['info']],'file_size':file_size[post_data['info']]}
+            elif post_data['type']=='kill_file_size':
+                try:
+                    if post_data['info']  in file_size:
+                        del file_size[post_data['info']]
+                        del downn_path[post_data['info']]
+                except:
+                    pass
+                ready_data={'status':'OK'}
+            elif post_data['type']=='download_complete':
+                num=random.randint(0,60000)
+                post_box[num]={'@type':'td_send','data':{'@type': 'downloadFile','file_id': post_data['info'], 'priority':1,'offset':0,'limit':0, '@extra': num},'status':'pending','responce':None}
+                
+                path=wait_download_file_complete(post_data['info'],0,0)
+                
+                ready_data=path
+                del post_box[num]
+                
+                
+                
+            elif post_data['type']=='download_photo':
+                num=random.randint(0,60000)
+                post_box[num]={'@type':'td_send','data':{'@type': 'downloadFile','file_id': post_data['info'], 'priority':1,'offset':0,'limit':0, '@extra': num},'status':'pending','responce':None}
+                
+                path=wait_download_file_photo(post_data['info'],0,0)
+                
+                ready_data=path
+                del post_box[num]
+            elif post_data['type']=='listen':
+            
+                post_box['get_status']={'status':'listen','responce':None}
+                counter_wait=0
+                while post_box['get_status']['responce']==None and counter_wait<10:
+                    counter_wait+=1
+                    time.sleep(0.1)
+                ready_data = post_box['get_status']['responce']
+            elif post_data['type']=='listen2':
+                post_box['updateFile_local']={'status':'listen','responce':None}
+                
+                ready_data = post_box['updateFile_local']['responce']#td_receive()
+            elif post_data['type']=='login':
+                
+                print ('Already Logged in')
+                ready_data={'status':'Logging'}
+            elif post_data['type']=='logout':
+                post_box[555.999]={'@type':'td_send','data':{'@type': 'logOut', '@extra': 555.999},'status':'pending','responce':None}
+                
+                #td_send({'@type': 'logOut', '@extra': 555.999})
+                ready_data=wait_response(555.999)
+                
+                ready_data={'status':'Logedout'}
+                xbmc.executebuiltin(u'Notification(%s,%s)' % ('Telemedia', 'Loged Out ok Restart Kodi to log in'))
+                stop_listen=2
+               
+            elif post_data['type']=='checklogin':
+                ready_data={'status':stop_listen}
+            self.send_response(200)
+            self.send_header('Content-type','text/html')
+            self.end_headers()
+            self.wfile.write(json.dumps(ready_data))
+        
+    def do_HEAD(self):
+        
+        """Serve a HEAD request."""
+        
+        f, start_range, end_range = self.send_head()
+        if f:
+            f.close()
+       
+    def send_head(self):
+        global size,global_f
+        """Common code for GET and HEAD commands.
+
+        This sends the response code and MIME headers.
+
+        Return value is either a file object (which has to be copied
+        to the outputfile by the caller unless the command was HEAD,
+        and must be closed by the caller under all circumstances), or
+        None, in which case the caller has nothing further to do.
+
+        """
+        
+        
+        id=self.path.replace('/','')
+        start_range=0
+        if "Range" in self.headers:
+            s, e = self.headers['range'][6:].split('-', 1)
+            sl = len(s)
+            el = len(e)
+            if sl > 0:
+                start_range = int(s)
+        
+        
+        print 'Download file'
+        if 1:#size==0:
+            size,path,prefix=get_file_size(id)
+            
+            #p,b=download_buffer(id,(size-40000),size)
+            #p,b=download_buffer(id,0,40000)
+        #size=1525952019
+        #
+
+        #    
+        
+        #print ("HTTP: path: %s" % self.path)
+        #path = "e:\\aa.avi"#self.translate_path(self.path)
+        
+        
+        
+        
+        if "Range" in self.headers:
+            self.send_response(206)
+        else:
+            self.send_response(200)
+
+        self.send_header("Content-type", 'video/mp4')
+      
+        start_range = 0
+        end_range = size
+        self.send_header("Accept-Ranges", "bytes")
+
+        if "Range" in self.headers:
+            s, e = self.headers['range'][6:].split('-', 1)
+            sl = len(s)
+            el = len(e)
+            if sl > 0:
+                start_range = int(s)
+                if el > 0:
+                    end_range = int(e) + 1
+            elif el > 0:
+                ei = int(e)
+                if ei < size:
+                    start_range = size - ei
+
+        f = None
+        num=random.randint(0,60000)
+        post_box[num]={'@type':'td_send','data':{'@type': 'downloadFile','file_id':int(id), 'priority':1,'offset':start_range,'limit':end_range, '@extra': num},'status':'pending','responce':None}
+                
+        
+        print {'@type': 'downloadFile','file_id':int(id), 'priority':1,'offset':start_range,'limit':end_range, '@extra': num}
+        logging.warning('start_range:'+str(start_range))
+        do_buffer=True
+        if 1:#start_range==0:
+            event=wait_response(num)
+        
+            if 'expected_size' in event :
+                
+                if len(event['local']['path'])>0 and (event['local']['is_downloading_completed']==True):
+                    do_buffer=False
+                    logging.warning('Found Complete')
+                    path=event['local']['path']
+                    size=event['size']
+        if do_buffer:
+            path,size=wait_download_file(id,start_range,end_range)
+        
+        
+        try:
+            f = open(path, 'rb')
+            global_f=f
+        except Exception as e:
+            f=global_f
+            logging.warning('File Error:'+str(e))
+            self.send_error(404, "File not found")
+            return (None, 0, 0)
+        
+        
+        self.send_header("Content-Range",
+                         'bytes ' + str(start_range) + '-' +
+                         str(end_range - 1) + '/' + str(size))
+    
+        self.send_header("Content-Length", str(end_range-start_range))
+        #self.send_header("Last-Modified", self.date_time_string(fs.st_mtime))
+        self.end_headers()
+
+        #print ("Sending Bytes %d to %d" % (start_range, end_range))
+        return (f, start_range, end_range)
+
+
+    def translate_path(self, opath):
+        path = urllib.unquote(opath)
+        for p in self.uprclpathmap.itervalues():
+            if path.startswith(p):
+                return path
+        print ("HTTP: translate_path: %s not found in path map" % opath)
+        return None
+
+    def guess_type(self, path):
+        """Guess the type of a file.
+
+        Argument is a PATH (a filename).
+
+        Return value is a string of the form type/subtype,
+        usable for a MIME Content-type header.
+
+        The default implementation looks the file's extension
+        up in the table self.extensions_map, using application/octet-stream
+        as a default; however it would be permissible (if
+        slow) to look inside the data to make a better guess.
+
+        """
+
+        base, ext = posixpath.splitext(path)
+        if ext in self.extensions_map:
+            return self.extensions_map[ext]
+        ext = ext.lower()
+        if ext in self.extensions_map:
+            return self.extensions_map[ext]
+        else:
+            return self.extensions_map['']
+
+    if not mimetypes.inited:
+        mimetypes.init() # try to read system mime.types
+    extensions_map = mimetypes.types_map.copy()
+    extensions_map.update({
+        '': 'application/octet-stream', # Default
+        '.mp4': 'video/mp4',
+        '.ogg': 'video/ogg',
+        })
+
+
+
+#This class will handles any incoming request from
+#the browser 
+'''
+class myHandler(BaseHTTPRequestHandler):
+    
+    #Handler for the GET requests
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type','text/html')
+        self.end_headers()
+        logging.warning("GET request,\nPath: %s\nHeaders:\n%s\n", str(self.path), str(self.headers))
+        
+        # Send the html message
+        self.wfile.write(str(event))
+        return
+    def do_POST(self):
+        global event,data_to_send,ready_data,stop_listen,create_dp_new,client
+        content_length = int(self.headers['Content-Length']) # <--- Gets the size of data
+        post_data = json.loads(self.rfile.read(content_length)) # <--- Gets the data itself
+        logging.warning(str(post_data))
+        if stop_listen==0 or stop_listen==2:
+            
+            if stop_listen==2:
+                
+                if post_data['type']=='login':
+                    
+                    if stop_listen>0:
+                    
+                        create_dp_new=0
+                        stop_listen=0
+                        td_json_client_destroy(client)
+                        client = td_json_client_create()
+                    ready_data={'status':'Logging'}
+                else:
+                    if stop_listen==0:
+                        dt='Wait for loggin'
+                    else:
+                        dt='Needs to log from setting'
+                    ready_data={'status':dt,'stop':stop_listen}
+            else:
+                    print('Still on login')
+                    ready_data={'status':'Logging'}
+            self.send_response(200)
+            self.send_header('Content-type','text/html')
+            self.end_headers()
+            
+            
+           
+            self.wfile.write(json.dumps(ready_data))
+        elif stop_listen==1:
+        
+            
+            ready_data=''
+            if post_data['type']=='td_send':
+                #data_to_send=post_data['info']
+                td_send(json.loads(post_data['info']))
+                ready_data=wait_response(json.loads(post_data['info'])['@extra'])
+            elif post_data['type']=='listen':
+                ready_data = td_receive()
+            elif post_data['type']=='login':
+                
+                print ('Already Logged in')
+                ready_data={'status':'Logging'}
+            elif post_data['type']=='logout':
+                td_send({'@type': 'logOut', '@extra': 555.999})
+                ready_data=wait_response(555.999)
+                print ('Logout '+str(ready_data))
+                ready_data={'status':'Logedout'}
+            
+            
+            self.send_response(200)
+            self.send_header('Content-type','text/html')
+            self.end_headers()
+            self.wfile.write(json.dumps(ready_data))
+'''
+class ThreadingSimpleServer(SocketServer.ThreadingMixIn,
+                            BaseHTTPServer.HTTPServer):
+    pass
+def start_server():
+    global server
+    print 'Start1'
+    # Set pathmap as request handler class variable
+    RangeHTTPRequestHandler.uprclpathmap = {}
+    print 'Start3'
+    server = ThreadingSimpleServer(('', PORT_NUMBER), RangeHTTPRequestHandler)
+    print 'Start'
+    
+    server.serve_forever()
+thread=[]
+thread.append(Thread(start_server))
+
+thread[0].start()
+logging.warning('Server is Up')
+if on_xbmc:
+
+    
+    user_dataDir = xbmc.translatePath(Addon.getAddonInfo("profile")).decode("utf-8")
+else:
+    cur=os.path.dirname(os.path.abspath(__file__))
+    user_dataDir = cur
+logo_path=os.path.join(user_dataDir, 'logo')
+files_path=os.path.join(user_dataDir, 'files')
+db_path=os.path.join(user_dataDir, 'database')
+log_path=os.path.join(user_dataDir, 'log')
+try:
+    if not os.path.exists(user_dataDir):
+         os.makedirs(user_dataDir)
+
+    if not os.path.exists(logo_path):
+         os.makedirs(logo_path)
+
+    if not os.path.exists(files_path):
+         os.makedirs(files_path)
+
+    if not os.path.exists(db_path):
+         os.makedirs(db_path)
+
+    if not os.path.exists(log_path):
+         os.makedirs(log_path)
+except:
+    pass
+platform= (platform.architecture())
+logging.warning(platform)
+
+cur=os.path.dirname(os.path.abspath(__file__))
+cur=os.path.join(cur,'resources','lib')
+if platform[0]=='32bit':
+        logging.warning('32bit')
+
+
+
+
+if sys.platform.lower().startswith('linux'):
+    plat = 'linux'
+    if 'ANDROID_DATA' in os.environ:
+        plat = 'android'
+elif sys.platform.lower().startswith('win'):
+    plat = 'windows'
+elif sys.platform.lower().startswith('darwin'):
+    plat = 'darwin'
+else:
+    plat = None
+logging.warning('Platform:'+plat)
+if plat == 'android':
+    if platform[0]=='32bit':
+        logging.warning('32bit')
+        f_name='libtdjsonjava32'
+    else:
+        f_name='libtdjsonjava64'
+
+
+    loc1=os.path.join(xbmc.translatePath('special://xbmc'),'libtdjsonjava.so')
+
+  
+
+    loc4=os.path.join(xbmc.translatePath('special://xbmc'),'libtdjson.so')
+
+  
+    copyfile(os.path.join(cur,'%s.so'%f_name),loc1)
+
+    #all_option=[loc1,loc2,loc3]#,os.path.join(cur,'lib','libtdjni.so'),os.path.join(cur,'lib','libtdjsonjava_armv7.so'),os.path.join(cur,'lib','libtdjsonjava_arm64.so'),os.path.join(cur,'lib','libtdjsonjava_and_x86.so'),os.path.join(cur,'lib','libtdjsonjava_and_64.so')]
+    #all_option2=[loc4,loc5,loc6]
+  
+    if 1:#for items in all_option:
+        try:
+            logging.warning('CDLL:'+loc1)
+            tdjson=CDLL(loc1)
+         
+          
+            cwd=xbmc.translatePath('special://xbmc')
+            logging.warning('Imp:'+loc1)
+            
+            fo, p, d = imp.find_module('libtdjsonjava', [cwd])
+            logging.warning('tdjson:'+loc1)
+            tdjson = imp.load_module('libtdjsonjava', fo, p, d)
+    
+            #break
+        except Exception as e:
+            logging.warning(e)
+            pass
+    td_json_client_create = tdjson._td_json_client_create
+    td_json_client_create.restype = c_void_p
+    td_json_client_create.argtypes = []
+
+    td_json_client_receive = tdjson._td_json_client_receive
+    td_json_client_receive.restype = c_char_p
+    td_json_client_receive.argtypes = [c_void_p, c_double]
+
+    td_json_client_send = tdjson._td_json_client_send
+    td_json_client_send.restype = None
+    td_json_client_send.argtypes = [c_void_p, c_char_p]
+
+    td_json_client_execute = tdjson._td_json_client_execute
+    td_json_client_execute.restype = c_char_p
+    td_json_client_execute.argtypes = [c_void_p, c_char_p]
+
+    td_json_client_destroy = tdjson._td_json_client_destroy
+    td_json_client_destroy.restype = None
+    td_json_client_destroy.argtypes = [c_void_p]
+    logging.warning('Done Define')
+    
+else:
+    if platform[0]=='64bit':
+
+        cur=os.path.join(cur,'x64')
+    ph=os.path.join(cur,'libeay32.dll')
+    logging.warning(ph)
+    CDLL(ph)
+
+
+    ph=os.path.join(cur,'ssleay32.dll')
+    logging.warning(ph)
+    CDLL(ph)
+
+
+    ph=os.path.join(cur,'zlib1.dll')
+
+    CDLL(ph)
+
+    ph=os.path.join(cur,'tdjson.dll')
+    logging.warning (ph)
+    tdjson = CDLL(ph)
+
+    # tdjson = CDLL(tdjson_path)
+
+    td_json_client_create = tdjson.td_json_client_create
+    td_json_client_create.restype = c_void_p
+    td_json_client_create.argtypes = []
+
+    td_json_client_receive = tdjson.td_json_client_receive
+    td_json_client_receive.restype = c_char_p
+    td_json_client_receive.argtypes = [c_void_p, c_double]
+
+    td_json_client_send = tdjson.td_json_client_send
+    td_json_client_send.restype = None
+    td_json_client_send.argtypes = [c_void_p, c_char_p]
+
+    td_json_client_execute = tdjson.td_json_client_execute
+    td_json_client_execute.restype = c_char_p
+    td_json_client_execute.argtypes = [c_void_p, c_char_p]
+
+    td_json_client_destroy = tdjson.td_json_client_destroy
+    td_json_client_destroy.restype = None
+    td_json_client_destroy.argtypes = [c_void_p]
+    
+    td_set_log_file_path = tdjson.td_set_log_file_path
+    td_set_log_file_path.restype = c_int
+    td_set_log_file_path.argtypes = [c_char_p]
+
+    td_set_log_max_file_size = tdjson.td_set_log_max_file_size
+    td_set_log_max_file_size.restype = None
+    td_set_log_max_file_size.argtypes = [c_longlong]
+
+    td_set_log_verbosity_level = tdjson.td_set_log_verbosity_level
+    td_set_log_verbosity_level.restype = None
+    td_set_log_verbosity_level.argtypes = [c_int]
+
+    fatal_error_callback_type = CFUNCTYPE(None, c_char_p)
+
+    td_set_log_fatal_error_callback = tdjson.td_set_log_fatal_error_callback
+    td_set_log_fatal_error_callback.restype = None
+    td_set_log_fatal_error_callback.argtypes = [fatal_error_callback_type]
+    td_set_log_verbosity_level(0)
+    def on_fatal_error_callback(error_message):
+        logging.warning('TDLib fatal error: '+ error_message)
+    c_on_fatal_error_callback = fatal_error_callback_type(on_fatal_error_callback)
+    td_set_log_fatal_error_callback(c_on_fatal_error_callback)
+
+
+
+ 
+
+def td_execute(query):
+    query = json.dumps(query).encode('utf-8')
+    result = td_json_client_execute(None, query)
+    if result:
+        result = json.loads(result.decode('utf-8'))
+    return result
+
+
+
+# setting TDLib log verbosity level to 1 (errors)
+#logging.warning(td_execute({'@type': 'setLogVerbosityLevel', 'new_verbosity_level': 1, '@extra': 1.01234}))
+
+#logging.warning(td_execute({'@type': 'setLogStream', 'log_stream': {'@type':'logStreamFile','path':log_f,'max_file_size':1000000000}, '@extra': 1.01234}))
+#exit()
+#a=a+1
+
+# create client
+client = td_json_client_create()
+
+# simple wrappers for client usage
+def td_send(query):
+    query = json.dumps(query).encode('utf-8')
+    td_json_client_send(client, query)
+
+def td_receive():
+    try:
+        result = td_json_client_receive(client, 0.01)
+        if result:
+            result = json.loads(result.decode('utf-8'))
+        return result
+    except Exception as e:
+        logging.warning('Rec err:'+str(e))
+        return ''
+
+# another test for TDLib execute method
+#logging.warning(td_execute({'@type': 'getTextEntities', 'text': '@telegram /test_command https://telegram.org telegram.me', '@extra': ['5', 7.0]}))
+def wait_response_now(id,dp='',timeout=0):
+    global post_box
+    ret_value=''
+    counter=0
+    while True:
+        event = td_receive()
+        if event:
+            if '@extra' in event :
+                if event['@extra']==int(id):
+                    break
+        
+        
+            
+        
+            #    print post_box[id]['status']
+        time.sleep(0.001)
+    return (event)
+    
+def wait_response(id,dp='',timeout=0):
+    global post_box
+    ret_value=''
+    counter=0
+    while True:
+        
+        
+        
+        
+            
+        counter+=1
+        if timeout>0:
+            if counter>(timeout*1000):
+                return None
+        if id in post_box:
+            
+            if post_box[id]['status']=='recived':
+                print 'found ret'
+                ret_value=post_box[id]['responce']
+                del post_box[id]
+                break
+            #else:
+            #    print post_box[id]['status']
+        time.sleep(0.001)
+    return (ret_value)
+# testing TDLib send method
+td_send({'@type': 'getAuthorizationState', '@extra': 1.01234})
+
+# main events cycle
+logging.warning('Start Telemedia 2.0 service')
+if on_xbmc:
+  
+    cond=xbmc.abortRequested
+else:
+    cond=0
+
+
+event=None
+while not cond:
+    if send_login==1:
+        send_login=0
+        td_send({'@type': 'getAuthorizationState', '@extra': 99.991234})
+        
+        
+    if 0:#on_xbmc:
+        if monitor.waitForAbort(1):
+                # Abort was requested while waiting. We should exit
+                break
+    
+    
+    if stop_listen==0:
+        if create_dp_new==0:
+            logging.warning('create_dp_new')
+            if on_xbmc:
+                dp = xbmcgui.DialogProgressBG()
+
+                dp.create('[B][COLOR=green]      Telemedia                                       [/COLOR][/B]', '[B][COLOR=yellow]Login[/COLOR][/B]')
+            create_dp_new=1
+        
+        
+        
+        if event:
+            '''
+            if 'scope' in event:
+                if ['@type']=='notificationSettingsScopeChannelChats':
+                    if on_xbmc:
+                        dp.update(0,'[B][COLOR=green]      Telemedia                                       [/COLOR][/B]', '[B][COLOR=yellow]notificationSettingsScopeChannelChats  [/COLOR][/B]')
+                    logging.warning('wating td_send')
+                    td_send({'@type': 'getChats','offset_order':9223372036854775807, 'limit': '500', '@extra': 1.01234})
+                    event=wait_response(1.01234)
+                    logging.warning('wating event')
+                    logging.warning(event)
+            '''
+            if event.get('@type') =='error':
+                    if on_xbmc:
+                        dp.close()
+                        xbmcgui.Dialog().ok('Telemedia Error',str(event.get('message')))
+                    else:
+                        print str(event.get('message'))
+                    stop_listen=2
+            # process authorization states
+            if event['@type'] == 'updateAuthorizationState':
+                if on_xbmc:
+                    dp.update(20,'[B][COLOR=green]      Telemedia                                       [/COLOR][/B]', '[B][COLOR=yellow]updateAuthorizationState  [/COLOR][/B]')
+                auth_state = event['authorization_state']
+                
+                # if client is closed, we need to destroy it and create new client
+                if auth_state['@type'] == 'authorizationStateClosed':
+                    if on_xbmc:
+                        dp.close()
+                    stop_listen=2
+
+                # set TDLib parameters
+                # you MUST obtain your own api_id and api_hash at https://my.telegram.org
+                # and use them in the setTdlibParameters call
+                
+                if auth_state['@type'] == 'authorizationStateWaitTdlibParameters':
+                    td_send({'@type': 'setTdlibParameters', 'parameters': {
+                                                           'database_directory': db_path,
+                                                           'files_directory': files_path,
+                                                           'use_message_database': True,
+                                                           'use_secret_chats': True,
+                                                           'api_id': 94575,
+                                                           'api_hash': 'a3406de8d171bb422bb6ddf3bbd800e2',
+                                                           'system_language_code': 'en',
+                                                           'device_model': 'Desktop',
+                                                           'system_version': 'Linux',
+                                                           'application_version': '1.0',
+                                                           'enable_storage_optimizer': True}})
+
+                # set an encryption key for database to let know TDLib how to open the database
+                elif auth_state['@type'] == 'authorizationStateWaitEncryptionKey':
+                    if on_xbmc:
+                        dp.update(40,'[B][COLOR=green]      Telemedia                                       [/COLOR][/B]', '[B][COLOR=yellow]authorizationStateWaitEncryptionKey  [/COLOR][/B]')
+                    td_send({'@type': 'checkDatabaseEncryptionKey', 'key': 'my_key'})
+
+                # enter phone number to log in
+                elif auth_state['@type'] == 'authorizationStateWaitPhoneNumber':
+                    if on_xbmc:
+                        dp.update(60,'[B][COLOR=green]      Telemedia                                       [/COLOR][/B]', '[B][COLOR=yellow]authorizationStateWaitPhoneNumber  [/COLOR][/B]')
+                        
+                        #Enter phone number (Without the +):
+                        phone_number = xbmcgui.Dialog().input(Addon.getLocalizedString(32036), '', xbmcgui.INPUT_NUMERIC)#
+                    else:
+                        phone_number = input('Please enter your phone number: ')
+                    td_send({'@type': 'setAuthenticationPhoneNumber', 'phone_number': str(phone_number)})
+
+                # wait for authorization code
+                elif auth_state['@type'] == 'authorizationStateWaitCode':
+                    if on_xbmc:
+                        dp.update(70,'[B][COLOR=green]      Telemedia                                       [/COLOR][/B]', '[B][COLOR=yellow]authorizationStateWaitCode  [/COLOR][/B]')
+                        #'Enter code:'
+                        code = xbmcgui.Dialog().input(Addon.getLocalizedString(32037), '', xbmcgui.INPUT_NUMERIC)
+                    else:
+                        code = input('Please enter the authentication code you received: ')
+                    td_send({'@type': 'checkAuthenticationCode', 'code': str(code)})
+
+                # wait for first and last name for new users
+                elif auth_state['@type'] == 'authorizationStateWaitRegistration':
+                    first_name = input('Please enter your first name: ')
+                    last_name = input('Please enter your last name: ')
+                    td_send({'@type': 'registerUser', 'first_name': first_name, 'last_name': last_name})
+
+                # wait for password if present
+                elif auth_state['@type'] == 'authorizationStateWaitPassword':
+                    
+                    
+                    if on_xbmc:
+                        dp.update(90,'[B][COLOR=green]      Telemedia                                       [/COLOR][/B]', '[B][COLOR=yellow]authorizationStateWaitPassword  [/COLOR][/B]')
+                        #'Password:'
+                        password = xbmcgui.Dialog().input(Addon.getLocalizedString(32038), '', xbmcgui.INPUT_ALPHANUM)
+                    else:
+                        password = raw_input('Please enter your password: ')
+                    td_send({'@type': 'checkAuthenticationPassword', 'password': str(password)})
+                elif auth_state['@type'] == "authorizationStateReady":
+                    logging.warning('In end')
+                    stop_listen=1
+                    if on_xbmc:
+                        dp.close()
+                        #'Login Complete'
+                        xbmc.executebuiltin(u'Notification(%s,%s)' % ('Telemedia', Addon.getLocalizedString(32039)))
+                        
+                        xbmc.executebuiltin('Container.Refresh')
+            # handle an incoming update or an answer to a previously sent request
+                
+            sys.stdout.flush()
+    elif stop_listen==1:
+        
+        if wait_for_download_photo==1:
+            global_path=download_photo(global_id,global_offset,global_end,event)
+            if global_path!='':
+                wait_for_download_photo=0
+        if wait_for_download==1:
+            
+            global_path,global_size=download_file_out(global_id,global_offset,global_end,event)
+            if global_path!='':
+                wait_for_download=0
+        if wait_for_download_complete==1:
+            global_path,global_size=download_file_complete(global_id,global_offset,global_end,event)
+            if global_path!='':
+                wait_for_download_complete=0
+        try:
+            
+            for items in post_box:
+                    
+                    if post_box[items]['status']=='pending':
+                        
+                        td_send(post_box[items]['data'])
+                        post_box[items]['status']='send'
+        except Exception as e:
+            logging.warning('Err in pending:'+str(e))
+            pass
+        if event:
+            
+            try:
+                if "@type" in event:
+                    if 'updateFile' in event['@type']:
+                        
+                        for items in file_size:
+                            if "file"  in event:
+                                
+                                if event["file"]['id']==int(items):
+                                    file_size[items]=event['file']['local']['downloaded_size']
+                                    downn_path[items]=event['file']['local']['path']
+                                    
+            except Exception as e:
+                logging.warning('Err in filesize:'+str(e))
+                pass
+            if event.get('@type') =='error':
+                    if on_xbmc:
+                        dp.close()
+                        xbmcgui.Dialog().ok('Telemedia Error',str(event.get('message')))
+                    else:
+                        print str(event.get('message'))
+            try:
+                
+                for items in post_box:
+                       
+                       
+                        if post_box[items]['status']=='send':
+                            if '@extra' in event :
+                                logging.warning('TD RECIVING NOW')
+                                if event['@extra']==(items):
+                                    logging.warning('TD RECIVING DONE')
+                                    post_box[items]['responce']=event
+                                    post_box[items]['status']='recived'
+                        if post_box[items]['status']=='listen':
+                            if "@type" in event:
+                                if 'updateFile' in event['@type']:
+                                    post_box[items]['responce']=event
+                                    
+                        if items=='updateFile_local':
+                            if "@type" in event:
+                                if 'updateFile' in event['@type']:
+                                    if "file"  in event:
+                                        
+                                        file=event["file"]['local']['path']
+                                        if xbmcvfs.exists(file) and event["file"]['id']==post_box[items]['id']:
+                                        
+                                            
+                                            post_box[items]['responce']=file
+                                            
+            except Exception as e:
+                    logging.warning('Err post:'+str(e))
+    if stop_listen!=2:
+        try:
+            event = td_receive()
+           
+            if stop_listen==1:
+                if event:
+                   if Addon.getSetting("get_notify")=='true':
+                    check_notify(event)
+                   if Addon.getSetting("show_login")=='true':
+                    
+                    check_login(event)
+            
+        except Exception as e:
+            logging.warning('Event err:'+str(e))
+    else:
+        try:
+            time.sleep(0.1)
+        except:
+            break
+# destroy client when it is closed and isn't needed anymore
+logging.warning('Destroy Client')
+
+td_json_client_destroy(client)
+try:
+    os.remove(file_path)
+except:
+    pass
+server.shutdown()
+
+logging.warning('Done Destroy Client')

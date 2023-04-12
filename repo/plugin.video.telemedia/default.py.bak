@@ -1,0 +1,2924 @@
+# -*- coding: utf-8 -*-
+import xbmcaddon,os,xbmc,xbmcgui,urllib,urllib2,re,xbmcplugin,sys,logging,shutil,time,xbmcvfs,json
+__USERAGENT__ = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.97 Safari/537.11'
+__addon__ = xbmcaddon.Addon()
+__cwd__ = xbmc.translatePath(__addon__.getAddonInfo('path')).decode("utf-8")
+Addon = xbmcaddon.Addon()
+try:
+    import requests,pyxbmct
+except:
+    pass
+import  threading
+from resources.modules.public import addNolink,addDir3,addLink,lang
+user_dataDir = xbmc.translatePath(Addon.getAddonInfo("profile")).decode("utf-8")
+if not xbmcvfs.exists(user_dataDir+'/'):
+     os.makedirs(user_dataDir)
+logo_path=os.path.join(user_dataDir, 'logo')
+if not xbmcvfs.exists(logo_path+'/'):
+     os.makedirs(logo_path)
+icons_path=os.path.join(user_dataDir, 'icons')
+if not xbmcvfs.exists(icons_path+'/'):
+     os.makedirs(icons_path)
+fan_path=os.path.join(user_dataDir, 'fan')
+if not xbmcvfs.exists(fan_path+'/'):
+     os.makedirs(fan_path)
+addon_path=os.path.join(user_dataDir, 'addons')
+if not xbmcvfs.exists(addon_path+'/'):
+     os.makedirs(addon_path)
+addon_extract_path=os.path.join(user_dataDir, 'addons','temp')
+if not xbmcvfs.exists(addon_extract_path+'/'):
+     os.makedirs(addon_extract_path)
+global id,playing_file,seek_time,exit_now
+dir_path = os.path.dirname(os.path.realpath(__file__))
+telemaia_icon=os.path.join(dir_path,'icon.png')
+telemaia_fan=os.path.join(dir_path,'fanart.jpg')
+exit_now=0
+import random
+if Addon.getSetting("debug")=='false':
+    reload(sys)  
+    sys.setdefaultencoding('utf8')
+
+
+id=0
+seek_time=0
+playing_file=False
+def log(txt):
+    logging.warning(txt)
+try:
+ class selection_time(pyxbmct.AddonDialogWindow):
+    
+    def __init__(self, title='',item=''):
+       
+        super(selection_time, self).__init__(title)
+        #'Play from beginning'
+        self.item=[item,Addon.getLocalizedString(32043)]
+        self.setGeometry(350, 150,1, 1,pos_x=700, pos_y=200)
+        self.list_index=-1
+
+        self.clicked=0
+        
+        self.set_active_controls()
+        self.set_navigation()
+        # Connect a key action (Backspace) to close the window.
+        self.connect(pyxbmct.ACTION_NAV_BACK, self.close)
+    def get_selection(self):
+        """ get final selection """
+        return self.list_index
+    def click_list(self):
+        self.clicked=1
+        self.list_index=self.list.getSelectedPosition()
+       
+        self.close()
+    
+    def set_active_controls(self):
+     
+      
+        # List
+        self.list = pyxbmct.List()
+        self.placeControl(self.list, 0,0,  rowspan=2, columnspan=1)
+        # Add items to the list
+        
+       
+        self.list.addItems(self.item)
+        
+        # Connect the list to a function to display which list item is selected.
+        self.connect(self.list, self.click_list)
+        
+       
+
+    def set_navigation(self):
+        
+        self.setFocus(self.list)
+
+    
+
+    
+
+    def setAnimation(self, control):
+        # Set fade animation for all add-on window controls
+        control.setAnimations([('WindowOpen', 'effect=fade start=0 end=100 time=50',),
+                                ('WindowClose', 'effect=fade start=100 end=0 time=50',)])
+except:
+    pass
+def clear_files():
+        db_path=os.path.join(user_dataDir, 'files','temp')
+        onlyfiles = [f for f in os.listdir(db_path) if os.path.isfile(os.path.join(db_path, f))]
+        
+        for fl in onlyfiles:
+            #dp.update(0, 'Please Wait...','Removing File', fl )
+            re_fl=os.path.join(db_path,fl)
+            
+            if os.path.exists(re_fl):
+              try:
+                os.remove(re_fl)
+              except Exception as e:
+                logging.warning('Err:'+str(e))
+                pass
+        db_path=os.path.join(user_dataDir, 'files','documents')
+        onlyfiles = [f for f in os.listdir(db_path) if os.path.isfile(os.path.join(db_path, f))]
+        for fl in onlyfiles:
+            #dp.update(0, 'Please Wait...','Removing File', fl )
+            re_fl=os.path.join(db_path,fl)
+            if os.path.exists(re_fl):
+              try:
+                os.remove(re_fl)
+              except:
+                pass
+        
+        db_path=os.path.join(user_dataDir, 'files','videos')
+        onlyfiles = [f for f in os.listdir(db_path) if os.path.isfile(os.path.join(db_path, f))]
+        for fl in onlyfiles:
+            #dp.update(0, 'Please Wait...','Removing File', fl )
+            re_fl=os.path.join(db_path,fl)
+            if os.path.exists(re_fl):
+              try:
+                os.remove(re_fl)
+              except:
+                pass
+        db_path=os.path.join(user_dataDir, 'files','photos')
+        onlyfiles = [f for f in os.listdir(db_path) if os.path.isfile(os.path.join(db_path, f))]
+        for fl in onlyfiles:
+            #dp.update(0, 'Please Wait...','Removing File', fl )
+            re_fl=os.path.join(db_path,fl)
+            if os.path.exists(re_fl):
+              try:
+                os.remove(re_fl)
+              except:
+                pass
+        db_path=os.path.join(user_dataDir, 'files','music')
+        onlyfiles = [f for f in os.listdir(db_path) if os.path.isfile(os.path.join(db_path, f))]
+        for fl in onlyfiles:
+            #dp.update(0, 'Please Wait...','Removing File', fl )
+            re_fl=os.path.join(db_path,fl)
+            if os.path.exists(re_fl):
+              try:
+                os.remove(re_fl)
+              except:
+                pass
+class Thread(threading.Thread):
+    def __init__(self, target, *args):
+       
+        self._target = target
+        self._args = args
+        
+        
+        threading.Thread.__init__(self)
+        
+    def run(self):
+        
+        self._target(*self._args)
+
+    
+def is_hebrew(input_str):    
+       try:
+        import unicodedata
+        input_str=input_str.replace(' ','').replace('\n','').replace('\r','').replace('\t','').replace(' ','')
+        nfkd_form = unicodedata.normalize('NFKD', input_str.replace(' ','').replace('\n','').replace('\r','').replace('\t','').replace(' ',''))
+        a=False
+        for cha in input_str:
+            
+            a='HEBREW' in unicodedata.name(cha.strip())
+            if a:
+                break
+        return a
+       except:
+            return True
+        
+class TelePlayer(xbmc.Player):
+    def __init__(self, *args, **kwargs):
+       
+        self.g_timer=0
+        self.g_item_total_time=0
+        xbmc.Player.__init__(self)
+        
+    def onPlayBackStarted(self):
+        global id,playing_file
+        self.g_timer=0
+        log('(Tele Player) onPlayBackStarted')
+        playing_file=True
+    def onPlayBackResumed(self):
+        global id,playing_file
+        log('(Tele Player) onPlayBackResumed')
+        playing_file=True
+
+    def onPlayBackPaused(self):
+        global id,playing_file
+        log('(Tele Player) onPlayBackPaused')
+        playing_file=True
+    def onPlayBackEnded(self):
+        global id,playing_file
+        log('(Tele Player) Ended playback')
+        num=random.randint(0,60000)
+        data={'type':'td_send',
+             'info':json.dumps({'@type': 'cancelDownloadFile','file_id':int(id), '@extra': num})
+             }
+        event=requests.post('http://127.0.0.1:5118/',json=data).json()
+        
+        
+        playing_file=False
+        
+        logging.warning('playing_file1')
+    def update_db(self):
+        logging.warning('Self.TMDB:'+str(self.tmdb))
+        try:
+            from sqlite3 import dbapi2 as database
+        except:
+            from pysqlite2 import dbapi2 as database
+        cacheFile=os.path.join(user_dataDir,'database.db')
+        self.dbcon = database.connect(cacheFile)
+        self.dbcur = self.dbcon.cursor()
+        self.dbcur.execute("CREATE TABLE IF NOT EXISTS %s ( ""name TEXT, ""tmdb TEXT, ""season TEXT, ""episode TEXT,""playtime TEXT,""total TEXT, ""free TEXT);" % 'playback')
+        self.dbcon.commit()
+        self.season=self.season.replace('%20','0').replace(' ','0')
+        self.episode=self.episode.replace('%20','0').replace(' ','0')
+        if len(str(self.tmdb))<2:
+            only_name=True
+            self.dbcur.execute("SELECT * FROM playback where name='%s' and season='%s' and episode='%s'"%(self.saved_name.replace("'","%27"),self.season,self.episode))
+        else:
+            only_name=False
+            self.dbcur.execute("SELECT * FROM playback where tmdb='%s' and season='%s' and episode='%s'"%(self.tmdb,self.season,self.episode))
+        match = self.dbcur.fetchall()
+        
+        
+        if match==None:
+          self.dbcur.execute("INSERT INTO playback Values ('%s','%s','%s','%s','%s','%s','%s');" %  (self.saved_name.replace("'","%27"),self.tmdb,self.season,self.episode,str(self.g_timer),str(self.g_item_total_time),' '))
+          self.dbcon.commit()
+        else:
+           if len(match)>0:
+            name,timdb,season,episode,playtime,totaltime,free=match[0]
+            if str(self.g_timer)!=playtime:
+                if only_name:
+                    self.dbcur.execute("UPDATE playback SET playtime='%s' where name='%s' and  season='%s' and episode='%s'"%(str(self.g_timer),self.saved_name.replace("'","%27"),self.season,self.episode))
+                else:
+                    self.dbcur.execute("UPDATE playback SET playtime='%s' where tmdb='%s' and  season='%s' and episode='%s'"%(str(self.g_timer),self.tmdb,self.season,self.episode))
+                self.dbcon.commit()
+           else:
+                self.dbcur.execute("INSERT INTO playback Values ('%s','%s','%s','%s','%s','%s','%s');" %  (self.saved_name.replace("'","%27"),self.tmdb,self.season,self.episode,str(self.g_timer),str(self.g_item_total_time),' '))
+                self.dbcon.commit()
+        self.dbcur.close()
+        self.dbcon.close()
+    def onPlayBackStopped(self):
+        global id,playing_file
+        log('(Tele Player) Stop playback')
+        num=random.randint(0,60000)
+        data={'type':'td_send',
+             'info':json.dumps({'@type': 'cancelDownloadFile','file_id':int(id), '@extra': num})
+             }
+        event=requests.post('http://127.0.0.1:5118/',json=data).json()
+        
+        
+        playing_file=False
+        
+        logging.warning('playing_file2')
+    '''
+    def onPlayBackSeek(self, time, seekOffset):
+        global id,playing_file
+        log('SEEK FOUND')
+        self.pause()
+       
+        log('vidtime:'+str(seekOffset))
+        
+        td_send({'@type': 'downloadFile','file_id':int(id), 'priority':1,'offset':seekOffset,'limit':0, '@extra': 777.999})
+        event=wait_response(777.999)
+        playing_file=True
+        self.play()
+    '''
+    def download_buffer(self):
+        try:
+            buffer_size=long(Addon.getSetting("buffer_size"))
+            global id,playing_file
+            dp = xbmcgui.DialogProgress()
+            
+            dp.create('Telemedia', '[B][COLOR=yellow]%s[/COLOR][/B]'%Addon.getLocalizedString(32044))
+            num=random.randint(0,60000)
+            data={'type':'td_send',
+             'info':json.dumps({'@type': 'downloadFile','file_id':int(id), 'priority':2,'offset':(994694350-(993165312)),'limit':994694350, '@extra': num})
+             }
+            event=requests.post('http://127.0.0.1:5118/',json=data).json()
+            
+            j_enent_o=(event)
+            
+           
+            
+            j_enent_o=(event)
+            once=True
+            while True:
+                data={'type':'listen',
+                 'info':''
+                 }
+                event=requests.post('http://127.0.0.1:5118/',json=data).json()
+               
+                #event = td_receive()
+                
+                if dp.iscanceled():
+                    try:
+                        self.path=event['file']['local']['path']
+                    except: 
+                        self.path=''
+                        pass
+                    break
+                if self.stop==1:
+                    break
+                if event:
+                    
+                    if event.get('@type') =='error':
+               
+                        xbmcgui.Dialog().ok('Error occurred',str(event.get('message')))
+                        break
+                    
+                        
+                        
+                    if 'updateFile' in event['@type']:
+                        
+                        dp.update(int((event['file']['local']['downloaded_prefix_size']*100.0)/buffer_size),'[B][COLOR=green]Telemedia[/COLOR][/B]', '[B][COLOR=yellow]%s %s/%s[/COLOR][/B]'%(Addon.getLocalizedString(32045),str(event['file']['local']['downloaded_prefix_size']),str(buffer_size)))
+                        if len(event['file']['local']['path'])>0 and event['file']['local']['downloaded_prefix_size']>(0x500):
+                            size=event['file']['size']
+                           
+                            break
+                xbmc.sleep(10)
+            dp.close()
+        except Exception as e:
+            import linecache
+            exc_type, exc_obj, tb = sys.exc_info()
+            f = tb.tb_frame
+            lineno = tb.tb_lineno
+            filename = f.f_code.co_filename
+            linecache.checkcache(filename)
+            line = linecache.getline(filename, lineno, f.f_globals)
+            logging.warning('ERROR IN Main:'+str(lineno))
+            logging.warning('inline:'+str(line))
+            logging.warning(str(e))
+            xbmcgui.Dialog().ok('Error occurred','Err:'+str(e)+'Line:'+str(lineno))
+    def download_file(self):
+        try:
+            buffer_size=long(Addon.getSetting("buffer_size"))
+            
+            global id,playing_file
+            dp = xbmcgui.DialogProgress()
+            dp.create('Telemedia', '[B][COLOR=yellow]%s[/COLOR][/B]'%Addon.getLocalizedString(32044))
+            num=random.randint(0,60000)
+            data={'type':'td_send',
+             'info':json.dumps({'@type': 'downloadFile','file_id':int(id), 'priority':1,'offset':0,'limit':0, '@extra': num})
+             }
+            event=requests.post('http://127.0.0.1:5118/',json=data).json()
+            do_buffer=True
+            if 'expected_size' in event :
+                logging.warning('Found Complete')
+                if len(event['local']['path'])>0 and  (event['local']['is_downloading_completed']==True):
+                    do_buffer=False
+                    self.path='Done'
+            if do_buffer:
+                
+                
+                if buffer_size>=event['size']:
+                        buffer_size=event['size']-1000
+                        
+                j_enent_o=(event)
+                
+                
+                
+                j_enent_o=(event)
+                
+                while True:
+                    data={'type':'get_file_size',
+                     'info':id
+                     }
+                    event=requests.post('http://127.0.0.1:5118/',json=data).json()
+                    
+                    
+                    path=event['path']
+                    file_size=event['file_size']
+                    
+                    if dp.iscanceled():
+                        try:
+                            self.path='Done'
+                        except: 
+                            self.path=''
+                            pass
+                        break
+                    
+                    if file_size!=0:
+                        
+                       
+                            
+                            dp.update(int((file_size*100.0)/buffer_size),'[B][COLOR=green]Telemedia[/COLOR][/B]', '[B][COLOR=yellow]%s %s/%s[/COLOR][/B]'%(Addon.getLocalizedString(32045),str(file_size),str(buffer_size)))
+                            if len(path)>0 and int(file_size)>=buffer_size:
+                                self.path=path
+                                break
+                    xbmc.sleep(10)
+                data={'type':'kill_file_size',
+                     'info':id
+                     }
+                event=requests.post('http://127.0.0.1:5118/',json=data).json()
+            dp.close()
+        except Exception as e:
+            import linecache
+            exc_type, exc_obj, tb = sys.exc_info()
+            f = tb.tb_frame
+            lineno = tb.tb_lineno
+            filename = f.f_code.co_filename
+            linecache.checkcache(filename)
+            line = linecache.getline(filename, lineno, f.f_globals)
+            logging.warning('ERROR IN Main:'+str(lineno))
+            logging.warning('inline:'+str(line))
+            logging.warning(str(e))
+            xbmcgui.Dialog().ok('Error occurred','Err:'+str(e)+'Line:'+str(lineno))
+    def get_resume(self):
+        try:
+            from sqlite3 import dbapi2 as database
+        except:
+            from pysqlite2 import dbapi2 as database
+        cacheFile=os.path.join(user_dataDir,'database.db')
+        self.dbcon = database.connect(cacheFile)
+        self.dbcur = self.dbcon.cursor()
+        self.dbcur.execute("CREATE TABLE IF NOT EXISTS %s ( ""name TEXT, ""tmdb TEXT, ""season TEXT, ""episode TEXT,""playtime TEXT,""total TEXT, ""free TEXT);" % 'playback')
+        self.dbcon.commit()
+        if len(str(self.tmdb))>2:
+            self.dbcur.execute("SELECT * FROM playback where tmdb='%s' and season='%s' and episode='%s'"%(self.tmdb,str(self.season).replace('%20','0').replace(' ','0'),str(self.episode).replace('%20','0').replace(' ','0')))
+            
+        else:
+            self.dbcur.execute("SELECT * FROM playback where name='%s' and season='%s' and episode='%s'"%(self.saved_name.replace("'","%27"),str(self.season).replace('%20','0').replace(' ','0'),str(self.episode).replace('%20','0').replace(' ','0')))
+        match_playtime = self.dbcur.fetchone()
+        if match_playtime!=None:
+
+            name_r,timdb_r,season_r,episode_r,playtime,totaltime,free=match_playtime
+            res={}
+            res['wflag']=False
+            res['resumetime']=playtime
+            res['totaltime']=totaltime
+        else:
+            res=False
+            
+        set_runtime=0
+        if res:
+            if not res['wflag']:
+
+                if res['resumetime']!=None:
+
+                    #'Resume From '
+                    choose_time=Addon.getLocalizedString(32042)+time.strftime("%H:%M:%S", time.gmtime(float(res['resumetime'])))
+                    logging.warning('choose_time')
+                    logging.warning(choose_time)
+                    if float(res['resumetime'])>=(0.98*(float(res['totaltime']))):
+                        selection=1
+                        clicked=1
+                    else:
+                      
+                        window = selection_time('Menu',choose_time)
+                        window.doModal()
+                        selection = window.get_selection()
+                        clicked=window.clicked
+                        del window
+                    if clicked==0:
+                        return -1
+                    if selection==-1:
+                       stop_auto_play=1
+                       
+                       return 0
+                    if selection==0:
+                        
+                        set_runtime=float(res['resumetime'])
+                        set_total=res['totaltime']
+                        
+                        
+                    elif selection==1:
+                        
+                        
+                        set_runtime=0
+                        set_total=res['totaltime']
+        self.dbcur.close()
+        self.dbcon.close()
+        return set_runtime
+    def playTeleFile(self, id_pre,data,name,no_subs,tmdb,season,episode,original_title,description):
+      try:
+        self.tmdb=tmdb
+        self.saved_name=name
+        self.season=season
+        self.episode=episode
+        global id,playing_file,seek_time
+        try:
+            dialog = xbmcgui.DialogBusy()
+            dialog.create()
+        except:
+            pass
+        id=id_pre
+        self.stop=0
+        self.path=''
+        
+        link='http://127.0.0.1:5118/'+id
+        thread=[]
+        thread.append(Thread(self.download_file))
+        
+        thread[0].start()
+        while self.path=='':
+            xbmc.sleep(10)
+        
+        
+        listItem = xbmcgui.ListItem(name, path=link) 
+        #listItem.setProperty('inputstreamaddon', 'inputstream.adaptive')
+        #listItem.setProperty('inputstream.adaptive.manifest_type', 'hls')
+        
+        video_data={}
+        if season!=None and season!="%20" and season!="0":
+           video_data['TVshowtitle']=original_title.replace('%20',' ').replace('%3a',':').replace('%27',"'").replace('_',".")
+           video_data['mediatype']='tvshow'
+           
+        else:
+           video_data['mediatype']='movies'
+        if season!=None and season!="%20" and season!="0":
+           tv_movie='tv'
+           url2='http://api.themoviedb.org/3/tv/%s?api_key=%s&append_to_response=external_ids'%(tmdb,'653bb8af90162bd98fc7ee32bcbbfb3d')
+        else:
+           tv_movie='movie'
+           
+           url2='http://api.themoviedb.org/3/movie/%s?api_key=%s&append_to_response=external_ids'%(tmdb,'653bb8af90162bd98fc7ee32bcbbfb3d')
+        if 'tt' not in tmdb:
+             try:
+                
+                
+                imdb_id=requests.get(url2).json()['external_ids']['imdb_id']
+                
+             except Exception as e:
+                logging.warning('IMDB err:'+str(e))
+                imdb_id=" "
+        else:
+             imdb_id=tmdb
+        
+
+        
+        if 'Music File' in description:
+            types='music'
+            video_data['title']=name
+        else:
+            types='Video'
+            if '@' in name and '.' in name:
+                nm=name.split('.')
+                ind=0
+                for items in nm:
+                    if '@' in items:
+                        nm.pop(ind)
+                    ind+=1
+                name='.'.join(nm)
+            video_data['title']=name.replace('.mkv','').replace('.avi','').replace('.mp4','')
+            logging.warning('New Name:'+name)
+            video_data['Writer']=tmdb
+            video_data['season']=season
+            video_data['episode']=episode
+            video_data['plot']='from_telemedia'
+            video_data['imdb']=imdb_id
+            video_data['code']=imdb_id
+
+            video_data['imdbnumber']=imdb_id
+            
+            video_data['imdb_id']=imdb_id
+            video_data['IMDBNumber']=imdb_id
+            video_data['genre']=imdb_id
+            
+            
+            if no_subs=='1' or is_hebrew(unicode(name)):
+                video_data[u'mpaa']=unicode('heb')
+        
+        listItem.setInfo(type=types, infoLabels=video_data)
+        resume_time=self.get_resume()
+        if resume_time!=-1:
+            
+            self.play(link,listitem=listItem,windowed=False)
+            
+            #Waiting for play
+            #Please Wait
+            dp = xbmcgui . DialogProgress ( )
+            dp.create(Addon.getLocalizedString(32041)+'...',Addon.getLocalizedString(32040), '','')
+            
+            w_time=int(Addon.getSetting("wait_size"))
+            for _ in xrange(w_time):
+                dp.update(0,Addon.getLocalizedString(32041)+'...',Addon.getLocalizedString(32040)+' : '+str(_), '' )
+                try:
+                    vidtime = self.getTime()
+                except:
+                    vidtime=0
+                    pass
+                if self.isPlaying() and vidtime>0:
+                    break
+                if dp.iscanceled():
+                    dp.close()
+                    
+                    break
+                time.sleep(0.100)
+            try:
+                xbmcgui.DialogBusy().close() 
+            except:
+                pass
+            
+            
+            xbmc.executebuiltin("Dialog.Close(busydialog)")
+            self.path=''
+            
+            if resume_time>0:
+                try:
+                    self.seekTime(int(float(resume_time)))
+                except Exception as e:
+                    logging.warning('Seek Err:'+str(e))
+                    pass
+            dp.close()
+            while (not xbmc.abortRequested) and (self.isPlaying()):
+                 try:
+                    vidtime = self.getTime()
+                 except:
+                    vidtime = 0
+                 try:
+                    self.g_timer=xbmc.Player().getTime()
+                    self.g_item_total_time=xbmc.Player().getTotalTime()
+                 except:
+                    pass
+                 time.sleep(0.1)
+        
+        #dp.create('Please Wait...','Closing File', '','')
+        #dp.update(0, 'Please Wait...','Canceling File', '' )
+        log('(Tele Player) The playback has stop222')
+        log('(Tele Player) STOPED')
+        self.stop=1
+        num=random.randint(0,60000)
+        data={'type':'td_send',
+             'info':json.dumps({'@type': 'cancelDownloadFile','file_id':int(id), '@extra': num})
+             }
+        event=requests.post('http://127.0.0.1:5118/',json=data).json()
+        
+        #dp.update(0, 'Please Wait...','Removing File', '' )
+        if resume_time!=-1:
+            self.update_db()
+        time.sleep(1)
+        clear_files()
+        playing_file=True
+        #dp.close()
+        
+      except Exception as e:
+            import linecache
+            exc_type, exc_obj, tb = sys.exc_info()
+            f = tb.tb_frame
+            lineno = tb.tb_lineno
+            filename = f.f_code.co_filename
+            linecache.checkcache(filename)
+            line = linecache.getline(filename, lineno, f.f_globals)
+            logging.warning('ERROR IN Main:'+str(lineno))
+            logging.warning('inline:'+str(line))
+            logging.warning(str(e))
+            xbmcgui.Dialog().ok('Error occurred','Err:'+str(e)+'Line:'+str(lineno))
+       
+            
+        
+        
+def get_params():
+        param=[]
+        if len(sys.argv)>=2:
+          paramstring=sys.argv[2]
+          if len(paramstring)>=2:
+                params=sys.argv[2]
+                cleanedparams=params.replace('?','')
+                if (params[len(params)-1]=='/'):
+                        params=params[0:len(params)-2]
+                pairsofparams=cleanedparams.split('&')
+                param={}
+                for i in range(len(pairsofparams)):
+                        splitparams={}
+                        splitparams=pairsofparams[i].split('=')
+                        if (len(splitparams))==2:
+                                param[splitparams[0]]=splitparams[1]
+                                
+        return param     
+
+def download_photo(id,counter,f_name,mv_name):
+   try:
+    
+    logging.warning('mv_name:'+mv_name)
+    #if xbmcvfs.exists(mv_name):
+    #    return mv_name
+    logging.warning('mv_name Not found:'+mv_name)
+    data={'type':'download_photo',
+             'info':id
+             }
+    logging.warning('Sending')
+    file=requests.post('http://127.0.0.1:5118/',json=data).json()
+    logging.warning(file)
+    
+    logging.warning('file download:'+file)
+    if xbmcvfs.exists(file):
+        try:
+            shutil.move(file,mv_name)
+        except Exception as e:
+            logging.warning('File copy err:'+str(e))
+            pass
+        
+    else :
+        logging.warning('File not found')
+        return 'None'
+    
+    return mv_name
+   except Exception as e:
+        import linecache
+        exc_type, exc_obj, tb = sys.exc_info()
+        f = tb.tb_frame
+        lineno = tb.tb_lineno
+        filename = f.f_code.co_filename
+        linecache.checkcache(filename)
+        line = linecache.getline(filename, lineno, f.f_globals)
+        logging.warning('ERROR IN Photo:'+str(lineno))
+        logging.warning('inline:'+str(line))
+        logging.warning(str(e))
+        xbmcgui.Dialog().ok('Error occurred','Err:'+str(e)+'Line:'+str(lineno))
+        return ''
+
+
+def infiniteReceiver(all_d):
+   global exit_now
+   try:
+    
+    logging.warning('sending')
+    dp = xbmcgui . DialogProgress ( )
+    dp.create('Please Wait...','Adding Groups', '','')
+    dp.update(0, 'Please Wait...','Adding Groups', '' )
+    logging.warning('td sending')
+    num=random.randint(0,60000)
+    data={'type':'td_send',
+             'info':json.dumps({'@type': 'getChats','offset_order':9223372036854775807, 'limit': '500', '@extra': num})
+             }
+    event=requests.post('http://127.0.0.1:5118/',json=data).json()
+    exit_now=0
+    if 'status' in event:
+        xbmcgui.Dialog().ok('Error occurred',event['status'])
+        exit_now=1
+    if exit_now==0:
+       
+
+        
+        
+        counter=0
+        counter_ph=10000
+    
+        j_enent_o=(event)
+        zzz=0
+        
+        for items in j_enent_o['chat_ids']:
+            logging.warning('Send')
+            data={'type':'td_send',
+                 'info':json.dumps({'@type': 'getChat','chat_id':items, '@extra':counter})
+                 }
+            event=requests.post('http://127.0.0.1:5118/',json=data).json()
+            logging.warning('Recive')
+            
+            logging.warning(json.dumps(event))
+            if dp.iscanceled():
+                          dp.close()
+                         
+                          break
+            j_enent=(event)
+            
+            dp.update(int(((zzz* 100.0)/(len(j_enent_o['chat_ids']))) ), 'Please Wait...','Adding Groups', j_enent['@type'].encode('utf8') )
+            if j_enent['@type']=='chat' and len(j_enent['title'])>1:
+                
+                icon_id=''
+                fan_id=''
+                fanart=''
+                icon=''
+                name=j_enent['title']
+             
+                color='white'
+                if 'is_channel' in j_enent['type']:
+                    if j_enent['type']['is_channel']==False:
+                        
+                        genere='Chat'
+                        color='lightblue'
+                    else:
+                        genere='Channel'
+                        color='khaki'
+                else:
+                     genere=j_enent['type']['@type']
+                     color='lightgreen'
+                if 'last_message' in j_enent:
+                    plot=name.encode('utf8')
+                    pre=j_enent['last_message']['content']
+               
+                    if 'caption' in pre:
+                        plot=j_enent['last_message']['content']['caption']['text'].encode('utf8')
+                    elif 'text' in pre:
+                        if 'text' in pre['text']:
+                            plot=j_enent['last_message']['content']['text']['text'].encode('utf8')
+                    
+                        
+                else:
+                    plot=name.encode('utf8')
+                dp.update(int(((zzz* 100.0)/(len(j_enent_o['chat_ids']))) ), 'Please Wait...','Adding Groups', name.encode('utf8') )
+                zzz+=1
+             
+                if 'photo' in j_enent:
+                   
+                   if 'small' in j_enent['photo']:
+                     counter_ph+=1
+                     icon_id=j_enent['photo']['small']['id']
+                     f_name=str(j_enent['id'])+'_small.jpg'
+                     mv_name=os.path.join(logo_path,f_name)
+                     if os.path.exists(mv_name):
+                        icon=mv_name
+                     else:
+                        icon=download_photo(icon_id,counter_ph,f_name,mv_name)
+                   if 'big' in j_enent['photo']:
+                     counter_ph+=1
+                     fan_id=j_enent['photo']['big']['id']
+                     f_name=str(j_enent['id'])+'_big.jpg'
+                     mv_name=os.path.join(logo_path,f_name)
+                     if os.path.exists(mv_name):
+                        fanart=mv_name
+                     else:
+                        fanart=download_photo(fan_id,counter_ph,f_name,mv_name)
+                
+                
+                aa=addDir3('[COLOR %s]'%color+name.encode('utf8')+'[/COLOR]',str(items),2,icon,fanart,plot+'\nfrom_plot',generes=genere,data='0',last_id='0$$$0$$$0$$$0',image_master=icon+'$$$'+fanart,menu_leave=True,original_title=name)
+                all_d.append(aa)
+            
+            counter+=1
+            
+        
+    dp.close()
+    return all_d
+   except Exception as e:
+        import linecache
+        exc_type, exc_obj, tb = sys.exc_info()
+        f = tb.tb_frame
+        lineno = tb.tb_lineno
+        filename = f.f_code.co_filename
+        linecache.checkcache(filename)
+        line = linecache.getline(filename, lineno, f.f_globals)
+        logging.warning('ERROR IN Main:'+str(lineno))
+        logging.warning('inline:'+str(line))
+        logging.warning(str(e))
+        xbmcgui.Dialog().ok('Error occurred','Err:'+str(e)+'Line:'+str(lineno))
+def my_groups():
+    logging.warning('Start Main')
+    try:
+        
+        all_d=[]
+        aa=addDir3('[COLOR yellow]'+Addon.getLocalizedString(32024)+'[/COLOR]',str(id),6,'https://sitechecker.pro/wp-content/uploads/2017/12/search-engines.png','https://www.komando.com/wp-content/uploads/2017/12/computer-search.jpg','Search All',last_id='0$$$0',data='all')
+        all_d.append(aa)
+        all_d=infiniteReceiver(all_d)
+        xbmcplugin .addDirectoryItems(int(sys.argv[1]),all_d,len(all_d))
+    except Exception as e:
+        import linecache
+        exc_type, exc_obj, tb = sys.exc_info()
+        f = tb.tb_frame
+        lineno = tb.tb_lineno
+        filename = f.f_code.co_filename
+        linecache.checkcache(filename)
+        line = linecache.getline(filename, lineno, f.f_globals)
+        logging.warning('ERROR IN Main:'+str(lineno))
+        logging.warning('inline:'+str(line))
+        logging.warning(str(e))
+        xbmcgui.Dialog().ok('Error occurred','Err:'+str(e)+'Line:'+str(lineno))
+def main_menu():
+    logging.warning('Start Main')
+    data={'type':'checklogin',
+         'info':''
+         }
+    event=requests.post('http://127.0.0.1:5118/',json=data).json()
+    logging.warning(event)
+    all_d=[]
+    if event['status']==2 or event['status']=='Needs to log from setting':
+        
+        addNolink( '[COLOR lightgreen]%s[/COLOR]'%Addon.getLocalizedString(32001), 'www',5,False,fan="https://www.theseanamethod.com/wp-content/uploads/2017/01/login-570317_1280.jpg", iconimage="https://achieve.lausd.net/cms/lib/CA01000043/Centricity/domain/779/welligentbuttons/login.png")
+        
+        #xbmc.executebuiltin('Container.Refresh')
+    else:
+        #addNolink( '[COLOR lightgreen]Logout[/COLOR]', 'www',99,False,fan='https://miro.medium.com/max/800/1*peMgcGzIdn5O36ecjwrKxw.jpeg', iconimage="https://previews.123rf.com/images/faysalfarhan/faysalfarhan1711/faysalfarhan171154303/89754008-logout-isolated-on-elegant-brown-round-button-abstract-illustration.jpg")
+        #Movies
+        aa=addDir3('[COLOR yellow]'+Addon.getLocalizedString(32020)+'[/COLOR]',str(id),10,'https://image.flaticon.com/icons/png/512/2049/2049990.png','https://image.tmdb.org/t/p/w500_and_h282_face/jOzrELAzFxtMx2I4uDGHOotdfsS.jpg','Movies')
+        all_d.append(aa)
+        #Tv Shows
+        aa=addDir3('[COLOR lighblue]'+Addon.getLocalizedString(32021)+'[/COLOR]',str(id),11,'https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcQ48ZyMr013iwx2gXtSBm9iAcSkxv5ue5eJ16DEPXLCckXGcVRa','https://www.fanthatracks.com/wp-content/uploads/2019/08/themandalorian_disneyplus_SM_poster_cover.jpg','Tv Shows')
+        all_d.append(aa)
+        #My Groups
+        aa=addDir3('[COLOR khaki]'+Addon.getLocalizedString(32022)+'[/COLOR]',str(id),12,'https://sitechecker.pro/wp-content/uploads/2017/12/search-engines.png','https://buytelegrammember24.com/wp-content/uploads/2019/01/Screen-Shot-2019-01-14-at-9.45.41-AM.png','My Groups')
+        all_d.append(aa)
+        #Search Groups
+        aa=addDir3('[COLOR white]'+Addon.getLocalizedString(32023)+'[/COLOR]',str(id),13,'https://pageloot.com/wp-content/uploads/elementor/thumbs/make-qr-codes-for-telegram-groups-o75hxtbe6pqtp9qokn9gy422mzjm9cdesi6lyghjjg.jpg','https://cdn.ilovefreesoftware.com/wp-content/uploads/2019/06/Search-Telegram-Channels.png','Search All',last_id='0$$$0',data='all')
+        all_d.append(aa)
+        #Search All
+        aa=addDir3('[COLOR yellow]'+Addon.getLocalizedString(32024)+'[/COLOR]',str(id),6,'https://sitechecker.pro/wp-content/uploads/2017/12/search-engines.png','https://www.komando.com/wp-content/uploads/2017/12/computer-search.jpg','Search All',last_id='0$$$0',data='all')
+        all_d.append(aa)
+        #xbmc.executebuiltin('Container.Refresh')
+        #Add Local Tv shows
+        aa=addDir3('[COLOR yellow]'+Addon.getLocalizedString(32046)+'[/COLOR]','https://api.themoviedb.org/3/discover/tv?api_key=34142515d9d23817496eeb4ff1d223d0&language={0}&sort_by=popularity.desc&include_null_first_air_dates=false&with_original_language={1}&page=1'.format(lang,lang),26,'http://oakhillcapital.com/wp-content/uploads/2015/08/LocalTV.jpg','http://coldshotproductions.net/flachannelbanner.png',Addon.getLocalizedString(32046))
+        all_d.append(aa)
+        try:
+            from sqlite3 import dbapi2 as database
+        except:
+            from pysqlite2 import dbapi2 as database
+        cacheFile=os.path.join(user_dataDir,'database.db')
+        dbcon = database.connect(cacheFile)
+        dbcur = dbcon.cursor()
+        dbcur.execute("CREATE TABLE IF NOT EXISTS %s ( ""name TEXT, ""tmdb TEXT, ""year TEXT, ""icon TEXT,""fan TEXT,""plot TEXT, ""free TEXT);" % 'custom_show')
+        dbcon.commit()
+        dbcur.execute("SELECT * FROM custom_show where tmdb='%s'"%(url))
+        match = dbcur.fetchall()
+        
+        
+        if len(match)==0:
+          #My Local Tv shows
+          aa=addDir3('[COLOR yellow]'+Addon.getLocalizedString(32055)+'[/COLOR]','www',28,'http://oakhillcapital.com/wp-content/uploads/2015/08/LocalTV.jpg','http://coldshotproductions.net/flachannelbanner.png',Addon.getLocalizedString(32055))
+        
+        dbcur.close()
+        dbcon.close()
+        all_d.append(aa)
+        xbmcplugin .addDirectoryItems(int(sys.argv[1]),all_d,len(all_d))
+def res_q(quality):
+    f_q=' '
+    if '2160' in quality:
+      f_q='2160'
+    elif '1080' in quality:
+      f_q='1080'
+    elif '720' in quality:
+      f_q='720'
+    elif '480' in quality:
+      f_q='480'
+    elif 'hd' in quality.lower() or 'hq' in quality.lower():
+      f_q='720'
+    elif '360' in quality or 'sd' in quality.lower():
+      f_q='360'
+    elif '240' in quality:
+      f_q='240'
+    return f_q
+    
+def fix_q_links(quality):
+    f_q=100
+    if quality.lower()=='4k':
+        quality='2160'
+    if '2160' in quality:
+      f_q=1
+    if '1080' in quality:
+      f_q=2
+    elif '720' in quality:
+      f_q=3
+    elif '480' in quality:
+      f_q=4
+    elif 'hd' in quality.lower() or 'hq' in quality.lower():
+      f_q=5
+    elif '360' in quality or 'sd' in quality.lower():
+      f_q=6
+    elif '240' in quality:
+      f_q=7
+    return f_q
+def get_q(name):
+    q=res_q(name)
+    loc=fix_q_links(q)
+    return q,loc
+def search(tmdb,type,last_id_pre,search_entered_pre,icon_pre,fan_pre,season,episode,no_subs=0,original_title='',heb_name=''):
+    import random
+    
+    last_id=last_id_pre.split('$$$')[0]
+    last_id_msg=last_id_pre.split('$$$')[1]
+   
+    
+    if search_entered_pre=='Search All':
+        search_entered=''
+        
+        #Enter Search
+        keyboard = xbmc.Keyboard(search_entered, Addon.getLocalizedString(32025))
+        keyboard.doModal()
+        if keyboard.isConfirmed():
+                query = keyboard.getText()
+        else:
+            return 0
+    else:
+        query=search_entered_pre
+    query=query.replace('%20',' ').replace('%27',"'").replace('%3a',":")
+    
+    num=random.randint(1,1001)
+    all_links=[]
+    if type=='all':
+        data={'type':'td_send',
+             'info':json.dumps({'@type': 'searchMessages', 'query': query,'offset_message_id':last_id,'offset_chat_id':last_id_msg,'limit':100, '@extra': num})
+             }
+        event=requests.post('http://127.0.0.1:5118/',json=data).json()
+        
+        
+        counter_ph=0
+        for items in event['messages']:  
+            #logging.warning(items)
+            
+            if 'document' in items['content']:
+                name=items['content']['document']['file_name']
+                if '.mkv' not in name and '.mp4' not in name and '.avi' not in name:
+                    continue
+                size=items['content']['document']['document']['size']
+                f_size2=str(round(float(size)/(1024*1024*1024), 2))+' GB'
+                q,loc=get_q(name)
+                all_links.append((name, str(items['content']['document']['document']['id']),3,q,loc, icon_pre,fan_pre,f_size2,no_subs,tmdb,season,episode,original_title))
+                #addLink( name, str(items['content']['document']['document']['id']),3,False, icon_pre,fan_pre,f_size2,data=data,no_subs=no_subs,tmdb=tmdb,season=season,episode=episode,original_title=original_title)
+            if 'video' in items['content']:
+                    name=items['content']['video']['file_name']
+                    
+                    size=items['content']['video']['video']['size']
+                    f_size2=str(round(float(size)/(1024*1024*1024), 2))+' GB'
+                    logging.warning('items')
+                    q,loc=get_q(name)
+                    all_links.append(( name, str(items['content']['video']['video']['id']),3,q,loc, icon_pre,fan_pre,f_size2,no_subs,tmdb,season,episode,original_title))
+                    #addLink( name, str(items['content']['video']['video']['id']),3,False, icon_pre,fan_pre,f_size2,tmdb=tmdb,season=season,episode=episode,original_title=original_title)
+            if 'caption' in items['content']:
+                    txt_lines=items['content']['caption']['text'].split('\n')
+                    all_l=[]
+                    name=txt_lines[0]
+                    rem_lines=[]
+                    for lines in txt_lines:
+                        if 'upfile' not in lines and 'drive.google' not in lines:
+                          rem_lines.append(lines)
+                          continue
+                        
+                            
+                        all_l.append(lines)
+                    if len(all_l)==0:
+                        continue
+                    icon=icon_pre
+                    fan=fan_pre
+                    if 'photo' in items['content']['caption']:
+                        counter_ph+=1
+                        icon_id=items['content']['photo']['sizes'][0]['photo']['id']
+                        f_name=items['content']['photo']['sizes'][0]['photo']['remote']['id']+'.jpg'
+                        mv_name=os.path.join(icons_path,f_name)
+                        if os.path.exists(mv_name):
+                            icon=mv_name
+                        else:
+                           icon=download_photo(icon_id,counter_ph,f_name,mv_name)
+                        
+                        counter_ph+=1
+                        loc=items['content']['photo']['sizes']
+                        icon_id=items['content']['photo']['sizes'][len(loc)-1]['photo']['id']
+                        f_name=items['content']['photo']['sizes'][len(loc)-1]['photo']['remote']['id']+'.jpg'
+                        mv_name=os.path.join(fan_path,f_name)
+                        if os.path.exists(mv_name):
+                            fan=mv_name
+                        else:
+                           fan=download_photo(icon_id,counter_ph,f_name,mv_name)
+                           
+                    q,loc=get_q(name)
+                    all_links.append(('[COLOR lightgreen]'+ txt_lines[0]+'[/COLOR]' , '$$$'.join(all_l),9,q,loc, icon,fan,('\n'.join(rem_lines)).replace('\n\n','\n'),no_subs,tmdb,season,episode,original_title))
+                    #addLink( '[COLOR lightgreen]'+ txt_lines[0]+'[/COLOR]' , '$$$'.join(all_l),9,False, icon,fan,('\n'.join(rem_lines)).replace('\n\n','\n'),no_subs=no_subs,tmdb=tmdb,season=season,episode=episode,original_title=original_title)
+            elif 'web_page' in items['content']:
+                name=items['content']['web_page']['title']
+                link=items['content']['web_page']['url']
+                plot=items['content']['web_page']['description']
+                if 'upfile' not in link and 'drive.google' not in link:
+                      
+                      continue
+                icon=icon_pre
+                fan=fan_pre
+                if 'photo' in items['content']['web_page']:
+                    counter_ph+=1
+                    icon_id=items['content']['web_page']['photo']['sizes'][0]['photo']['id']
+                    f_name=items['content']['web_page']['photo']['sizes'][0]['photo']['remote']['id']+'.jpg'
+                    mv_name=os.path.join(icons_path,f_name)
+                    if os.path.exists(mv_name):
+                        icon=mv_name
+                    else:
+                       icon=download_photo(icon_id,counter_ph,f_name,mv_name)
+                    
+                    counter_ph+=1
+                    loc=items['content']['web_page']['photo']['sizes']
+                    icon_id=items['content']['web_page']['photo']['sizes'][len(loc)-1]['photo']['id']
+                    f_name=items['content']['web_page']['photo']['sizes'][len(loc)-1]['photo']['remote']['id']+'.jpg'
+                    mv_name=os.path.join(fan_path,f_name)
+                    if os.path.exists(mv_name):
+                        fan=mv_name
+                    else:
+                       fan=download_photo(icon_id,counter_ph,f_name,mv_name)
+                logging.warning('NAME22:'+name)
+                q,loc=get_q(name)
+                
+                all_links.append(('[COLOR lightgreen]'+ name+'[/COLOR]', link,9,q,loc, icon,fan,plot.replace('\n\n','\n'),no_subs,tmdb,season,episode,original_title))
+                #addLink( '[COLOR lightgreen]'+ name+'[/COLOR]', link,9,False, icon,fan,plot.replace('\n\n','\n'),no_subs=no_subs,tmdb=tmdb,season=season,episode=episode,original_title=original_title)
+            f_id=items['chat_id']
+
+    all_links=sorted(all_links, key=lambda x: x[4], reverse=False)
+    for  name, link,mode,q,loc, icon,fan,plot,no_subs,tmdb,season,episode,original_title in all_links:
+        logging.warning(heb_name)
+        
+        addLink( name, link,mode,False, icon,fan,plot,no_subs=no_subs,tmdb=tmdb,season=season,episode=episode,original_title=original_title)
+    try:
+        last_id=str(items['id'])+'$$$'+str(f_id)
+        
+    except:
+        #xbmc.executebuiltin(u'Notification(%s,%s)' % ('Telemedia', 'No result for:'+query))
+        pass
+    
+    
+    #addDir3('[COLOR yellow]'+'Next Page'+'[/COLOR]',str(id),6,'https://www.5thtackle.com/wp-content/uploads/2017/04/next-page.jpg','https://www.mcgill.ca/continuingstudies/files/continuingstudies/next-page-magazine.png',query,data=type,last_id=last_id)
+def utf8_simple(params):
+    
+    # problem: u.urlencode(params.items()) is not unicode-safe. Must encode all params strings as utf8 first.
+    # UTF-8 encodes all the keys and values in params dictionary
+    try:
+        params = params.encode('utf-8')
+    except:
+        params='ERROR'
+            
+    
+    return params
+def file_list(id,page,last_id_all,quary,icon_pre,fan_pre,image_master='',original_title=''):
+   try:
+        link_types=['upfile','drive.google','youtube','youtu.be']
+        
+        all_d=[]
+        icon_pre=telemaia_icon
+        fan_pre=telemaia_fan
+        if image_master!='':
+            fan_pre=image_master.split('$$$')[1]
+            icon_pre=image_master.split('$$$')[0]
+        fan_o=fan_pre
+        icon_o=icon_pre
+        if 'from_plot' in quary:
+            quary=' '
+            dont_s_again=True
+        else:
+            dont_s_again=False
+            search_entered=''
+            #'Enter Search'
+            keyboard = xbmc.Keyboard(search_entered, Addon.getLocalizedString(32025))
+            keyboard.doModal()
+            if keyboard.isConfirmed():
+                    quary = keyboard.getText()
+            else:
+                return 0
+        import random
+        logging.warning(id)
+        logging.warning('File List')
+        last_id_doc=last_id_all.split('$$$')[0]
+        last_id=last_id_all.split('$$$')[1]
+        last_id_link=last_id_all.split('$$$')[2]
+        last_id_audio=last_id_all.split('$$$')[3]
+        
+        disp_files=Addon.getSetting("disp_f")=='true'
+        disp_vid=Addon.getSetting("disp_v")=='true'
+        disp_links=Addon.getSetting("disp_l")=='true'
+        disp_audio=Addon.getSetting("disp_a2")=='true'
+        
+        disp_repo=Addon.getSetting("repo")=='true'
+        num=random.randint(1,1001)
+        
+        
+        if last_id_audio!='-99' and disp_audio:
+            num=random.randint(1,1001)
+            data={'type':'td_send',
+                 'info':json.dumps({'@type': 'searchChatMessages','chat_id':(id), 'query': quary.strip(),'from_message_id':int(last_id_audio),'offset':0,'filter':{'@type': 'searchMessagesFilterAudio'},'limit':100, '@extra': num})
+                 }
+           
+           
+           
+            event=requests.post('http://127.0.0.1:5118/',json=data).json()
+            
+           
+            counter_ph=1000
+            for items in event['messages']:  
+                    
+                    
+                    name=items['content']['audio']['title']
+                    
+                    size=items['content']['audio']['audio']['size']
+                    f_size2=str(round(float(size)/(1024*1024*1024), 2))+' GB'
+                    icon=icon_pre
+                    fan=fan_pre
+                    if 'album_cover_thumbnail' in items['content']['audio']:
+                        if 'photo' in items['content']['audio']['album_cover_thumbnail']:
+                            counter_ph+=1
+                            icon_id=items['content']['audio']['album_cover_thumbnail']['photo']['id']
+                            f_name=items['content']['audio']['album_cover_thumbnail']['photo']['remote']['id']+'.jpg'
+                            mv_name=os.path.join(icons_path,f_name)
+                            if os.path.exists(mv_name):
+                                icon=mv_name
+                            else:
+                               icon=download_photo(icon_id,counter_ph,f_name,mv_name)
+                            
+                            fan=icon
+                    dur=items['content']['audio']['duration']
+                    t=time.strftime("%H:%M:%S", time.gmtime(dur))
+                    if 'date' in items:
+                        da=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(items['date']))
+                    
+                    addLink( '[COLOR lime]'+name+'[/COLOR]', str(items['content']['audio']['audio']['id']),3,False, icon,fan,f_size2+'\n'+t+'\nMusic File',da=da)
+                    
+                
+            last_id_audio=-99
+            try:
+             last_id_audio=items['id']
+             last_id_audio_found=1
+            except:
+             pass
+        if last_id_doc!='-99' and disp_files:
+           num=random.randint(1,1001)
+           data={'type':'td_send',
+                 'info':json.dumps({'@type': 'searchChatMessages','chat_id':(id), 'query': quary.strip(),'from_message_id':int(last_id_doc),'offset':0,'filter':{'@type': 'searchMessagesFilterDocument'},'limit':100, '@extra': num})
+                 }
+           
+           
+           #data={'type':'td_send',
+           #      'info':json.dumps({'@type': 'getChatHistory','chat_id':long(id), 'from_message_id': 0,'offset':0,'limit':10, '@extra':num})
+           #      }
+           event=requests.post('http://127.0.0.1:5118/',json=data).json()
+           
+           
+           
+           for items in event['messages']:  
+                logging.warning('n itmes')
+                logging.warning(items)
+               
+                if 'document' in items['content']:
+                    
+                    name=items['content']['document']['file_name']
+                    if disp_repo and 'repo' in original_title.lower():
+                        
+                        if '.mkv' not in name and '.mp4' not in name and '.avi' not in name and '.zip' not in name:
+                            continue
+                    else:
+                        if '.mkv' not in name and '.mp4' not in name and '.avi' not in name:
+                            continue
+                    size=items['content']['document']['document']['size']
+                    f_size2=str(round(float(size)/(1024*1024*1024), 2))+' GB'
+                    if Addon.getSetting("remove_title")=='true':
+                        name=name.replace(original_title,'').replace('@'+original_title,'')
+                    if 'date' in items:
+                        da=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(items['date']))
+                    regex='.*([1-3][0-9]{3})'
+                    year_pre=re.compile(regex).findall(name)
+                    year=0
+                    if len(year_pre)>0:
+                        year=year_pre[0]
+                    mode=3
+                    o_name=name
+                    if '.zip'  in name:
+                        name='[COLOR gold]'+name+'[/COLOR]'
+                        mode=24
+                    #if '.zip' in name and 'build' in name:
+                    #    mode=25
+                    addLink( name, str(items['content']['document']['document']['id']),mode,False, icon_pre,fan_pre,f_size2,da=da,year=year,original_title=o_name)
+                
+                
+           last_id_doc=-99
+           try:
+            last_id_doc=items['id']
+            last_id_doc_found=1
+           except:
+            pass
+        else:
+           last_id_doc=-99
+           last_id_doc_found=0
+        if last_id!='-99' and disp_vid:
+            num=random.randint(1,1001)
+            data={'type':'td_send',
+                 'info':json.dumps({'@type': 'searchChatMessages','chat_id':(id), 'query': quary.strip(),'from_message_id':int(last_id),'offset':0,'filter':{'@type': 'searchMessagesFilterVideo'},'limit':100, '@extra': num})
+                 }
+            event=requests.post('http://127.0.0.1:5118/',json=data).json()
+            
+            for items in event['messages']:  
+                #logging.warning(items)
+                if 'video' in items['content']:
+                    name=items['content']['video']['file_name']
+                    
+                    
+                    size=items['content']['video']['video']['size']
+                    f_size2=str(round(float(size)/(1024*1024*1024), 2))+' GB'
+                    plot=''
+                    if 'caption' in items['content']:
+                        plot=items['content']['caption']['text']
+                        
+                        if '\n' in plot:
+                                name=plot.split('\n')[0]
+                                
+                    if Addon.getSetting("remove_title")=='true':
+                        name=name.replace(original_title,'').replace('@'+original_title,'')
+                    if 'date' in items:
+                        da=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(items['date']))
+                    regex='.*([1-3][0-9]{3})'
+                    year_pre=re.compile(regex).findall(name)
+                    year=0
+                    if len(year_pre)>0:
+                        year=year_pre[0]
+                    addLink( name, str(items['content']['video']['video']['id']),3,False, icon_pre,fan_pre,f_size2+'\n'+plot.replace('\n\n',' - '),da=da,year=year)
+                
+                
+               
+            last_id=-99
+            try:
+                last_id=items['id']
+            except:
+                pass
+                
+            
+        else:
+            last_id=-99
+        
+        
+        if last_id_link!='-99' and disp_links:
+           num=random.randint(1,1001)
+           data={'type':'td_send',
+                 'info':json.dumps({'@type': 'searchChatMessages','chat_id':(id), 'query': quary,'from_message_id':int(last_id_link),'offset':0,'filter':{'@type': 'searchMessagesFilterUrl'},'limit':100, '@extra': num})
+                 }
+           
+           
+           #data={'type':'td_send',
+           #      'info':json.dumps({'@type': 'getChatHistory','chat_id':long(id), 'from_message_id': 0,'offset':0,'limit':10, '@extra':num})
+           #      }
+           event=requests.post('http://127.0.0.1:5118/',json=data).json()
+           logging.warning('link data')
+           logging.warning(json.dumps(event))
+           
+           counter_ph=0
+           for items in event['messages']:  
+                #logging.warning(items)
+                if 'web_page' in items['content']:
+                    name=items['content']['web_page']['title']
+                    link=items['content']['web_page']['url']
+                    plot=items['content']['web_page']['description']
+                    all_l=[link]
+                    ok=False
+                    for items_in in link_types:
+                        if items_in in link:
+                            ok=True
+                            break
+                            
+                    if not ok:
+                          
+                          continue
+                        
+                    
+                    if 'text' in items['content']:
+                        txt_lines=items['content']['text']['text'].split('\n')
+                        
+                        rem_lines=[]
+                        
+                        for lines in txt_lines:
+                            ok=False
+                            for items_in in link_types:
+                                if items_in in lines:
+                                    ok=True
+                                    break
+                                    
+                            if not ok:
+                                  
+                                  continue
+                            
+                                
+                            all_l.append(lines)
+                    icon=icon_pre
+                    fan=fan_pre
+                    if 'photo' in items['content']['web_page']:
+                        counter_ph+=1
+                        icon_id=items['content']['web_page']['photo']['sizes'][0]['photo']['id']
+                        f_name=items['content']['web_page']['photo']['sizes'][0]['photo']['remote']['id']+'.jpg'
+                        mv_name=os.path.join(icons_path,f_name)
+                        if os.path.exists(mv_name):
+                            icon=mv_name
+                        else:
+                           icon=download_photo(icon_id,counter_ph,f_name,mv_name)
+                        
+                        counter_ph+=1
+                        loc=items['content']['web_page']['photo']['sizes']
+                        icon_id=items['content']['web_page']['photo']['sizes'][len(loc)-1]['photo']['id']
+                        f_name=items['content']['web_page']['photo']['sizes'][len(loc)-1]['photo']['remote']['id']+'.jpg'
+                        mv_name=os.path.join(fan_path,f_name)
+                        if os.path.exists(mv_name):
+                            fan=mv_name
+                        else:
+                           fan=download_photo(icon_id,counter_ph,f_name,mv_name)
+                    if 'date' in items:
+                        da=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(items['date']))
+                    addLink('[COLOR lightgreen]'+ name+'[/COLOR]', utf8_simple('$$$'.join(all_l)),9,False, icon,fan,plot.replace('\n\n','\n'),da=da)
+                elif 'caption' in items['content']:
+                    txt_lines=items['content']['caption']['text'].split('\n')
+                    all_l=[]
+                    rem_lines=[]
+                    
+                    for lines in txt_lines:
+                        ok=False
+                        for items_in in link_types:
+                            if items_in in lines:
+                                ok=True
+                                break
+                                
+                        if not ok:
+                              rem_lines.append(lines)
+                              continue
+                        
+                        
+                            
+                        all_l.append(lines)
+                    if len(all_l)==0:
+                        continue
+                    
+                    counter_ph+=1
+                    icon_id=items['content']['photo']['sizes'][0]['photo']['id']
+                    f_name=items['content']['photo']['sizes'][0]['photo']['remote']['id']+'.jpg'
+                    mv_name=os.path.join(icons_path,f_name)
+                    if os.path.exists(mv_name):
+                        icon=mv_name
+                    else:
+                       icon=download_photo(icon_id,counter_ph,f_name,mv_name)
+                    
+                    counter_ph+=1
+                    loc=items['content']['photo']['sizes']
+                    icon_id=items['content']['photo']['sizes'][len(loc)-1]['photo']['id']
+                    f_name=items['content']['photo']['sizes'][len(loc)-1]['photo']['remote']['id']+'.jpg'
+                    mv_name=os.path.join(fan_path,f_name)
+                    if os.path.exists(mv_name):
+                        fan=mv_name
+                    else:
+                       fan=download_photo(icon_id,counter_ph,f_name,mv_name)
+                       
+                    if 'date' in items:
+                        da=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(items['date']))
+                    
+                    addLink( '[COLOR lightgreen]'+ txt_lines[0]+'[/COLOR]', utf8_simple('$$$'.join(all_l)),9,False, icon,fan,('\n'.join(rem_lines)).replace('\n\n','\n'),da=da)
+                
+                elif 'text' in items['content']:
+                    txt_lines=items['content']['text']['text'].split('\n')
+                    all_l=[]
+                    rem_lines=[]
+                    
+                    for lines in txt_lines:
+                        ok=False
+                        for items_in in link_types:
+                            if items_in in lines:
+                                ok=True
+                                break
+                                
+                        if not ok:
+                              rem_lines.append(lines)
+                              continue
+                        
+                            
+                        all_l.append(lines)
+                    if len(all_l)==0:
+                        continue
+                    
+                    icon=icon_pre
+                    fan=fan_pre
+                    if 'photo' in items['content']:
+                        counter_ph+=1
+                        icon_id=items['content']['photo']['sizes'][0]['photo']['id']
+                        f_name=items['content']['photo']['sizes'][0]['photo']['remote']['id']+'.jpg'
+                        mv_name=os.path.join(icons_path,f_name)
+                        if os.path.exists(mv_name):
+                            icon=mv_name
+                        else:
+                           icon=download_photo(icon_id,counter_ph,f_name,mv_name)
+                        
+                        
+                        counter_ph+=1
+                        
+                        loc=items['content']['photo']['sizes']
+                        icon_id=items['content']['photo']['sizes'][len(loc)-1]['photo']['id']
+                        f_name=items['content']['photo']['sizes'][len(loc)-1]['photo']['remote']['id']+'.jpg'
+                        mv_name=os.path.join(fan_path,f_name)
+                        if os.path.exists(mv_name):
+                            fan=mv_name
+                        else:
+                           fan=download_photo(icon_id,counter_ph,f_name,mv_name)
+                       
+                    if 'date' in items:
+                        da=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(items['date']))
+                   
+                    addLink( '[COLOR lightgreen]'+ txt_lines[0]+'[/COLOR]', utf8_simple('$$$'.join(all_l)),9,False, icon,fan,('\n'.join(rem_lines)).replace('\n\n','\n'),da=da)
+                
+                
+                
+           last_id_link=-99
+           try:
+            last_id_link=items['id']
+            
+           except:
+            pass
+        else:
+           last_id_link=-99
+          
+           
+        if last_id_doc==-99 and last_id==-99 and last_id_link==-99 and last_id_audio==-99:
+            xbmcgui.Dialog().ok(Addon.getLocalizedString(32052),Addon.getLocalizedString(32059))
+        f_last_id=str(last_id_doc)+'$$$'+str(last_id)+'$$$'+str(last_id_link)+'$$$'+str(last_id_audio)
+        if quary==' ':
+            quary='from_plot'
+        #Next Page
+        aa=addDir3('[COLOR yellow]'+Addon.getLocalizedString(32026)+'[/COLOR]',str(id),2,'https://www.5thtackle.com/wp-content/uploads/2017/04/next-page.jpg','https://www.mcgill.ca/continuingstudies/files/continuingstudies/next-page-magazine.png',quary,data=str(int(page)+1),last_id=f_last_id,image_master=icon_o+'$$$'+fan_o)
+        all_d.append(aa) 
+        if dont_s_again:
+            f_last_id='0$$$0$$$0$$$0'
+            #'Search'
+            aa=addDir3('[COLOR khaki]'+Addon.getLocalizedString(32027)+'[/COLOR]',str(id),2,'https://sitechecker.pro/wp-content/uploads/2017/12/search-engines.png','https://www.komando.com/wp-content/uploads/2017/12/computer-search.jpg','search',data='0',last_id=f_last_id,image_master=image_master)
+            all_d.append(aa)
+        xbmcplugin .addDirectoryItems(int(sys.argv[1]),all_d,len(all_d))
+   except Exception as e:
+        import linecache
+        exc_type, exc_obj, tb = sys.exc_info()
+        f = tb.tb_frame
+        lineno = tb.tb_lineno
+        filename = f.f_code.co_filename
+        linecache.checkcache(filename)
+        line = linecache.getline(filename, lineno, f.f_globals)
+        logging.warning('ERROR IN Main:'+str(lineno))
+        logging.warning('inline:'+str(line))
+        logging.warning(str(e))
+        xbmcgui.Dialog().ok('Error occurred','Err:'+str(e)+'Line:'+str(lineno))
+def play(name,url,data,iconimage,fan,no_subs,tmdb,season,episode,original_title,description):
+    '''
+    link='http://127.0.0.1:5118/'+url
+    logging.warning('Play Link:'+link)
+    video_data={}
+    video_data['title']=name
+    video_data['poster']=fan
+
+    video_data['icon']=iconimage
+    
+    listItem = xbmcgui.ListItem(video_data['title'], path=link) 
+    listItem.setInfo(type='Video', infoLabels=video_data)
+
+
+    listItem.setProperty('IsPlayable', 'true')
+
+   
+       
+    ok=xbmc.Player().play(link,listitem=listItem)
+    xbmc.executebuiltin("Dialog.Close(busydialog)")
+    '''
+    try:
+        
+        monitor=TelePlayer()
+        monitor.playTeleFile(url,data,name,no_subs,tmdb,season,episode,original_title,description)
+        
+    except Exception as e:
+        import linecache
+        exc_type, exc_obj, tb = sys.exc_info()
+        f = tb.tb_frame
+        lineno = tb.tb_lineno
+        filename = f.f_code.co_filename
+        linecache.checkcache(filename)
+        line = linecache.getline(filename, lineno, f.f_globals)
+        logging.warning('ERROR IN Main:'+str(lineno))
+        logging.warning('inline:'+str(line))
+        logging.warning(str(e))
+        xbmcgui.Dialog().ok('Error occurred','Err:'+str(e)+'Line:'+str(lineno))
+    
+def get_upfile_det(url):
+    name=''
+    logging.warning(url)
+    headers = {
+  
+    'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:60.0) Gecko/20100101 Firefox/60.0',
+    'Accept': 'application/json',
+    'Accept-Language': 'en-US,en;q=0.5',
+    
+    'Content-Type': 'application/json;charset=utf-8',
+    'Connection': 'keep-alive',
+    'Pragma': 'no-cache',
+    'Cache-Control': 'no-cache',
+    }
+    html=requests.get(url,headers=headers).content
+    
+       
+    regex='<title>(.+?)</title>.+?<input type="hidden" value="(.+?)" name="hash">'
+    match=re.compile(regex,re.DOTALL).findall(html)
+    if len(match)==0:
+         xbmcgui.Dialog().ok('Error occurred','Link is down')
+         return 0,0
+    for name,link in match:
+      id=url.split('/')[-1]
+      id=id.replace('.html','').replace('.htm','')
+      
+      playlink='http://down.upfile.co.il/downloadnew/file/%s/%s'%(id,link)
+    return playlink,name
+
+def googledrive_download(id):
+    #download('http://mirrors.kodi.tv/addons/jarvis/script.module.requests/script.module.requests-2.9.1.zip','script.module.requests')
+    #dis_or_enable_addon('script.module.requests','auto')
+    #import requests,time
+    keys=[]
+    #id_pre=id.split('=')
+    #id=id_pre[len(id_pre)-1]
+    
+    def get_confirm_token(response):
+        
+        for cookie in response:
+            logging.warning('cookie.name')
+            logging.warning(cookie.name)
+            backup_cookie= cookie.value
+            if 'download_warning' in cookie.name:
+                logging.warning(cookie.value)
+                logging.warning('cookie.value')
+                return cookie.value
+            return backup_cookie
+
+        return None
+
+    
+    URL = "https://docs.google.com/uc?export=download"
+
+    #session = requests.Session()
+
+    #response = session.get(URL, params = { 'id' : id }, stream = True)
+    import urllib2
+    import cookielib
+
+    from cookielib import CookieJar
+
+    cj = CookieJar()
+    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
+    # input-type values from the html form
+    formdata =  { 'id' : id }
+    data_encoded = urllib.urlencode(formdata)
+    logging.warning(URL+'&'+ data_encoded)
+    response = opener.open(URL+'&'+ data_encoded)
+    content = response.read()
+    cookies={}
+    cook=[]
+    
+    for cookie in cj:
+         cook.append(cookie.name+'='+cookie.value)
+         cookies[cookie.name]=cookie.value
+         logging.warning( cookie)
+    token = get_confirm_token(cj)
+    logging.warning(token)
+    if token:
+        params = { 'id' : id, 'confirm' : token }
+        headers = {'Access-Control-Allow-Headers': 'Content-Length','Cookie':';'.join(cook)}
+        
+        data_encoded = urllib.urlencode(params)
+        return (URL+'&'+ data_encoded+"|"+ urllib.urlencode(headers))
+        #response = opener.open(URL+'&'+ data_encoded)
+        #chunk_read(response, report_hook=chunk_report,dp=dp,destination=destination,filesize=filesize)
+        
+
+    #save_response_content(response, destination)
+    return(keys)
+def fix_q(quality):
+    
+    
+    if '1080' in quality:
+      f_q=0
+    elif '720' in quality:
+      f_q=1
+    elif '480' in quality:
+      f_q=2
+   
+    elif '360' in quality or 'sd' in quality.lower():
+      f_q=3
+   
+    return f_q
+def getPublicStream(url):
+        import cookielib
+        import mediaurl
+
+        pquality=-1
+        pformat=-1
+        acodec=-1
+        fmtlist=[]
+        mediaURLs = []
+  
+       
+        cookies = cookielib.LWPCookieJar()
+        handlers = [
+            urllib2.HTTPHandler(),
+            urllib2.HTTPSHandler(),
+            urllib2.HTTPCookieProcessor(cookies)
+            ]
+        opener = urllib2.build_opener(*handlers)
+        logging.warning(url)
+        req = urllib2.Request(url)
+
+        req.add_header('User-agent',__USERAGENT__)
+        result= opener.open(req)
+        for cookie in cookies:
+            if cookie.name=='DRIVE_STREAM':
+              value=cookie.value
+
+        #response = urllib2.urlopen(req)
+        
+        response_data = result.read()
+        #response.close()
+
+
+
+
+        regex='<title>(.+?)</title>'
+        name=re.compile(regex).findall(response_data)[0]
+        for r in re.finditer('\"fmt_list\"\,\"([^\"]+)\"' ,
+                             response_data, re.DOTALL):
+            fmtlist = r.group(1)
+
+        title = ''
+        for r in re.finditer('\"title\"\,\"([^\"]+)\"' ,
+                             response_data, re.DOTALL):
+            title = r.group(1)
+
+
+        if fmtlist==[]:
+            return 'Download',None,name
+        itagDB={}
+        containerDB = {'x-flv':'flv', 'webm': 'WebM', 'mp4;+codecs="avc1.42001E,+mp4a.40.2"': 'MP4'}
+        for r in re.finditer('(\d+)/(\d+)x(\d+)/(\d+/\d+/\d+)\&?\,?' ,
+                               fmtlist, re.DOTALL):
+              (itag,resolution1,resolution2,codec) = r.groups()
+
+              if codec == '9/0/115':
+                itagDB[itag] = {'resolution': resolution2, 'codec': 'h.264/aac'}
+              elif codec == '99/0/0':
+                itagDB[itag] = {'resolution': resolution2, 'codec': 'VP8/vorbis'}
+              else:
+                itagDB[itag] = {'resolution': resolution2}
+
+        for r in re.finditer('\"url_encoded_fmt_stream_map\"\,\"([^\"]+)\"' ,
+                             response_data, re.DOTALL):
+            urls = r.group(1)
+
+
+        
+        urls = urllib.unquote(urllib.unquote(urllib.unquote(urllib.unquote(urllib.unquote(urls)))))
+        urls = re.sub('\\\\u003d', '=', urls)
+        urls = re.sub('\\\\u0026', '&', urls)
+
+
+#        urls = re.sub('\d+\&url\='+self.PROTOCOL, '\@', urls)
+        urls = re.sub('\&url\='+ 'https://', '\@', urls)
+
+#        for r in re.finditer('\@([^\@]+)' ,urls):
+#          videoURL = r.group(0)
+#        videoURL1 = self.PROTOCOL + videoURL
+
+
+        # fetch format type and quality for each stream
+        count=0
+        
+        for r in re.finditer('\@([^\@]+)' ,urls):
+                videoURL = r.group(1)
+                for q in re.finditer('itag\=(\d+).*?type\=video\/([^\&]+)\&quality\=(\w+)' ,
+                             videoURL, re.DOTALL):
+                    (itag,container,quality) = q.groups()
+                    count = count + 1
+                    order=0
+                    if pquality > -1 or pformat > -1 or acodec > -1:
+                        if int(itagDB[itag]['resolution']) == 1080:
+                            if pquality == 0:
+                                order = order + 1000
+                            elif pquality == 1:
+                                order = order + 3000
+                            elif pquality == 3:
+                                order = order + 9000
+                        elif int(itagDB[itag]['resolution']) == 720:
+                            if pquality == 0:
+                                order = order + 2000
+                            elif pquality == 1:
+                                order = order + 1000
+                            elif pquality == 3:
+                                order = order + 9000
+                        elif int(itagDB[itag]['resolution']) == 480:
+                            if pquality == 0:
+                                order = order + 3000
+                            elif pquality == 1:
+                                order = order + 2000
+                            elif pquality == 3:
+                                order = order + 1000
+                        elif int(itagDB[itag]['resolution']) < 480:
+                            if pquality == 0:
+                                order = order + 4000
+                            elif pquality == 1:
+                                order = order + 3000
+                            elif pquality == 3:
+                                order = order + 2000
+                    try:
+                        if itagDB[itag]['codec'] == 'VP8/vorbis':
+                            if acodec == 1:
+                                order = order + 90000
+                            else:
+                                order = order + 10000
+                    except :
+                        order = order + 30000
+
+                    try:
+                        if containerDB[container] == 'MP4':
+                            if pformat == 0 or pformat == 1:
+                                order = order + 100
+                            elif pformat == 3 or pformat == 4:
+                                order = order + 200
+                            else:
+                                order = order + 300
+                        elif containerDB[container] == 'flv':
+                            if pformat == 2 or pformat == 3:
+                                order = order + 100
+                            elif pformat == 1 or pformat == 5:
+                                order = order + 200
+                            else:
+                                order = order + 300
+                        elif containerDB[container] == 'WebM':
+                            if pformat == 4 or pformat == 5:
+                                order = order + 100
+                            elif pformat == 0 or pformat == 1:
+                                order = order + 200
+                            else:
+                                order = order + 300
+                        else:
+                            order = order + 100
+                    except :
+                        pass
+
+                    try:
+                        mediaURLs.append( mediaurl.mediaurl('https://' + videoURL, itagDB[itag]['resolution'] + ' - ' + containerDB[container] + ' - ' + itagDB[itag]['codec'], str(itagDB[itag]['resolution'])+ '_' + str(order+count), order+count, title=title))
+                    except KeyError:
+                        mediaURLs.append(mediaurl.mediaurl('https://'+ videoURL, itagDB[itag]['resolution'] + ' - ' + container, str(itagDB[itag]['resolution'])+ '_' + str(order+count), order+count, title=title))
+        
+        return mediaURLs,value,name
+        
+def googledrive_resolve(id):
+    
+    global tv_mode
+    links_data,cookie,name=getPublicStream('https://drive.google.com/file/d/'+id+'/view')
+    if links_data=='Download':
+        return 'Download',name
+    mediaURLs = sorted(links_data)
+    options = []
+    all_mediaURLs=[]
+    for mediaURL in mediaURLs:
+        logging.warning(mediaURL.qualityDesc)
+        if '4k' in mediaURL.qualityDesc:
+           
+           options.append('4000')
+        elif '1080' in mediaURL.qualityDesc:
+           
+           options.append('1080')
+        elif '720' in mediaURL.qualityDesc:
+           
+           options.append('720')
+        elif '480' in mediaURL.qualityDesc:
+           
+           options.append('480')
+        elif '360' in mediaURL.qualityDesc:
+           
+           options.append('360')
+        elif '240' in mediaURL.qualityDesc:
+           
+           options.append('240')
+        else:
+           
+           options.append('0')
+        all_mediaURLs.append((mediaURL.url,fix_q(mediaURL.qualityDesc)))
+    qualities=options
+    qualities=sorted(options, key=lambda x: x[0], reverse=False)
+    all_mediaURLs=sorted(all_mediaURLs, key=lambda x: x[1], reverse=False)
+    
+    if Addon.getSetting("auto_q")=='true':
+            all_n=[]
+            playbackURL,qul = all_mediaURLs[0]
+            playbackURL=playbackURL+'||Cookie=DRIVE_STREAM%3D'+cookie
+            all_n.append(name+' - [COLOR lightblue][B]'+str(options[0])+'[/B][/COLOR]')
+    else:
+        #ret = xbmcgui.Dialog().select("Choose", options)
+        #if ret==-1:
+        #    sys.exit()
+        all_l=[]
+        all_n=[]
+        count=0
+        for items in mediaURLs:
+            all_l.append(items.url+'||Cookie=DRIVE_STREAM%3D'+cookie)
+            all_n.append(name+' - [COLOR lightblue][B]'+str(options[count])+'[/B][/COLOR]')
+            count+=1
+        playbackURL = '$$$'.join(all_l)#[ret].url
+
+
+    if len(all_n)==1:
+        all_n=all_n[0]
+    return playbackURL ,all_n
+
+def get_resume(tmdb,saved_name,season,episode):
+        try:
+            from sqlite3 import dbapi2 as database
+        except:
+            from pysqlite2 import dbapi2 as database
+        cacheFile=os.path.join(user_dataDir,'database.db')
+        dbcon = database.connect(cacheFile)
+        dbcur = dbcon.cursor()
+        dbcur.execute("CREATE TABLE IF NOT EXISTS %s ( ""name TEXT, ""tmdb TEXT, ""season TEXT, ""episode TEXT,""playtime TEXT,""total TEXT, ""free TEXT);" % 'playback')
+        dbcon.commit()
+        if len(str(tmdb))>2:
+            dbcur.execute("SELECT * FROM playback where tmdb='%s' and season='%s' and episode='%s'"%(tmdb,str(season).replace('%20','0').replace(' ','0'),str(episode).replace('%20','0').replace(' ','0')))
+            logging.warning("SELECT * FROM playback where tmdb='%s' and season='%s' and episode='%s'"%(tmdb,str(season).replace('%20','0').replace(' ','0'),str(episode).replace('%20','0').replace(' ','0')))
+        else:
+            dbcur.execute("SELECT * FROM playback where name='%s' and season='%s' and episode='%s'"%(saved_name.replace("'","%27"),str(season).replace('%20','0').replace(' ','0'),str(episode).replace('%20','0').replace(' ','0')))
+        match_playtime = dbcur.fetchone()
+        if match_playtime!=None:
+
+            name_r,timdb_r,season_r,episode_r,playtime,totaltime,free=match_playtime
+            res={}
+            res['wflag']=False
+            res['resumetime']=playtime
+            res['totaltime']=totaltime
+        else:
+            res=False
+            
+        set_runtime=0
+        if res:
+            if not res['wflag']:
+
+                if res['resumetime']!=None:
+
+                    #Resume From 
+                    choose_time=Addon.getLocalizedString(32042)+time.strftime("%H:%M:%S", time.gmtime(float(res['resumetime'])))
+                    logging.warning('choose_time')
+                    logging.warning(choose_time)
+                    if float(res['resumetime'])>=(0.98*(float(res['totaltime']))):
+                        selection=1
+                        clicked=1
+                    else:
+                      
+                        window = selection_time('Menu',choose_time)
+                        window.doModal()
+                        selection = window.get_selection()
+                        clicked=window.clicked
+                        del window
+                    if clicked==0:
+                        set_runtime=-1
+                        return -1
+                    if selection==-1:
+                       stop_auto_play=1
+                       resume_time=-1
+                       return 0
+                    if selection==0:
+                        
+                        set_runtime=float(res['resumetime'])
+                        set_total=res['totaltime']
+                        
+                        
+                    elif selection==1:
+                        
+                        
+                        set_runtime=0
+                        set_total=res['totaltime']
+        dbcur.close()
+        dbcon.close()
+        return set_runtime
+def update_db_link(tmdb,saved_name,season,episode,g_timer,g_item_total_time):
+        logging.warning('TMDB:'+str(tmdb))
+        try:
+            from sqlite3 import dbapi2 as database
+        except:
+            from pysqlite2 import dbapi2 as database
+        cacheFile=os.path.join(user_dataDir,'database.db')
+        dbcon = database.connect(cacheFile)
+        dbcur = dbcon.cursor()
+        dbcur.execute("CREATE TABLE IF NOT EXISTS %s ( ""name TEXT, ""tmdb TEXT, ""season TEXT, ""episode TEXT,""playtime TEXT,""total TEXT, ""free TEXT);" % 'playback')
+        dbcon.commit()
+        season=season.replace('%20','0').replace(' ','0')
+        episode=episode.replace('%20','0').replace(' ','0')
+        if len(str(tmdb))<2:
+            only_name=True
+            dbcur.execute("SELECT * FROM playback where name='%s' and season='%s' and episode='%s'"%(saved_name.replace("'","%27"),season,episode))
+        else:
+            only_name=False
+            dbcur.execute("SELECT * FROM playback where tmdb='%s' and season='%s' and episode='%s'"%(tmdb,season,episode))
+        match = dbcur.fetchall()
+        logging.warning(match)
+        
+        if match==None:
+          dbcur.execute("INSERT INTO playback Values ('%s','%s','%s','%s','%s','%s','%s');" %  (saved_name.replace("'","%27"),tmdb,season,episode,str(g_timer),str(g_item_total_time),' '))
+          dbcon.commit()
+        else:
+           if len(match)>0:
+            name,timdb,season,episode,playtime,totaltime,free=match[0]
+            if str(g_timer)!=playtime:
+                if only_name:
+                    dbcur.execute("UPDATE playback SET playtime='%s' where name='%s' and  season='%s' and episode='%s'"%(str(g_timer),saved_name.replace("'","%27"),season,episode))
+                else:
+                    dbcur.execute("UPDATE playback SET playtime='%s' where tmdb='%s' and  season='%s' and episode='%s'"%(str(g_timer),tmdb,season,episode))
+                dbcon.commit()
+           else:
+                dbcur.execute("INSERT INTO playback Values ('%s','%s','%s','%s','%s','%s','%s');" %  (saved_name.replace("'","%27"),tmdb,season,episode,str(g_timer),str(g_item_total_time),' '))
+                dbcon.commit()
+        dbcur.close()
+        dbcon.close()
+def play_link(name,url,icon,fan,no_subs,tmdb,season,episode,original_title):
+    if 1:#try:
+        
+        if 'google' in url and '?' in url:
+            url=url.split('?')[0]
+        dialog = xbmcgui.DialogBusy()
+        dialog.create()
+        all_n=[]
+        logging.warning(url)
+        if '$$$' in url:
+            all_urls=url.split('$$$')
+            
+        else:
+            all_urls=[url]
+       
+        if len(all_urls)>1:
+            for itt in all_urls:
+                
+                if 'upfile' in url:
+                    f_link,name=get_upfile_det(itt)
+                    if f_link==0:
+                        return 0
+                    
+                    all_n.append(name)
+                else:
+                    all_n.append(re.compile('//(.+?)/').findall(itt)[0])
+            ret = xbmcgui.Dialog().select("choose", all_n)
+            if ret!=-1:
+                all_urls=[all_urls[ret]]
+                
+            else:
+              return 0
+        else:
+            all_urls=[all_urls[0]]
+        all_l=[]
+        all_n=[]
+        
+        for items in all_urls:
+            if 'upfile' in url:
+                f_link,name=get_upfile_det(items)
+                if f_link==0:
+                    return 0
+                all_l.append(f_link)
+                all_n.append(name)
+            if 'youtu' in items:
+                if 'youtu.be' in items:
+                    items=requests.get(items).url
+                logging.warning(items)
+                regex='v\=(.+?)$'
+                video_id=re.compile(regex).findall(items)[0]
+                playback_url = 'plugin://plugin.video.youtube/play/?video_id=%s' % video_id
+                logging.warning(playback_url)
+                all_l.append(playback_url)
+                all_n.append(name)
+            if 'drive.google' in items or 'docs.google' in items:
+              
+              if 'docs.googleusercontent.com' in items:
+                logging.warning('Returning')
+                return 0
+              
+              if '=' in items:
+                id=items.split('=')[-1]
+            
+              else:
+               regex='/d/(.+?)/view'
+               match=re.compile(regex).findall(items)
+               if len(match)>0:
+                 id=match[0]
+               else:
+                 regex='/d/(.+?)/preview'
+                 match=re.compile(regex).findall(items)
+                 if len(match)>0:
+                    id=match[0]
+                 else:
+                    regex='/d/(.+?)$'
+                    match=re.compile(regex).findall(items)
+                    id=match[0]
+              f_link,name= googledrive_resolve(id)
+              if f_link=='Download':
+                   f_link= googledrive_download(id)
+                   name='Download '+name
+              count=0
+              if '$$$' in f_link:
+                for item in f_link.split('$$$'):
+                    all_l.append(item)
+                    all_n.append(name[count])
+                    count+=1
+              else:
+                all_l.append(f_link)
+                all_n.append(name)
+        if len(all_l)==1:
+            final_link=all_l[0]
+            name=all_n[0]
+        else:
+            #"choose"
+            ret = xbmcgui.Dialog().select(Addon.getLocalizedString(32028), all_n)
+            if ret!=-1:
+                final_link=all_l[ret]
+                name=all_n[ret]
+            else:
+              return 0
+        logging.warning('final_link:'+final_link)
+        logging.warning(name)
+        video_data={}
+        if season!=None and season!="%20" and season!="0":
+           video_data['TVshowtitle']=original_title.replace('%20',' ').replace('%3a',':').replace('%27',"'").replace('_',".")
+           video_data['mediatype']='tvshow'
+           
+        else:
+           video_data['mediatype']='movies'
+        if season!=None and season!="%20" and season!="0":
+           tv_movie='tv'
+           url2='http://api.themoviedb.org/3/tv/%s?api_key=%s&append_to_response=external_ids'%(tmdb,'653bb8af90162bd98fc7ee32bcbbfb3d')
+        else:
+           tv_movie='movie'
+           
+           url2='http://api.themoviedb.org/3/movie/%s?api_key=%s&append_to_response=external_ids'%(tmdb,'653bb8af90162bd98fc7ee32bcbbfb3d')
+        if 'tt' not in tmdb:
+             try:
+                logging.warning(url2)
+                
+                imdb_id=requests.get(url2).json()['external_ids']['imdb_id']
+                logging.warning(imdb_id)
+             except Exception as e:
+                logging.warning('IMDB err:'+str(e))
+                imdb_id=" "
+        else:
+             imdb_id=tmdb
+        video_data['title']=name
+        video_data['Writer']=tmdb
+        video_data['season']=season
+        video_data['episode']=episode
+        video_data['plot']='from_telemedia'
+        video_data['imdb']=imdb_id
+        video_data['code']=imdb_id
+
+        video_data['imdbnumber']=imdb_id
+        
+        video_data['imdb_id']=imdb_id
+        video_data['IMDBNumber']=imdb_id
+        video_data['genre']=imdb_id
+        if no_subs=='1':
+            video_data[u'mpaa']=unicode('heb')
+        
+        listItem = xbmcgui.ListItem(video_data['title'], path=final_link) 
+        listItem.setInfo(type='Video', infoLabels=video_data)
+
+
+        listItem.setProperty('IsPlayable', 'true')
+
+       
+        resume_time=get_resume(tmdb,saved_name,season,episode)
+        if resume_time==-1:
+            return 0
+        logging.warning('resume_time:'+str(resume_time))
+        ok=xbmc.Player().play(final_link,listitem=listItem)
+        w_time=int(Addon.getSetting("wait_size"))
+        for _ in xrange(w_time):
+            
+            try:
+                vidtime = xbmc.Player().getTime()
+            except:
+                vidtime=0
+                pass
+            if xbmc.Player().isPlaying() and vidtime>0:
+                break
+           
+                
+                break
+            time.sleep(0.100)
+        
+        
+        
+        
+        
+        if resume_time>0:
+            try:
+                xbmc.Player().seekTime(int(float(resume_time)))
+            except Exception as e:
+                logging.warning('Seek Err:'+str(e))
+                pass
+        
+        while (not xbmc.abortRequested) and (xbmc.Player().isPlaying()):
+             try:
+                vidtime = xbmc.Player().getTime()
+             except:
+                vidtime = 0
+             try:
+                g_timer=xbmc.Player().getTime()
+                g_item_total_time=xbmc.Player().getTotalTime()
+             except:
+                pass
+             time.sleep(0.1)
+        
+        #dp.create('Please Wait...','Closing File', '','')
+        #dp.update(0, 'Please Wait...','Canceling File', '' )
+        
+        #dp.update(0, 'Please Wait...','Removing File', '' )
+        if resume_time!=-1:
+            update_db_link(tmdb,saved_name,season,episode,g_timer,g_item_total_time)
+        xbmc.executebuiltin("Dialog.Close(busydialog)")
+    '''
+    except Exception as e:
+            import linecache
+            exc_type, exc_obj, tb = sys.exc_info()
+            f = tb.tb_frame
+            lineno = tb.tb_lineno
+            filename = f.f_code.co_filename
+            linecache.checkcache(filename)
+            line = linecache.getline(filename, lineno, f.f_globals)
+            logging.warning('ERROR IN Play:'+str(lineno))
+            logging.warning('inline:'+str(line))
+            logging.warning(str(e))
+            xbmcgui.Dialog().ok('Error occurred','Err:'+str(e)+'Line:'+str(lineno))
+            xbmc.executebuiltin("Dialog.Close(busydialog)")
+    '''
+def movies_menu():
+    all_d=[]
+    'Popular Movies'
+    aa=addDir3(Addon.getLocalizedString(32047).decode('utf8'),'http://api.themoviedb.org/3/movie/popular?api_key=34142515d9d23817496eeb4ff1d223d0&language=%s&page=1'%lang,14,'https://i.gifer.com/XfzE.gif','https://www.newszii.com/wp-content/uploads/2018/08/Most-Popular-Action-Movies.png','Tmdb')
+    all_d.append(aa)
+    #Genre
+    aa=addDir3(Addon.getLocalizedString(32048).decode('utf8'),'http://api.themoviedb.org/3/genre/movie/list?api_key=34142515d9d23817496eeb4ff1d223d0&language=%s&page=1'%lang,18,'https://st3.depositphotos.com/10665628/19019/v/1600/depositphotos_190192058-stock-illustration-cinema-genre-cinematography-seamless-pattern.jpg','https://s.studiobinder.com/wp-content/uploads/2019/09/Movie-Genres-Types-of-Movies-List-of-Genres-and-Categories-Header-StudioBinder.jpg','Tmdb')
+    all_d.append(aa)
+    #Years
+    aa=addDir3(Addon.getLocalizedString(32049).decode('utf8'),'movie_years&page=1',14,'https://cdn.dribbble.com/users/2432597/screenshots/6945317/tejas-40-years-dribble_2x.jpg','https://i.pinimg.com/originals/e4/03/91/e4039182cd17c48c8f9cead44cda7df3.jpg','Tmdb')
+    all_d.append(aa)
+    xbmcplugin .addDirectoryItems(int(sys.argv[1]),all_d,len(all_d))
+    
+def ClearCache():
+    from resources.modules import cache
+    cache.clear(['cookies', 'pages','posters'])
+   
+
+    
+
+    xbmc.executebuiltin((u'Notification(%s,%s)' % ('Telemedia', 'Cleaned')).encode('utf-8'))
+def get_genere(link):
+   tv_images={u'\u05d0\u05e7\u05e9\u05df \u05d5\u05d4\u05e8\u05e4\u05ea\u05e7\u05d0\u05d5\u05ea': 'http://stavarts.com/wp-content/uploads/2017/10/%D7%A9%D7%99%D7%A9%D7%99-%D7%94%D7%A8%D7%A4%D7%AA%D7%A7%D7%90%D7%95%D7%AA-%D7%AA%D7%A9%D7%A2%D7%B4%D7%97-%D7%A8%D7%90%D7%92%D7%A0%D7%90%D7%A8%D7%95%D7%A7_Page_1.jpg', u'\u05de\u05e1\u05ea\u05d5\u05e8\u05d9\u05df': 'http://avi-goldberg.com/wp-content/uploads/5008202002.jpg', u'\u05d9\u05dc\u05d3\u05d9\u05dd': "https://"+'i.ytimg.com/vi/sN4xfdDwjHk/maxresdefault.jpg', u'\u05de\u05e2\u05e8\u05d1\u05d5\u05df': "https://"+'i.ytimg.com/vi/Jw1iuGaNuy0/hqdefault.jpg', u'\u05e4\u05e9\u05e2': 'http://www.mapah.co.il/wp-content/uploads/2012/09/DSC_1210.jpg', u'\u05e8\u05d9\u05d0\u05dc\u05d9\u05d8\u05d9': 'http://blog.tapuz.co.il/oferD/images/%7B2D0A8A8A-7F57-4C8F-9290-D5DB72F06509%7D.jpg', u'\u05de\u05e9\u05e4\u05d7\u05d4': 'http://kaye7.school.org.il/photos/family.jpg', u'\u05e1\u05d1\u05d5\u05df': 'http://www.myliberty.co.il/media/com_hikashop/upload/2-1.jpg', u'\u05d7\u05d3\u05e9\u05d5\u05ea': "https://"+'shaza10.files.wordpress.com/2010/11/d790d795d79cd7a4d79f-d797d793d7a9-d797d793d7a9d795d7aa-10-d7a6d799d79cd795d79d-d7aad795d79ed7a8-d7a4d795d79cd798d799d79f03.jpg', u'\u05e7\u05d5\u05de\u05d3\u05d9\u05d4': "https://"+'upload.wikimedia.org/wikipedia/he/e/ef/Le_Tout_Nouveau_Testament.jpg', u'\u05d0\u05e0\u05d9\u05de\u05e6\u05d9\u05d4': 'http://www.printime.co.il/image/users/16584/ftp/my_files/smileynumbers1we.jpg', u'\u05de\u05d3\u05e2 \u05d1\u05d3\u05d9\u05d5\u05e0\u05d9 \u05d5\u05e4\u05e0\u05d8\u05d6\u05d9\u05d4': "https://"+'media.getbooks.co.il/catalog/product/cache/1/image/9df78eab33525d08d6e5fb8d27136e95/s/h/shemharuach_getbooks-copy.jpg', u'\u05d3\u05e8\u05de\u05d4': 'http://www.yorav.co.il/images/moshe+erela/2007/dram.JPG', u'\u05d3\u05d5\u05e7\u05d5\u05de\u05e0\u05d8\u05e8\u05d9': 'http://img.mako.co.il/2017/03/28/704104_I.jpg', u'\u05de\u05dc\u05d7\u05de\u05d4 \u05d5\u05e4\u05d5\u05dc\u05d9\u05d8\u05d9\u05e7\u05d4': "https://"+'dannyorbach.files.wordpress.com/2013/05/berlinsynagoge.jpg', u'\u05d3\u05d9\u05d1\u05d5\u05e8\u05d9\u05dd': 'http://www.news1.co.il/uploadimages/NEWS1-556713283061982.jpg'}
+   movie_images={u'\u05de\u05d5\u05e1\u05d9\u05e7\u05d4': 'http://www.blich.ramat-gan.k12.il/sites/default/files/files/music.jpg', u'\u05e1\u05e8\u05d8 \u05d8\u05dc\u05d5\u05d9\u05d6\u05d9\u05d4': 'https://i.ytimg.com/vi/hFc1821MSoA/hqdefault.jpg', u'\u05d4\u05e8\u05e4\u05ea\u05e7\u05d0\u05d5\u05ea': "https://"+'upload.wikimedia.org/wikipedia/he/3/38/%D7%94%D7%A8%D7%A4%D7%AA%D7%A7%D7%90%D7%95%D7%AA_%D7%91%D7%A8%D7%A0%D7%A8%D7%93_%D7%95%D7%91%D7%99%D7%90%D7%A0%D7%A7%D7%94_%D7%9B%D7%A8%D7%96%D7%94_%D7%A2%D7%91%D7%A8%D7%99%D7%AA.png', u'\u05de\u05e1\u05ea\u05d5\u05e8\u05d9\u05df': 'http://avi-goldberg.com/wp-content/uploads/5008202002.jpg', u'\u05de\u05e2\u05e8\u05d1\u05d5\u05df': "https://"+'i.ytimg.com/vi/Jw1iuGaNuy0/hqdefault.jpg', u'\u05de\u05dc\u05d7\u05de\u05d4': 'http://images.nana10.co.il/upload/mediastock/img/16/0/208/208383.jpg', u'\u05e4\u05e9\u05e2': 'http://www.mapah.co.il/wp-content/uploads/2012/09/DSC_1210.jpg', u'\u05e4\u05e0\u05d8\u05d6\u05d9\u05d4': 'http://blog.tapuz.co.il/beinhashurot/images/1943392_142.jpg', u'\u05de\u05e9\u05e4\u05d7\u05d4': 'http://kaye7.school.org.il/photos/family.jpg', u'\u05e7\u05d5\u05de\u05d3\u05d9\u05d4': "https://"+'upload.wikimedia.org/wikipedia/he/e/ef/Le_Tout_Nouveau_Testament.jpg', u'\u05d0\u05e0\u05d9\u05de\u05e6\u05d9\u05d4': 'http://www.printime.co.il/image/users/16584/ftp/my_files/smileynumbers1we.jpg', u'\u05d3\u05e8\u05de\u05d4': 'http://www.yorav.co.il/images/moshe+erela/2007/dram.JPG', u'\u05d4\u05e1\u05d8\u05d5\u05e8\u05d9\u05d4': "https://"+'medicine.ekmd.huji.ac.il/schools/occupationaltherapy/He/about/PublishingImages/%d7%aa%d7%9e%d7%95%d7%a0%d7%94%207.jpg', u'\u05e8\u05d5\u05de\u05e0\u05d8\u05d9': "https://"+'i.ytimg.com/vi/oUon62EIInc/maxresdefault.jpg', u'\u05d3\u05d5\u05e7\u05d5\u05de\u05e0\u05d8\u05e8\u05d9': 'http://img.mako.co.il/2017/03/28/704104_I.jpg', u'\u05d0\u05d9\u05de\u05d4': 'http://up203.siz.co.il/up2/y12o20immdyw.jpg', u'\u05de\u05d5\u05ea\u05d7\u05df': 'http://www.brz.co.il/wp-content/uploads/2014/06/11-350x350.jpg', u'\u05de\u05d3\u05e2 \u05d1\u05d3\u05d9\u05d5\u05e0\u05d9': "https://"+'upload.wikimedia.org/wikipedia/commons/c/cc/4pen.jpg', u'\u05d0\u05e7\u05e9\u05df': "https://"+'www.renne.co.il/wp-content/uploads/2017/07/actionsign.jpg'}
+
+   images={}
+   html=requests.get(link).json()
+   aa=[]
+   image='https://wordsfromjalynn.files.wordpress.com/2014/12/movie-genres-1.png'
+   for data in html['genres']:
+     if '/movie' in link:
+       new_link='http://api.themoviedb.org/3/genre/%s/movies?api_key=34142515d9d23817496eeb4ff1d223d0&language=%s&page=1'%(str(data['id']),lang)
+     else:
+       new_link='http://api.themoviedb.org/3/discover/tv?api_key=34142515d9d23817496eeb4ff1d223d0&sort_by=popularity.desc&with_genres=%s&language=%s&page=1'%(str(data['id']),lang)
+     if data['name'] in tv_images:
+       image=tv_images[data['name']]
+     elif data['name'] in movie_images:
+       image=movie_images[data['name']]
+     
+     aa.append(addDir3(data['name'],new_link,14,image,image,data['name']))
+   xbmcplugin .addDirectoryItems(int(sys.argv[1]),aa,len(aa))
+def tv_show_menu():
+    all=[]
+    #Popular
+    aa=addDir3(Addon.getLocalizedString(32057).decode('utf8'),'http://api.themoviedb.org/3/tv/popular?api_key=34142515d9d23817496eeb4ff1d223d0&language=%s&page=1'%lang,14,'https://www.designmantic.com/blog/wp-content/uploads/2018/01/Best-Tv-show-logos-718x300.jpg','https://image.businessinsider.com/5d5ea69fcd97841fea3d3b36?width=1100&format=jpeg&auto=webp','TMDB')
+    all.append(aa)
+    #Genre
+    aa=addDir3(Addon.getLocalizedString(32048).decode('utf8'),'http://api.themoviedb.org/3/genre/tv/list?api_key=34142515d9d23817496eeb4ff1d223d0&language=%s&page=1'%lang,18,'http://www.logotypes101.com/logos/994/F920BB739F9F1041441FF1574D9D70FC/youtube_tv_shows.png','https://consequenceofsound.net/wp-content/uploads/2019/11/CoS_2010sDecades-TVShows.jpg?quality=80','TMDB')
+    all.append(aa)
+    #Years
+    aa=addDir3(Addon.getLocalizedString(32049).decode('utf8'),'tv_years&page=1',14,'https://pmcvariety.files.wordpress.com/2018/07/tv-time-logo.jpg?w=1000&h=563&crop=1','https://d2yhzr6tx8qnba.cloudfront.net/images/db/9/b6/58e2db43d1b69.jpeg','TMDB')
+    all.append(aa)
+    xbmcplugin .addDirectoryItems(int(sys.argv[1]),all,len(all))
+def search_movies(heb_name,original_title,data,iconimage,fanart,tmdb,season,episode):
+    logging.warning('Searching now:'+name)
+    search(tmdb,'all','0$$$0',heb_name,iconimage,fanart,season,episode,no_subs=1,original_title=original_title)
+    search(tmdb,'all','0$$$0',original_title,iconimage,fanart,season,episode,original_title=original_title)
+
+def search_tv(heb_name,original_title,data,iconimage,fanart,season,episode,tmdb):
+    if len(episode)==1:
+      episode_n="0"+episode
+    else:
+       episode_n=episode
+    if len(season)==1:
+      season_n="0"+season
+    else:
+      season_n=season
+      
+    options=[heb_name+' ע%s פ%s'%(season,episode),heb_name+' עונה %s פרק %s'%(season,episode),original_title.replace('%20','.').replace(' ','.').replace('%27',"'").replace('%3a',":")+'.S%sE%s'%(season_n,episode_n)]
+    for items in options:
+        logging.warning(items)
+        search(tmdb,'all','0$$$0',items,iconimage,fanart,season,episode,no_subs=1,original_title=original_title,heb_name=heb_name)
+    
+def clear_all():
+    import shutil
+    data={'type':'logout',
+         'info':'quit'
+         }
+    event=requests.post('http://127.0.0.1:5118/',json=data).json()
+    shutil.rmtree(user_dataDir)
+    clear_files()
+    xbmc.executebuiltin(u'Notification(%s,%s)' % ('Telemedia', 'All is cleared now'))
+def search_groups(icon_o,fan_o):
+        all_d=[]
+        search_entered=''
+        #'Enter Search'
+        keyboard = xbmc.Keyboard(search_entered, Addon.getLocalizedString(32025))
+        keyboard.doModal()
+        if keyboard.isConfirmed():
+                query = keyboard.getText()
+        else:
+            return 0
+        num=random.randint(0,60000)
+        data={'type':'td_send',
+             'info':json.dumps({'@type': 'searchPublicChats', 'query': query, '@extra': num})
+             }
+        event=requests.post('http://127.0.0.1:5118/',json=data).json()
+        dp = xbmcgui.DialogProgress()
+        dp.create('Please Wait...','Adding Groups', '','')
+        dp.update(0, 'Please Wait...','Adding Groups', '' )
+    
+        logging.warning(json.dumps(event))
+        counter=0
+        counter_ph=10000
+        zzz=0
+        for items in event['chat_ids']:
+            num=random.randint(0,60000)
+            data={'type':'td_send',
+                     'info':json.dumps({'@type': 'getChat','chat_id':items, '@extra':num})
+                     }
+            event_in=requests.post('http://127.0.0.1:5118/',json=data).json()
+            logging.warning(json.dumps(event_in))
+            if dp.iscanceled():
+                          dp.close()
+                         
+                          break
+            j_enent=(event_in)
+            
+            dp.update(int(((zzz* 100.0)/(len(event['chat_ids']))) ), 'Please Wait...','Adding Groups', j_enent['@type'].encode('utf8') )
+            if j_enent['@type']=='chat' and len(j_enent['title'])>1:
+                
+                icon_id=''
+                fan_id=''
+                fanart=''
+                icon=''
+                name=j_enent['title']
+             
+                color='white'
+                if 'is_channel' in j_enent['type']:
+                    if j_enent['type']['is_channel']==False:
+                        
+                        genere='Chat'
+                        color='lightblue'
+                    else:
+                        genere='Channel'
+                        color='khaki'
+                else:
+                     genere=j_enent['type']['@type']
+                     color='lightgreen'
+                if 'last_message' in j_enent:
+                    plot=name.encode('utf8')
+                    pre=j_enent['last_message']['content']
+               
+                    if 'caption' in pre:
+                        plot=j_enent['last_message']['content']['caption']['text'].encode('utf8')
+                    elif 'text' in pre:
+                        if 'text' in pre['text']:
+                            plot=j_enent['last_message']['content']['text']['text'].encode('utf8')
+                    
+                        
+                else:
+                    plot=name.encode('utf8')
+                dp.update(int(((zzz* 100.0)/(len(event['chat_ids']))) ), 'Please Wait...','Adding Groups', name.encode('utf8') )
+                zzz+=1
+             
+                if 'photo' in j_enent:
+                   
+                   if 'small' in j_enent['photo']:
+                     counter_ph+=1
+                     icon_id=j_enent['photo']['small']['id']
+                     f_name=str(j_enent['id'])+'_small.jpg'
+                     mv_name=os.path.join(logo_path,f_name)
+                     if os.path.exists(mv_name):
+                        icon=mv_name
+                     else:
+                        icon=download_photo(icon_id,counter_ph,f_name,mv_name)
+                   if 'big' in j_enent['photo']:
+                     counter_ph+=1
+                     fan_id=j_enent['photo']['big']['id']
+                     f_name=str(j_enent['id'])+'_big.jpg'
+                     mv_name=os.path.join(logo_path,f_name)
+                     if os.path.exists(mv_name):
+                        fanart=mv_name
+                     else:
+                        fanart=download_photo(fan_id,counter_ph,f_name,mv_name)
+                
+                
+                aa=addDir3('[COLOR %s]'%color+name.encode('utf8')+'[/COLOR]',str(items),2,icon,fanart,plot+'\nfrom_plot',generes=genere,data='0',last_id='0$$$0$$$0$$$0',image_master=icon+'$$$'+fanart,join_menu=True)
+                all_d.append(aa)
+            
+            counter+=1
+        if len(all_d)>0:
+             
+            addNolink( '[COLOR lightblue][I]%s[/I][/COLOR]'%Addon.getLocalizedString(32058), 'www',99,False,iconimage=icon_o,fan=fan_o)
+        xbmcplugin .addDirectoryItems(int(sys.argv[1]),all_d,len(all_d))
+        dp.close()
+               
+def join_chan(url):
+    num=random.randint(0,60000)
+    data={'type':'td_send',
+             'info':json.dumps({'@type': 'joinChat', 'chat_id': url, '@extra': num})
+             }
+    event=requests.post('http://127.0.0.1:5118/',json=data).json()
+    logging.warning(json.dumps(event))
+    if event["@type"]=='ok':
+        #Joined OK
+        xbmc.executebuiltin(u'Notification(%s,%s)' % ('Telemedia', Addon.getLocalizedString(32029)))
+    else:
+        #Error in join
+        xbmc.executebuiltin(u'Notification(%s,%s)' % ('Telemedia', Addon.getLocalizedString(32030)))
+
+def leave_chan(name,url):
+    num=random.randint(0,60000)
+    #"Leave Channel"
+    #Leave    
+    ok=xbmcgui.Dialog().yesno(Addon.getLocalizedString(32031),'?%s'%name+(Addon.getLocalizedString(32032)))
+    if ok:
+        data={'type':'td_send',
+             'info':json.dumps({'@type': 'leaveChat', 'chat_id': url, '@extra': num})
+             }
+        event=requests.post('http://127.0.0.1:5118/',json=data).json()
+        logging.warning(json.dumps(event))
+        if event["@type"]=='ok':
+            xbmc.executebuiltin(u'Notification(%s,%s)' % ('Telemedia', 'OK'))
+            xbmc.executebuiltin('Container.Refresh')
+        else:
+            xbmc.executebuiltin(u'Notification(%s,%s)' % ('Telemedia', '[COLOR red]Error[/COLOR]'))
+def dis_or_enable_addon(addon_id, enable="true"):
+    import json
+    logging.warning('ADDON ID:'+addon_id)
+    addon = '"%s"' % addon_id
+    if xbmc.getCondVisibility("System.HasAddon(%s)" % addon_id) and enable == "true":
+        logging.warning('already Enabled')
+        return xbmc.log("### Skipped %s, reason = allready enabled" % addon_id)
+    elif not xbmc.getCondVisibility("System.HasAddon(%s)" % addon_id) and enable == "false":
+        return xbmc.log("### Skipped %s, reason = not installed" % addon_id)
+    else:
+        do_json = '{"jsonrpc":"2.0","id":1,"method":"Addons.SetAddonEnabled","params":{"addonid":%s,"enabled":%s}}' % (addon, enable)
+        logging.warning(do_json)
+        query = xbmc.executeJSONRPC(do_json)
+        response = json.loads(query)
+        if enable == "true":
+            logging.warning("### Enabled %s, response = %s" % (addon_id, response))
+        else:
+            logging.warning("### Disabled %s, response = %s" % (addon_id, response))
+    return xbmc.executebuiltin('Container.Update(%s)' % xbmc.getInfoLabel('Container.FolderPath'))
+def showText(heading, text):
+    id = 10147
+    xbmc.executebuiltin('ActivateWindow(%d)' % id)
+    xbmc.sleep(100)
+    win = xbmcgui.Window(id)
+    retry = 50
+    while (retry > 0):
+        try:
+            xbmc.sleep(10)
+            retry -= 1
+            win.getControl(1).setLabel(heading)
+            win.getControl(5).setText(text)
+            return
+        except:
+            pass
+def install_addon(name,url):
+    from zfile import ZipFile
+    num=random.randint(0,60000)
+    #Install
+    
+    ok=xbmcgui.Dialog().yesno(Addon.getLocalizedString(32033),(Addon.getLocalizedString(32033)+' %s?'%name))
+    if ok:
+        mv_name=os.path.join(addon_path,name)
+        logging.warning('Downloading addon')
+        addon=download_photo(url,num,name,mv_name)
+        logging.warning('addon')
+        logging.warning(addon)
+        
+        
+        
+        with ZipFile(addon, 'r') as zipObj:
+           # Extract all the contents of zip file in current directory
+           zipObj.extractall(addon_extract_path)
+        f_o = os.listdir(addon_extract_path)
+        file = open(os.path.join(addon_extract_path,f_o[0], 'addon.xml'), 'r') 
+        file_data= file.read()
+        file.close()
+        regex='id="(.+?)"'
+        nm=re.compile(regex).findall(file_data)[0]
+        regex='import addon="(.+?)"'
+        dep=re.compile(regex).findall(file_data)
+        missing=[]
+        for items in dep:
+            if not xbmc.getCondVisibility("System.HasAddon(%s)" % items):
+                missing.append(items)
+        if len(missing)>0:
+            showText('Missing Dependencies','\n'.join(missing))
+            return 0
+        addon_p=xbmc.translatePath("special://home/addons/")
+        
+        files = os.listdir(addon_extract_path)
+        logging.warning(os.path.join(addon_p,f_o[0]))
+        if os.path.exists(os.path.join(addon_p,f_o[0])):
+            shutil.rmtree(os.path.join(addon_p,f_o[0]))
+            
+        
+        shutil.move(os.path.join(addon_extract_path,f_o[0]), addon_p)
+        xbmc.executebuiltin("XBMC.UpdateLocalAddons()")
+        time.sleep(1)
+        dis_or_enable_addon(nm)
+        shutil.rmtree(addon_path)
+        #'Installed'
+        #'Installation complete'
+        xbmcgui.Dialog().ok(Addon.getLocalizedString(32034),Addon.getLocalizedString(32035))
+def download_file_loc(id):
+        try:
+            
+            path=''
+            dp = xbmcgui.DialogProgress()
+            dp.create('Telemedia', '[B][COLOR=yellow]Loading[/COLOR][/B]')
+            num=random.randint(0,60000)
+            data={'type':'td_send',
+             'info':json.dumps({'@type': 'downloadFile','file_id':int(id), 'priority':1,'offset':0,'limit':0, '@extra': num})
+             }
+            event=requests.post('http://127.0.0.1:5118/',json=data).json()
+           
+            j_enent_o=(event)
+            
+           
+            
+            j_enent_o=(event)
+            once=True
+            while True:
+                data={'type':'td_send',
+                 'info':json.dumps({'@type': 'getFile','file_id':int(id), '@extra': num})
+                 }
+                event=requests.post('http://127.0.0.1:5118/',json=data).json()
+               
+                
+                #event = td_receive()
+                
+                if dp.iscanceled():
+                    num=random.randint(0,60000)
+                    data={'type':'td_send',
+                         'info':json.dumps({'@type': 'cancelDownloadFile','file_id':int(id), '@extra': num})
+                         }
+                    event=requests.post('http://127.0.0.1:5118/',json=data).json()
+                    path=''
+                        
+                    break
+                
+                if event:
+                    if 'file' in event:
+                        size=event['file']['size']
+                    else:
+                        size=event['size']
+                    if event.get('@type') =='error':
+               
+                        xbmcgui.Dialog().ok('Error occurred',str(event.get('message')))
+                        break
+                    
+                        
+                    
+                    if 'expected_size' in event:
+                        
+                        dp.update(int((event['local']['downloaded_size']*100.0)/size),'[B][COLOR=green]Telemedia[/COLOR][/B]', '[B][COLOR=yellow]Downloading %s/%s[/COLOR][/B]'%(str(event['local']['downloaded_size']),str(size)))
+                        
+                        
+                        if len(event['local']['path'])>0 and event['local']['is_downloading_completed']==True:
+                            size=event['size']
+                            path=event['local']['path']
+                            break
+                xbmc.sleep(100)
+            dp.close()
+            return path
+        except Exception as e:
+            import linecache
+            exc_type, exc_obj, tb = sys.exc_info()
+            f = tb.tb_frame
+            lineno = tb.tb_lineno
+            filename = f.f_code.co_filename
+            linecache.checkcache(filename)
+            line = linecache.getline(filename, lineno, f.f_globals)
+            logging.warning('ERROR IN Main:'+str(lineno))
+            logging.warning('inline:'+str(line))
+            logging.warning(str(e))
+            xbmcgui.Dialog().ok('Error occurred','Err:'+str(e)+'Line:'+str(lineno))
+def install_build(original_title,url):
+    import shutil
+    from zfile import ZipFile
+    ok=xbmcgui.Dialog().yesno(("Install"),('Download and Install [COLOR lightblue][B] %s [/B][/COLOR]?'%original_title))
+    if ok:
+        path=download_file_loc(url)
+        logging.warning(path)
+    dp = xbmcgui.DialogProgress()
+    dp.create('Telemedia', '[B][COLOR=yellow]Cleaning Kodi[/COLOR][/B]')
+    addon_p=xbmc.translatePath("special://home/addons/")
+    f_list=os.listdir(addon_p)
+    zz=0
+    error_list=[]
+    for items in f_list:
+        if 'telemedia' not in items and 'requests' not in items and  'pyxbmct' not in items:
+            n_f=os.path.join(addon_p,items)
+            dp.update(int((zz)/len(f_list)),'[B][COLOR=green]Telemedia[/COLOR][/B]', '[B][COLOR=yellow]Cleaning Kodi Addons[/COLOR][/B]',items)
+            zz+=1
+            try:
+                os .unlink (n_f)
+                shutil.rmtree(n_f)
+            except:
+                error_list.append('Removing:'+n_f)
+                
+    addon_p=xbmc.translatePath("special://home")
+    zz=0
+    for items in f_list:
+        if 'addons' not in items:
+            n_f=os.path.join(addon_p,items)
+            dp.update(int((zz)/len(f_list)),'[B][COLOR=green]Telemedia[/COLOR][/B]', '[B][COLOR=yellow]Cleaning Kodi user data[/COLOR][/B]',items)
+            zz+=1
+            try:
+                os .unlink (n_f)
+                shutil.rmtree(n_f)
+            except:
+                error_list.append('Removing:'+n_f)
+    addon_p=xbmc.translatePath("special://home/")
+    
+    zz=0
+    with zipfile.ZipFile(path) as zf:
+     z_list=zf.infolist()
+     for member in tqdm(z_list, desc='Extracting '):
+         try:
+            dp.update(int((zz)/len(z_list)),'[B][COLOR=green]Telemedia[/COLOR][/B]', '[B][COLOR=yellow]Extracting[/COLOR][/B]',member)
+            zz+=1
+            if 'telemedia' not in member:
+                zf.extract(member, addon_p)
+         except zipfile.error as e:
+             error_list.append(member)
+             pass
+    if len(error_list)>0:
+        showText('Errors', '\n'.join(error_list))
+    xbmcgui.Dialog().ok('All Done','Restart Kodi')
+def add_tv_to_db(name,url,data,iconimage,fanart,description):
+    #Add tv show
+    #Add
+    logging.warning('id:'+url)
+    try:
+        from sqlite3 import dbapi2 as database
+    except:
+        from pysqlite2 import dbapi2 as database
+    cacheFile=os.path.join(user_dataDir,'database.db')
+    dbcon = database.connect(cacheFile)
+    dbcur = dbcon.cursor()
+    dbcur.execute("CREATE TABLE IF NOT EXISTS %s ( ""name TEXT, ""tmdb TEXT, ""year TEXT, ""icon TEXT,""fan TEXT,""plot TEXT, ""free TEXT);" % 'custom_show')
+    dbcon.commit()
+    ok=xbmcgui.Dialog().yesno(Addon.getLocalizedString(32050),(Addon.getLocalizedString(32051)+' %s?'%name.decode('utf8')))
+    if ok:
+        dbcur.execute("SELECT * FROM custom_show where tmdb='%s'"%(url))
+        match = dbcur.fetchall()
+        logging.warning(match)
+        
+        if len(match)==0:
+          dbcur.execute("INSERT INTO custom_show Values ('%s','%s','%s','%s','%s','%s','%s');" %  (name.replace("'","%27"),url,data,iconimage,fanart,description.replace("'","%27"),''))
+          dbcon.commit()
+          #Added
+          xbmcgui.Dialog().ok('Telemedia',name.decode('utf8')+' '+Addon.getLocalizedString(32054))
+        else:
+           #Error occurred
+           #Already Listed
+           xbmcgui.Dialog().ok(Addon.getLocalizedString(32052),Addon.getLocalizedString(32053))
+    dbcur.close()
+    dbcon.close()
+def my_local_tv():
+    try:
+        from sqlite3 import dbapi2 as database
+    except:
+        from pysqlite2 import dbapi2 as database
+    cacheFile=os.path.join(user_dataDir,'database.db')
+    dbcon = database.connect(cacheFile)
+    dbcur = dbcon.cursor()
+    dbcur.execute("CREATE TABLE IF NOT EXISTS %s ( ""name TEXT, ""tmdb TEXT, ""year TEXT, ""icon TEXT,""fan TEXT,""plot TEXT, ""free TEXT);" % 'custom_show')
+    dbcon.commit()
+    
+    dbcur.execute("SELECT * FROM custom_show")
+    match = dbcur.fetchall()
+    all_d=[]
+    for name,url,data,iconimage,fanart,description,free in match:
+        
+        aa=addDir3(name.replace("%27","'"),url,16,iconimage,fanart,description.replace("%27","'"),id=url,heb_name=name)
+        all_d.append(aa)
+    xbmcplugin .addDirectoryItems(int(sys.argv[1]),all_d,len(all_d))
+    dbcur.close()
+    dbcon.close()
+def remove_my_tv(name,url):
+    #Remove
+    ok=xbmcgui.Dialog().yesno(Addon.getLocalizedString(32064),(Addon.getLocalizedString(32064)+' %s?'%name.decode('utf8')))
+    if ok:
+        try:
+            from sqlite3 import dbapi2 as database
+        except:
+            from pysqlite2 import dbapi2 as database
+        cacheFile=os.path.join(user_dataDir,'database.db')
+        dbcon = database.connect(cacheFile)
+        dbcur = dbcon.cursor()
+        dbcur.execute("CREATE TABLE IF NOT EXISTS %s ( ""name TEXT, ""tmdb TEXT, ""year TEXT, ""icon TEXT,""fan TEXT,""plot TEXT, ""free TEXT);" % 'custom_show')
+        dbcon.commit()
+        
+        dbcur.execute("DELETE  FROM custom_show where tmdb='%s'"%url)
+        dbcon.commit()
+        
+        
+        xbmcgui.Dialog().ok(Addon.getLocalizedString(32064),name + ' '+Addon.getLocalizedString(32064))
+        xbmc.executebuiltin('Container.Refresh')
+        
+        dbcur.close()
+        dbcon.close()
+params=get_params()
+
+url=None
+name=None
+mode=None
+iconimage=None
+fanart=None
+description=' '
+original_title=' '
+fast_link=''
+data=0
+id=' '
+saved_name=' '
+prev_name=' '
+isr=0
+no_subs=0
+season="%20"
+episode="%20"
+show_original_year=0
+heb_name=' '
+tmdbid=' '
+eng_name=' '
+dates=' '
+data1='[]'
+fav_status='false'
+only_torrent='no'
+only_heb_servers='0'
+new_windows_only=False
+meliq='false'
+tv_movie='movie'
+try:
+        url=urllib.unquote_plus(params["url"])
+       
+except:
+        
+        pass
+try:
+        tv_movie=(params["tv_movie"])
+except:
+        pass
+try:
+        name=urllib.unquote_plus(params["name"])
+except:
+        pass
+try:
+        iconimage=urllib.unquote_plus(params["iconimage"])
+except:
+        pass
+try:        
+        mode=int(params["mode"])
+except:
+        pass
+try:        
+        fanart=urllib.unquote_plus(params["fanart"])
+except:
+        pass
+try:        
+        description=urllib.unquote_plus(params["description"].encode('utf-8'))
+except:
+        pass
+try:        
+        data=urllib.unquote_plus(params["data"])
+except:
+        pass
+try:        
+        original_title=(params["original_title"])
+except:
+        pass
+try:        
+        tmdb=(params["id"])
+except:
+        pass
+try:        
+        season=(params["season"])
+except:
+        pass
+try:        
+        episode=(params["episode"])
+except:
+        pass
+try:        
+        tmdbid=(params["tmdbid"])
+except:
+        pass
+try:        
+        eng_name=(params["eng_name"])
+except:
+        pass
+try:        
+        show_original_year=(params["show_original_year"])
+except:
+        pass
+try:        
+        heb_name=urllib.unquote_plus(params["heb_name"])
+except:
+        pass
+try:        
+        isr=int(params["isr"])
+except:
+        pass
+try:        
+        saved_name=clean_name(params["saved_name"],1)
+except:
+        pass
+try:        
+        prev_name=(params["prev_name"])
+except:
+        pass
+try:        
+        dates=(params["dates"])
+except:
+        pass
+try:        
+        no_subs=(params["no_subs"])
+except:
+        pass
+try:        
+        image_master=urllib.unquote_plus(params["image_master"])
+except:
+        pass
+try:        
+        last_id=urllib.unquote_plus(params["last_id"])
+except:
+        pass
+        
+logging.warning('Mode:'+str(mode))
+logging.warning('url:'+str(url))
+
+if (mode==None or url==None or len(url)<1) and len(sys.argv)>1:
+        
+        main_menu()
+elif mode==2:
+    
+    file_list(url,data,last_id,description,iconimage,fanart,image_master=image_master,original_title=original_title)
+elif mode==3:
+    
+    play(name,url,data,iconimage,fanart,no_subs,tmdb,season,episode,original_title,description)
+elif mode==4:
+    data={'type':'logout',
+         'info':''
+         }
+    event=requests.post('http://127.0.0.1:5118/',json=data).json()
+elif mode==5:
+    data={'type':'login',
+         'info':''
+         }
+    event=requests.post('http://127.0.0.1:5118/',json=data).json()
+    
+elif mode==6:
+    
+    search(url,data,last_id,description,iconimage,fanart,'0','0',no_subs=0)
+elif mode==9:
+    play_link(name,url,iconimage,fanart,no_subs,tmdb,season,episode,original_title)
+
+elif mode==10:
+    movies_menu()
+elif mode==11:
+    tv_show_menu()
+elif mode==12:
+    my_groups()
+elif mode==13:
+    search_groups(iconimage,fanart)
+elif mode==14:
+    from resources.modules.tmdb import get_movies
+    get_movies(url)
+elif mode==15:
+    search_movies(heb_name,original_title,data,iconimage,fanart,tmdb,season,episode)
+elif mode==16:
+    from resources.modules.tmdb import get_seasons
+    get_seasons(name,url,iconimage,fanart,description,data,original_title,tmdb,heb_name,isr)
+elif mode==17:
+    
+    ClearCache()
+elif mode==18:
+    get_genere(url)
+elif mode==19:
+    from resources.modules.tmdb import get_episode
+    get_episode(name,url,iconimage,fanart,description,data,original_title,tmdb,season,tmdbid,show_original_year,heb_name,isr)
+elif mode==20:
+    search_tv(heb_name,original_title,data,iconimage,fanart,season,episode,tmdb)
+elif mode==21:
+    clear_all()
+elif mode==22:
+    join_chan(url)
+elif mode==23:
+    leave_chan(name,url)
+elif mode==24:
+    install_addon(original_title,url)
+elif mode==25:
+    install_build(original_title,url)
+elif mode==26:
+    from resources.modules.tmdb import get_movies
+    get_movies(url,local=True)
+elif mode==27:
+    add_tv_to_db(name,url,data,iconimage,fanart,description)
+elif mode==28:
+    my_local_tv()
+elif mode==29:
+    remove_my_tv(name,url)
+if len(sys.argv)>1 and exit_now==0:
+    if mode!=None:
+        xbmcplugin.addSortMethod(int(sys.argv[1]), xbmcplugin.SORT_METHOD_DATEADDED)
+        xbmcplugin.addSortMethod(int(sys.argv[1]), xbmcplugin.SORT_METHOD_VIDEO_SORT_TITLE)
+        xbmcplugin.addSortMethod(int(sys.argv[1]), xbmcplugin.SORT_METHOD_VIDEO_YEAR)
+    xbmcplugin.setContent(int(sys.argv[1]), 'movies')
+
+
+    xbmcplugin.endOfDirectory(int(sys.argv[1]))
+
+    #td_close()
+    
+        

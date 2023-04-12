@@ -1,0 +1,556 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: XBMC Main Translation Project (Frodo)\n"
+"Report-Msgid-Bugs-To: http://trac.xbmc.org/\n"
+"POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: XBMC Translation Team\n"
+"Language-Team: English (http://www.transifex.com/projects/p/XBMC-Main-Frodo/language/en/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: en\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#English
+
+msgctxt "#32001"
+msgid "Login"
+msgstr "Login"
+
+msgctxt "#32002"
+msgid "LogOut"
+msgstr "LogOut"
+
+msgctxt "#32003"
+msgid "Login when kodi starts"
+msgstr "Login when kodi starts"
+
+msgctxt "#32004"
+msgid "Remove group name from files"
+msgstr "Remove group name from files"
+
+msgctxt "#32005"
+msgid "Get notification"
+msgstr "Get notification"
+
+msgctxt "#32006"
+msgid "Show login Code"
+msgstr "Show login Code"
+
+msgctxt "#32007"
+msgid "Content"
+msgstr "Content"
+
+msgctxt "#32008"
+msgid "Display Files"
+msgstr "Display Files"
+
+
+msgctxt "#32009"
+msgid "Display Videos"
+msgstr "Display Videos"
+
+msgctxt "#32010"
+msgid "Display Links"
+msgstr "Display Links"
+
+msgctxt "#32011"
+msgid "Display Audio"
+msgstr "Display Audio"
+
+msgctxt "#32012"
+msgid "use repo groups"
+msgstr "use repo groups"
+
+msgctxt "#32013"
+msgid "Auto quality in google drive"
+msgstr "Auto quality in google drive"
+
+msgctxt "#32014"
+msgid "Buffer"
+msgstr "Buffer"
+
+msgctxt "#32015"
+msgid "Buffer size"
+msgstr "Buffer size"
+
+msgctxt "#32016"
+msgid "Wait for play time (sec)"
+msgstr "Wait for play time (sec)"
+
+msgctxt "#32017"
+msgid "Clear"
+msgstr "Clear"
+
+msgctxt "#32018"
+msgid "Clear cache"
+msgstr "Clear cache"
+
+msgctxt "#32019"
+msgid "Clear All"
+msgstr "Clear All"
+
+msgctxt "#32020"
+msgid "Movies"
+msgstr "Movies"
+
+msgctxt "#32021"
+msgid "Tv Shows"
+msgstr "Tv Shows"
+
+msgctxt "#32022"
+msgid "My Groups"
+msgstr "My Groups"
+
+msgctxt "#32023"
+msgid "Search Groups"
+msgstr "Search Groups"
+
+msgctxt "#32024"
+msgid "Search All"
+msgstr "Search All"
+
+msgctxt "#32025"
+msgid "Enter Search"
+msgstr "Enter Search"
+
+msgctxt "#32026"
+msgid "Next Page"
+msgstr "Next Page"
+
+msgctxt "#32027"
+msgid "Search"
+msgstr "Search"
+
+msgctxt "#32028"
+msgid "choose"
+msgstr "choose"
+
+msgctxt "#32029"
+msgid "Joined OK"
+msgstr "Joined OK"
+
+msgctxt "#32030"
+msgid "Error in join"
+msgstr "Error in join"
+
+msgctxt "#32031"
+msgid "Leave Channel"
+msgstr "Leave Channel"
+
+msgctxt "#32032"
+msgid "Leave from"
+msgstr "Leave from"
+
+msgctxt "#32033"
+msgid "Install"
+msgstr "Install"
+
+msgctxt "#32034"
+msgid "Installed"
+msgstr "Installed"
+
+msgctxt "#32035"
+msgid "Installation complete"
+msgstr "Installation complete"
+
+msgctxt "#32036"
+msgid "Enter phone number (Without the +):"
+msgstr "Enter phone number (Without the +):"
+
+msgctxt "#32037"
+msgid "Enter code:"
+msgstr "Enter code:"
+
+msgctxt "#32038"
+msgid "Password:"
+msgstr "Password:"
+
+msgctxt "#32039"
+msgid "Login Complete"
+msgstr "Login Complete"
+
+msgctxt "#32040"
+msgid "Waiting for play"
+msgstr "Waiting for play"
+
+msgctxt "#32041"
+msgid "Please Wait"
+msgstr "Please Wait"
+
+msgctxt "#32042"
+msgid "Resume From "
+msgstr "Resume From "
+
+msgctxt "#32043"
+msgid "Play from beginning"
+msgstr "Play from beginning"
+
+msgctxt "#32044"
+msgid "Loading"
+msgstr "Loading"
+
+msgctxt "#32045"
+msgid "Downloading"
+msgstr "Downloading"
+
+msgctxt "#32046"
+msgid "Add Local Tv shows"
+msgstr "Add Local Tv shows"
+
+msgctxt "#32047"
+msgid "Popular Movies"
+msgstr "Popular Movies"
+
+msgctxt "#32048"
+msgid "Genre"
+msgstr "Genre"
+
+msgctxt "#32049"
+msgid "Years"
+msgstr "Years"
+
+msgctxt "#32050"
+msgid "Add tv show"
+msgstr "Add tv show"
+
+msgctxt "#32051"
+msgid "Add the"
+msgstr "Add the"
+
+msgctxt "#32052"
+msgid "Error occurred"
+msgstr "Error occurred"
+
+msgctxt "#32053"
+msgid "Already Listed"
+msgstr "Already Listed"
+
+msgctxt "#32054"
+msgid "Added"
+msgstr "Added"
+
+msgctxt "#32055"
+msgid "My Local Tv shows"
+msgstr "My Local Tv shows"
+
+msgctxt "#32056"
+msgid "Remove"
+msgstr "Remove"
+
+msgctxt "#32057"
+msgid "Popular Tv shows"
+msgstr "Popular Tv shows"
+
+msgctxt "#32058"
+msgid "Join is in item menu"
+msgstr "Join is in item menu"
+
+msgctxt "#32059"
+msgid "No more items"
+msgstr "No more items"
+
+msgctxt "#32060"
+msgid "Account"
+msgstr "Account"
+
+msgctxt "#32061"
+msgid "Advance"
+msgstr "Advance"
+
+msgctxt "#32062"
+msgid "Join Channel"
+msgstr "Join Channel"
+
+msgctxt "#32063"
+msgid "Info"
+msgstr "Info"
+
+msgctxt "#32064"
+msgid "Remove the"
+msgstr "Remove the"
+
+msgctxt "#32065"
+msgid "Removed"
+msgstr "Removed"
+
+msgctxt "#32066"
+msgid "Remove tv show"
+msgstr "Remove tv show"
+
+msgctxt "#32067"
+msgid "Leave OK"
+msgstr "Leave OK"
+
+msgctxt "#32068"
+msgid "Error in Leave"
+msgstr "Error in Leave"
+
+msgctxt "#32069"
+msgid "add to My TV"
+msgstr "add to My TV"
+
+msgctxt "#32070"
+msgid "Search movies"
+msgstr "Search movies"
+
+
+msgctxt "#32071"
+msgid "Search tv shows"
+msgstr "Search tv shows"
+
+msgctxt "#32072"
+msgid "Search History"
+msgstr "Search History"
+
+msgctxt "#32073"
+msgid "Kids World"
+msgstr "Kids World"
+
+msgctxt "#32074"
+msgid "Movie World"
+msgstr "Movie World"
+
+msgctxt "#32075"
+msgid "Israeli Movies"
+msgstr "Israeli Movies"
+
+msgctxt "#32076"
+msgid "time_buffer"
+msgstr "time_buffer"
+
+msgctxt "#32077"
+msgid "port"
+msgstr "port"
+
+msgctxt "#32078"
+msgid "install apks"
+msgstr "install apks"
+
+msgctxt "#32079"
+msgid "My Full data groups"
+msgstr "My Full data groups"
+
+msgctxt "#32080"
+msgid "Add to full data groups"
+msgstr "Add to f.data groups"
+
+msgctxt "#32081"
+msgid "Already There"
+msgstr "Already There"
+
+msgctxt "#32082"
+msgid "Remove from FD groups"
+msgstr "Remove from FD groups"
+
+
+msgctxt "#32083"
+msgid "repo in group name is needed"
+msgstr "repo in group name is needed"
+
+msgctxt "#32084"
+msgid "apk in group name is needed"
+msgstr "apk in group name is needed"
+
+msgctxt "#32085"
+msgid "files in group name is needed"
+msgstr "files in group name is needed"
+
+msgctxt "#32086"
+msgid "download files"
+msgstr "Download files"
+
+msgctxt "#32087"
+msgid "choose folder"
+msgstr "Choose folder"
+
+msgctxt "#32088"
+msgid "Download"
+msgstr "Download"
+
+msgctxt "#32089"
+msgid "Bad download folder"
+msgstr "Bad download folder"
+
+msgctxt "#32090"
+msgid "Download complete"
+msgstr "Download complete"
+
+msgctxt "#32091"
+msgid "File Exists"
+msgstr "File Exists"
+
+msgctxt "#32092"
+msgid "Overwrite"
+msgstr "Overwrite?"
+
+msgctxt "#32093"
+msgid "Clean history"
+msgstr "Clean history"
+
+msgctxt "#32094"
+msgid "sure"
+msgstr "Sure?"
+
+msgctxt "#32095"
+msgid "sources order"
+msgstr "sources order"
+
+msgctxt "#32096"
+msgid "Quality"
+msgstr "Quality"
+
+msgctxt "#32097"
+msgid "name"
+msgstr "name"
+
+msgctxt "#32098"
+msgid "chunk_size"
+msgstr "chunk size"
+
+msgctxt "#32099"
+msgid "advance_buffer"
+msgstr "advance buffer"
+
+
+msgctxt "#32100"
+msgid "Upload_kodi_log"
+msgstr "Upload kodi log"
+
+msgctxt "#32101"
+msgid "Turkish_series"
+msgstr "Turkish tv series"
+
+msgctxt "#32102"
+msgid "display_option"
+msgstr "display"
+
+msgctxt "#32103"
+msgid "File_names"
+msgstr "File names"
+
+msgctxt "#32104"
+msgid "file_description"
+msgstr "file description"
+
+msgctxt "#32105"
+msgid "Join_all"
+msgstr "Join all"
+
+msgctxt "#32106"
+msgid "action_time"
+msgstr "this action may take a very long time."
+
+msgctxt "#32107"
+msgid "filter"
+msgstr "Filters"
+
+msgctxt "#32108"
+msgid "filter_watched"
+msgstr "Filter watched"
+
+msgctxt "#32109"
+msgid "watched_pre"
+msgstr "Watched precentage"
+
+msgctxt "#32110"
+msgid "dup_links"
+msgstr "Filter duplicate links"
+
+msgctxt "#32111"
+msgid "one_click"
+msgstr "One click Play"
+
+msgctxt "#32112"
+msgid "show_one_click"
+msgstr "show sources in oneclick play"
+
+msgctxt "#32113"
+msgid "fast_play"
+msgstr "Fast play"
+
+msgctxt "#32114"
+msgid "filter_text"
+msgstr "Filter links that contians"
+
+msgctxt "#32115"
+msgid "seperate"
+msgstr "add text seperated by comma"
+
+msgctxt "#32116"
+msgid "backup"
+msgstr "backup Telemedia"
+
+msgctxt "#32117"
+msgid "filter_size"
+msgstr "filter files smalled then (MB) in search"
+
+msgctxt "#32118"
+msgid "file_buf_size"
+msgstr "file buffer size"
+
+msgctxt "#32119"
+msgid "player_fails"
+msgstr "use alterative player when main fails"
+
+msgctxt "#32120"
+msgid "addons_update"
+msgstr "Addons update"
+
+msgctxt "#32121"
+msgid "choose_bot_id"
+msgstr "choose chat for auto update"
+
+msgctxt "#32122"
+msgid "enable_atuo_update"
+msgstr "Enable Auto update"
+
+msgctxt "#32123"
+msgid "update_bot_id"
+msgstr "update bot id"
+
+msgctxt "#32124"
+msgid "search_addon_updates"
+msgstr "Search addon updates"
+
+msgctxt "#32125"
+msgid "add"
+msgstr "add"
+
+msgctxt "#32126"
+msgid "replace"
+msgstr "replace"
+
+
+msgctxt "#32127"
+msgid "my_repo"
+msgstr "My Repo"
+
+msgctxt "#32128"
+msgid "space"
+msgstr "low space"
+
+msgctxt "#32129"
+msgid "clean"
+msgstr "clean?"
+
+msgctxt "#32130"
+msgid "clean_kodi"
+msgstr "clean Kodi"
+
+msgctxt "#32137"
+msgid "pre_buffer"
+msgstr "Pre Buffer"
+
+msgctxt "#32138"
+msgid "Archived Groups"
+msgstr "Archived Groups"
+
+msgctxt "#32140"
+msgid "Settings"
+msgstr "Settings"
+
+msgctxt "#32141"
+msgid "Telegram Folders"
+msgstr "Telegram Folders"

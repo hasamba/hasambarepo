@@ -1,0 +1,170 @@
+import sys,urllib,logging
+import xbmcgui,xbmcplugin,xbmc,xbmcaddon
+lang=xbmc.getLanguage(0)
+Addon = xbmcaddon.Addon()
+def addNolink( name, url,mode,isFolder,fan='DefaultFolder.png', iconimage="DefaultFolder.png",plot='',year='',generes='',rating='',trailer=''):
+ 
+
+          
+            params={}
+            params['name']=name
+            params['iconimage']=iconimage
+            params['fanart']=fan
+            params['description']=plot
+            params['url']=url
+            
+            all_ur=utf8_urlencode(params)
+            u=sys.argv[0]+"?&mode="+str(mode)+'&'+all_ur
+            logging.warning(u)
+            video_data={}
+            video_data['title']=name
+            
+            
+            if year!='':
+                video_data['year']=year
+            if generes!=' ':
+                video_data['genre']=generes
+            video_data['rating']=str(rating)
+        
+            video_data['poster']=fan
+            video_data['plot']=plot
+            if trailer!='':
+                video_data['trailer']=trailer
+            
+            liz = xbmcgui.ListItem( name, iconImage=iconimage, thumbnailImage=iconimage)
+
+            liz.setInfo(type="Video", infoLabels=video_data)
+            liz.setProperty( "Fanart_Image", fan )
+            liz.setProperty("IsPlayable","false")
+            art = {}
+            art.update({'poster': iconimage})
+            liz.setArt(art)
+            xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=u, listitem=liz,isFolder=isFolder)
+###############################################################################################################        
+def utf8_urlencode(params):
+    import urllib as u
+    # problem: u.urlencode(params.items()) is not unicode-safe. Must encode all params strings as utf8 first.
+    # UTF-8 encodes all the keys and values in params dictionary
+    for k,v in params.items():
+        # TRY urllib.unquote_plus(artist.encode('utf-8')).decode('utf-8')
+        if type(v) in (int, long, float):
+            params[k] = v
+        else:
+            try:
+                params[k.encode('utf-8')] = v.encode('utf-8')
+            except Exception as e:
+                logging.warning( '**ERROR utf8_urlencode ERROR** %s' % e )
+    
+    return u.urlencode(params.items()).decode('utf-8')
+def addDir3(name,url,mode,iconimage,fanart,description,image_master='',last_id='',video_info={},data=' ',original_title=' ',id=' ',season=' ',episode=' ',tmdbid=' ',eng_name=' ',show_original_year=' ',rating=0,heb_name=' ',isr=0,generes=' ',trailer=' ',dates=' ',watched='no',fav_status='false',collect_all=False,ep_number='',watched_ep='',remain='',hist='',join_menu=False,menu_leave=False):
+        name=name.replace("|",' ')
+        description=description.replace("|",' ')
+        params={}
+        params['iconimage']=iconimage
+        params['fanart']=fanart
+        params['description']=description
+        params['url']=url
+        
+        all_ur=utf8_urlencode(params)
+        u=sys.argv[0]+"?mode="+str(mode)+"&name="+(name)+"&image_master="+(image_master)+"&heb_name="+(heb_name)+"&last_id="+(last_id)+"&dates="+(dates)+"&data="+str(data)+"&original_title="+(original_title)+"&id="+(id)+"&season="+str(season)+"&episode="+str(episode)+"&tmdbid="+str(tmdbid)+"&eng_name="+(eng_name)+"&show_original_year="+(show_original_year)+"&isr="+str(isr)+'&'+all_ur+"&fav_status="+fav_status
+        ok=True
+        menu_items=[]
+        menu_items.append(('[I]%s[/I]'%Addon.getLocalizedString(32063), 'Action(Info)'))
+        if join_menu:
+            #join
+            menu_items.append(('[I]%s[/I]'%Addon.getLocalizedString(32062), 'XBMC.RunPlugin(%s)' % ('%s?url=%s&mode=22&name=join')%(sys.argv[0],url)))
+        if menu_leave:
+            #Leave Channel
+            menu_items.append(('[I]%s[/I]'%Addon.getLocalizedString(32031), 'XBMC.RunPlugin(%s)' % ('%s?url=%s&mode=23&name=%s')%(sys.argv[0],url,name)))
+        
+        if mode==16:
+            #Remove
+            menu_items.append(('[I]%s[/I]'%Addon.getLocalizedString(32056), 'XBMC.RunPlugin(%s)' % ('%s?url=%s&mode=29&name=%s')%(sys.argv[0],url,name)))
+        video_data={}
+        video_data['title']=original_title
+        if (episode!=' ' and episode!='%20' and episode!=None) :
+          video_data['mediatype']='tvshow'
+          video_data['TVshowtitle']=original_title
+          video_data['Season']=int(str(season).replace('%20','0'))
+          video_data['Episode']=int(str(episode).replace('%20','0'))
+          tv_show='tv'
+        else:
+           video_data['mediatype']='movies'
+           video_data['TVshowtitle']=''
+           video_data['tvshow']=''
+           video_data['season']=0
+           video_data['episode']=0
+           tv_show='movie'
+        if  mode==7:
+            tv_show='tv'
+        video_data['OriginalTitle']=original_title
+        if data!=' ':
+            video_data['year']=data
+        if generes!=' ':
+            video_data['genre']=generes
+        video_data['rating']=str(rating)
+    
+        video_data['poster']=fanart
+        video_data['plot']=description
+        if trailer!=' ':
+            video_data['trailer']=trailer
+      
+
+        
+
+        str_e1=list(u.encode('utf8'))
+        for i in range(0,len(str_e1)):
+           str_e1[i]=str(ord(str_e1[i]))
+        str_e='$$'.join(str_e1)
+        liz=xbmcgui.ListItem(name, iconImage="DefaultFolder.png", thumbnailImage=iconimage)
+        liz.addContextMenuItems(menu_items, replaceItems=False)
+        if video_info!={}:
+            
+            video_data=video_info
+        
+  
+        art = {}
+        art.update({'poster': iconimage})
+        liz.setArt(art)
+        video_data['title']=video_data['title'].replace("|",' ')
+        video_data['plot']=video_data['plot'].replace("|",' ')
+        
+        liz.setInfo( type="Video", infoLabels=video_data)
+        liz.setProperty( "Fanart_Image", fanart )
+        art = {}
+        art.update({'poster': iconimage})
+        liz.setArt(art)
+        #ok=xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]),url=u,listitem=liz,isFolder=True)
+        
+        return u,liz,True
+
+
+
+def addLink( name, url,mode,isFolder, iconimage,fanart,description,data='',no_subs='0',tmdb='0',season='0',episode='0',original_title='',da='',year=0):
+          name=name.replace("|",' ')
+          description=description.replace("|",' ')
+          params={}
+          params['name']=name
+          params['iconimage']=iconimage
+          params['fanart']=fanart
+          params['description']=description
+          params['url']=url
+        
+          all_ur=utf8_urlencode(params)
+          u=sys.argv[0]+"?url="+urllib.quote_plus(url)+"&no_subs="+str(no_subs)+"&season="+str(season)+"&episode="+str(episode)+"&mode="+str(mode)+"&original_title="+str(original_title)+"&id="+str(tmdb)+"&data="+str(data)+'&'+all_ur
+ 
+
+          
+         
+          
+          #u=sys.argv[0]+"?url="+urllib.quote_plus(url)+"&mode="+str(mode)+"&name="+urllib.quote_plus(name)
+          liz = xbmcgui.ListItem( name, iconImage=iconimage, thumbnailImage=iconimage)
+
+          liz.setInfo(type="Video", infoLabels={ "Title": urllib.unquote( name), "Plot": description,'dateadded':da,'year':year  })
+          art = {}
+          art.update({'poster': iconimage})
+          liz.setArt(art)
+          liz.setProperty("IsPlayable","false")
+          liz.setProperty( "Fanart_Image", fanart )
+          
+          xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=u, listitem=liz,isFolder=isFolder)

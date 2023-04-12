@@ -1,0 +1,590 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: All Subs\n"
+"Report-Msgid-Bugs-To: http://trac.xbmc.org/\n"
+"POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: 2017-09-27 10:42+0300\n"
+"Last-Translator: A. Dambledore\n"
+"Language-Team: Eng2Heb\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: ar_IL\n"
+"Plural-Forms: nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5);\n"
+"X-Generator: Poedit 2.0.4\n"
+
+#Hebrew
+
+msgctxt "#32001"
+msgid "Login"
+msgstr "התחבר"
+
+msgctxt "#32002"
+msgid "LogOut"
+msgstr "התנתק"
+
+msgctxt "#32003"
+msgid "Login when kodi starts"
+msgstr "התחבר בעת הפעלת הקודי"
+
+msgctxt "#32004"
+msgid "Remove group name from files"
+msgstr "הסרת שמות הקבוצה מהקבצים"
+
+msgctxt "#32005"
+msgid "Get notification"
+msgstr "קבל עדכונים"
+
+msgctxt "#32006"
+msgid "Show login Code"
+msgstr "הצג קוד התחברות"
+
+msgctxt "#32007"
+msgid "Content"
+msgstr "תוכן"
+
+msgctxt "#32008"
+msgid "Display Files"
+msgstr "הצג קבצים"
+
+msgctxt "#32009"
+msgid "Display Videos"
+msgstr "הצג וידאו"
+
+msgctxt "#32010"
+msgid "Display Links"
+msgstr "הצג קישורים"
+
+msgctxt "#32011"
+msgid "Display Audio"
+msgstr "הצג אודיו"
+
+msgctxt "#32012"
+msgid "use repo groups"
+msgstr "השתמש בקבוצות ריפו"
+
+msgctxt "#32013"
+msgid "Auto quality in google drive"
+msgstr "איכות אוטומטית בגוגל דרייב"
+
+msgctxt "#32014"
+msgid "Buffer"
+msgstr "אגירה"
+
+msgctxt "#32015"
+msgid "Buffer size"
+msgstr "גודל אגירה"
+
+msgctxt "#32016"
+msgid "Wait for play time (sec)"
+msgstr "המתן לניגון (שניות)"
+
+msgctxt "#32017"
+msgid "Clear"
+msgstr "נקה"
+
+msgctxt "#32018"
+msgid "Clear cache"
+msgstr "נקה מטמון"
+
+msgctxt "#32019"
+msgid "Clear All"
+msgstr "נקה הכל"
+
+msgctxt "#32020"
+msgid "Movies"
+msgstr "סרטים"
+
+msgctxt "#32021"
+msgid "Tv Shows"
+msgstr "סדרות"
+
+msgctxt "#32022"
+msgid "My Groups"
+msgstr "הקבוצות שלי"
+
+msgctxt "#32023"
+msgid "Search Groups"
+msgstr "חיפוש קבוצות"
+
+msgctxt "#32024"
+msgid "Search All"
+msgstr "חיפוש כללי"
+
+msgctxt "#32025"
+msgid "Enter Search"
+msgstr "בצע חיפוש"
+
+msgctxt "#32026"
+msgid "Next Page"
+msgstr "עמוד הבא"
+
+msgctxt "#32027"
+msgid "Search"
+msgstr "חיפוש"
+
+msgctxt "#32028"
+msgid "choose"
+msgstr "בחר"
+
+msgctxt "#32029"
+msgid "Joined OK"
+msgstr "בוצעה הצטרפות"
+
+msgctxt "#32030"
+msgid "Error in join"
+msgstr "שגיאה בהצטרפות"
+
+msgctxt "#32031"
+msgid "Leave Channel"
+msgstr "צא מהערוץ"
+
+msgctxt "#32032"
+msgid "Leave from"
+msgstr " צא מ"
+
+msgctxt "#32033"
+msgid "Install"
+msgstr "התקנה"
+
+msgctxt "#32034"
+msgid "Installed"
+msgstr "הותקן"
+
+msgctxt "#32035"
+msgid "Installation complete"
+msgstr "ההתקנה הושלמה"
+
+msgctxt "#32036"
+msgid "Enter phone number (Without the +): "
+msgstr "הכנס מספר טלפון (ללא +):"
+
+msgctxt "#32037"
+msgid "Enter code: "
+msgstr "הכנס קוד:"
+
+msgctxt "#32038"
+msgid "Password: "
+msgstr "סיסמה:"
+
+msgctxt "#32039"
+msgid "Login Complete "
+msgstr "ההתחברות הושלמה"
+
+msgctxt "#32040"
+msgid "Waiting for play"
+msgstr "ממתין לניגון"
+
+msgctxt "#32041"
+msgid "Please Wait"
+msgstr "אנא המתן"
+
+msgctxt "#32042"
+msgid "Resume From "
+msgstr "-המשך מ"
+
+msgctxt "#32043"
+msgid "Play from beginning"
+msgstr "נגן מהתחלה"
+
+msgctxt "#32044"
+msgid "Loading"
+msgstr "טוען"
+
+msgctxt "#32045"
+msgid "Downloading"
+msgstr "מבצע הורדה"
+
+msgctxt "#32046"
+msgid "Add Local Tv shows"
+msgstr "הוספת סדרה מקומית"
+
+msgctxt "#32047"
+msgid "Popular Movies"
+msgstr "סרטים פופולריים"
+
+
+msgctxt "#32048"
+msgid "Genre"
+msgstr "ז'אנר"
+
+msgctxt "#32049"
+msgid "Years"
+msgstr "שנים"
+
+msgctxt "#32050"
+msgid "Add tv show"
+msgstr "הוספת סדרה"
+
+msgctxt "#32051"
+msgid "Add the"
+msgstr " האם להוסיף "
+
+msgctxt "#32052"
+msgid "Error occurred"
+msgstr "אירעה שגיאה"
+
+msgctxt "#32053"
+msgid "Already Listed"
+msgstr "פריט זה כבר קיים"
+
+msgctxt "#32054"
+msgid "Added"
+msgstr " התווסף "
+
+msgctxt "#32055"
+msgid "My Local Tv shows"
+msgstr "סדרות מקומיות שלי"
+
+msgctxt "#32056"
+msgid "Remove"
+msgstr "הסר"
+
+msgctxt "#32057"
+msgid "Popular Tv shows"
+msgstr "סדרות פופולריות"
+
+msgctxt "#32058"
+msgid "Join is in item menu"
+msgstr "ההצטרפות נמצאת בתפריט הפריט"
+
+msgctxt "#32059"
+msgid "No more items"
+msgstr "אין עוד פריטים"
+
+msgctxt "#32060"
+msgid "Account"
+msgstr "חשבון"
+
+msgctxt "#32061"
+msgid "Advance"
+msgstr "מתקדם"
+
+msgctxt "#32062"
+msgid "Join Channel"
+msgstr "הצטרף לערוץ"
+
+msgctxt "#32063"
+msgid "Info"
+msgstr "מידע"
+
+msgctxt "#32064"
+msgid "Remove the"
+msgstr " הסר את "
+
+msgctxt "#32065"
+msgid "Removed"
+msgstr " הוסר "
+
+msgctxt "#32066"
+msgid "Remove tv show"
+msgstr "הסרת סדרה"
+
+msgctxt "#32067"
+msgid "Leave OK"
+msgstr "בוצעה יציאה"
+
+msgctxt "#32068"
+msgid "Error in Leave"
+msgstr "שגיאה ביציאה"
+
+msgctxt "#32069"
+msgid "add to My TV"
+msgstr "הוסף לסדרות שלי"
+
+msgctxt "#32070"
+msgid "Search movies"
+msgstr "חפש סרט"
+
+
+msgctxt "#32071"
+msgid "Search tv shows"
+msgstr "חפש סידרה"
+
+msgctxt "#32072"
+msgid "Search History"
+msgstr "היסטוריית חיפושים"
+
+msgctxt "#32073"
+msgid "Kids World"
+msgstr "עולם הילדים"
+
+msgctxt "#32074"
+msgid "Movie World"
+msgstr "עולם הסרטים"
+
+msgctxt "#32075"
+msgid "Israeli Movies"
+msgstr "סרטים ישראלים"
+
+msgctxt "#32076"
+msgid "time_buffer"
+msgstr "זמן בניית באפר"
+
+
+msgctxt "#32077"
+msgid "port"
+msgstr "פורט"
+
+msgctxt "#32078"
+msgid "install apks"
+msgstr "התקנת אפליקציות לאנדרואיד"
+
+msgctxt "#32079"
+msgid "My Full data groups"
+msgstr "קבוצות מידע מלא נבחרות"
+
+msgctxt "#32080"
+msgid "Add to full data groups"
+msgstr "הוסף לקבוצות מ.מלא"
+
+msgctxt "#32081"
+msgid "Already There"
+msgstr "קיים כבר"
+
+
+msgctxt "#32082"
+msgid "Remove from FD groups"
+msgstr "הסר מקבוצות מ.מלא"
+
+msgctxt "#32083"
+msgid "repo in group name is needed"
+msgstr "חייב repo בשם הקבוצה"
+
+msgctxt "#32084"
+msgid "apk in group name is needed"
+msgstr "חייב apk בשם הקבוצה"
+
+msgctxt "#32085"
+msgid "files in group name is needed"
+msgstr "חייב __files__ בשם הקבוצה"
+
+msgctxt "#32086"
+msgid "download files"
+msgstr "הורדת קבצים"
+
+msgctxt "#32087"
+msgid "choose folder"
+msgstr "בחר תקייה"
+
+msgctxt "#32088"
+msgid "Download"
+msgstr "הורדה"
+
+msgctxt "#32089"
+msgid "Bad download folder"
+msgstr "תקיית הורדה שגוייה"
+
+msgctxt "#32090"
+msgid "Download complete"
+msgstr "הורדה הסתיימה"
+
+msgctxt "#32091"
+msgid "File Exists"
+msgstr "קובץ קיים"
+
+msgctxt "#32092"
+msgid "Overwrite"
+msgstr "החלף?"
+
+msgctxt "#32093"
+msgid "Clean history"
+msgstr "נקה היסטוריה"
+
+msgctxt "#32094"
+msgid "sure"
+msgstr "בטוח?"
+
+msgctxt "#32095"
+msgid "sources order"
+msgstr "סידור מקורות לפי"
+
+msgctxt "#32096"
+msgid "Quality"
+msgstr "איכות"
+
+msgctxt "#32097"
+msgid "name"
+msgstr "שם"
+
+
+msgctxt "#32098"
+msgid "chunk_size"
+msgstr "גודל חבילה"
+
+msgctxt "#32099"
+msgid "advance_buffer"
+msgstr "באפר מתקדם"
+
+
+msgctxt "#32100"
+msgid "Upload_kodi_log"
+msgstr "העלה לוג של קודי"
+
+msgctxt "#32101"
+msgid "Turkish_series"
+msgstr "סדרות בטורקית"
+
+msgctxt "#32102"
+msgid "display_option"
+msgstr "הצג"
+
+msgctxt "#32103"
+msgid "File_names"
+msgstr "שמות קבצים"
+
+msgctxt "#32104"
+msgid "file_description"
+msgstr "תיאור הקובץ"
+
+msgctxt "#32105"
+msgid "Join_all"
+msgstr "הצטרף להכל"
+
+msgctxt "#32106"
+msgid "action_time"
+msgstr "פעולה זו עלולה לקחת זמן רב"
+
+msgctxt "#32107"
+msgid "filter"
+msgstr "סינון"
+
+msgctxt "#32108"
+msgid "filter_watched"
+msgstr "סנן תוכן נצפה"
+
+msgctxt "#32109"
+msgid "watched_pre"
+msgstr "אחוז שנחשב נצפה"
+
+msgctxt "#32110"
+msgid "dup_links"
+msgstr "סנן לינקים כפולים"
+
+msgctxt "#32111"
+msgid "one_click"
+msgstr "ניגון בקליק"
+
+msgctxt "#32112"
+msgid "show_one_click"
+msgstr "הראה מקורות לאחר ניגון"
+
+msgctxt "#32113"
+msgid "fast_play"
+msgstr "ניגון מהיר"
+
+msgctxt "#32114"
+msgid "filter_text"
+msgstr "סנן לינקים שמכילים"
+
+msgctxt "#32115"
+msgid "seperate"
+msgstr "הוסף טקסט לסינון, הפרד עם פסיקים"
+
+msgctxt "#32116"
+msgid "backup"
+msgstr "גבה טלמדיה"
+
+msgctxt "#32117"
+msgid "filter_size"
+msgstr "סנן קבצים קטנים בחיפוש סרטים סדרות (MB)"
+
+msgctxt "#32118"
+msgid "file_buf_size"
+msgstr "גודל באפר של קובץ"
+
+msgctxt "#32119"
+msgid "player_fails"
+msgstr "נגן עם נגן חלופי כשניגון נכשל"
+
+msgctxt "#32120"
+msgid "addons_update"
+msgstr "עדכון הרחבות"
+
+msgctxt "#32121"
+msgid "choose_bot_id"
+msgstr "בחר מקור לעדכון אוטומטי"
+
+msgctxt "#32122"
+msgid "enable_atuo_update"
+msgstr "אפשר עידכון אוטומטי"
+
+msgctxt "#32123"
+msgid "update_bot_id"
+msgstr "update bot id"
+
+msgctxt "#32124"
+msgid "search_addon_updates"
+msgstr "חפש עדכוני הרחבות"
+
+msgctxt "#32125"
+msgid "add"
+msgstr "הוסף"
+
+msgctxt "#32126"
+msgid "replace"
+msgstr "החלף"
+
+msgctxt "#32127"
+msgid "my_repo"
+msgstr "ריפו אישי"
+
+msgctxt "#32128"
+msgid "space"
+msgstr "שטח אחסון נמוך"
+
+msgctxt "#32129"
+msgid "clean"
+msgstr "לנקות?"
+
+msgctxt "#32130"
+msgid "clean_kodi"
+msgstr "נקה את קודי"
+
+
+msgctxt "#32131"
+msgid "Popular Movies"
+msgstr "סרטים בקולנוע"
+
+msgctxt "#32132"
+msgid "Popular Movies"
+msgstr "סרטים לפי אולפן"
+
+msgctxt "#32133"
+msgid "Popular Movies"
+msgstr "משודר כעת"
+
+msgctxt "#32134"
+msgid "Popular Movies"
+msgstr "סדרות מרשתות שונות"
+
+msgctxt "#32135"
+msgid "Popular Movies"
+msgstr "סדרות ישראליות"
+
+msgctxt "#32136"
+msgid "Popular Movies"
+msgstr "רשימות Trakt"
+
+
+msgctxt "#32137"
+msgid "pre_buffer"
+msgstr "קדם באפר"
+
+msgctxt "#32138"
+msgid "Archived Groups"
+msgstr "קבוצות ארכיון"
+
+msgctxt "#32139"
+msgid "New Tv Shows"
+msgstr "סדרות חדשות"
+
+
+msgctxt "#32140"
+msgid "Settings"
+msgstr "הגדרות"
+
+
+msgctxt "#32141"
+msgid "Telegram Folders"
+msgstr "תיקיות טלגרם"
