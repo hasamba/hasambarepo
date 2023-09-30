@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window>
+
+<!--     <coordinates>
+        <left>450</left>
+        <top>55</top>
+    </coordinates> -->
+    <controls>
+        <control type="image">
+            <left>0</left>
+            <top>0</top>
+            <width>1920</width>
+            <height>1080</height>
+            <texture>common/black.png</texture>
+            <animation type="WindowOpen" reversible="false">
+                <effect type="fade" start="0" end="80" time="100" tween="sine" easing="in" />
+            </animation>
+        </control>
+        <control type="group">
+        <left>450</left>
+        <top>55</top>
+            <animation type="WindowOpen" reversible="false">
+                <effect type="fade" start="0" end="100" time="150" tween="sine" easing="in" />
+                <effect type="zoom" start="0" end="100" time="150" center="auto" tween="quadratic" easing="out" />
+            </animation>
+            <control type="image" id="107">
+                <left>20</left>
+                <top>266</top>
+                    <height>390</height>
+                    <width>735</width>
+            </control>
+
+            <control type="image">
+                <left>15</left>
+                <top>260</top>
+                <width>1000</width>
+                <height>400</height>
+                <texture colordiffuse="CC000000">Background/loguploader-dialog-bg.png</texture>
+            </control>
+            <control type="image" id="1077">
+                <left>745</left>
+                <top>266</top>
+                    <width>260</width>
+                    <height>390</height>
+            </control>
+			
+            <control type="image" id="101">
+                <left>10</left>
+                <top>10</top>
+                <width>1680</width>
+                <height>950</height>
+            </control>
+            <control type="label" id="102">
+                <posx>-415</posx>
+                <posy>350</posy>
+                <width>1660</width>
+                <height>60</height>
+                <font>font16_bold</font>
+                <label></label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <visible>Skin.String(headertexttype)</visible>
+            </control>
+            <control type="image" id="103">
+                <posx>-720</posx>
+                <posy>5</posy>
+                <width>1660</width>
+                <height>160</height>
+                <aspectratio aligny="center" align="center">keep</aspectratio>
+                <visible>Skin.String(headerimagetype)</visible>
+            </control>
+            <control type="image" id="109">
+                <posx>-700</posx>
+                <posy>15</posy>
+                <width>1660</width>
+                <height>90</height>
+                <aspectratio>keep</aspectratio>
+                <visible>Skin.String(headerimagetype)</visible>
+            </control>
+            <control type="label" id="104">
+               <left>-250</left>
+                <top>480</top>
+                <width>860</width>
+                <height>160</height>
+                <font>font16_bold</font>
+                <align>right</align>
+                <aligny>top</aligny>
+                <colordiffuse>FFFF00FF</colordiffuse>
+                <pagecontrol>105</pagecontrol>
+            </control>
+<!--             <control type="scrollbar" id="105">
+                <left>1660</left>
+                <top>90</top>
+                <width>30</width>
+                <height>790</height>
+                <subtype>text</subtype>
+                <visible>true</visible>
+                <texturesliderbackground>Button/scrollbar-V-background.png</texturesliderbackground>
+                <texturesliderbar>Button/scrollbar-V.png</texturesliderbar>
+                <texturesliderbarfocus colordiffuse="FF12B2E7">Button/scrollbar-V-focus.png</texturesliderbarfocus>
+                <orientation>vertical</orientation>
+                <showonepage>true</showonepage>
+                <onup>201</onup>
+                <ondown>201</ondown>
+                <onleft>201</onleft>
+                <onright>201</onright>
+            </control> -->
+        </control>
+        <control type="group">
+<!-- 		    <left>-425</left>
+			<top>-320</top> -->
+		    <left>25</left>
+			<top>-270</top>
+            <animation type="WindowOpen" reversible="false">
+                <effect type="fade" start="0" end="100" time="150" tween="sine" easing="in" />
+                <effect type="zoom" start="0" end="100" time="150" center="auto" tween="quadratic" easing="out" />
+            </animation>
+            <control type="button" id="200">
+                <left>850</left>
+                <top>880</top>
+                <width>300</width>
+                <height>60</height>
+                <textcolor>FFF0F0F0</textcolor>
+                <textoffsetx>20</textoffsetx>
+                <label>התחל מהתחלה</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <texturefocus colordiffuse="FF12B2E7">Button/testbuttonfo.png</texturefocus>
+                <texturenofocus>Button/testbuttonnf.png</texturenofocus>
+                <onleft>201</onleft>
+                <onright>200</onright>
+                <onup>105</onup>
+                <ondown>105</ondown>
+            </control>
+            <control type="button" id="201">
+                <left>480</left>
+                <top>880</top>
+                <width>300</width>
+                <height>60</height>
+                <textcolor>FFF0F0F0</textcolor>
+                <textoffsetx>20</textoffsetx>
+                <label>המשך צפייה</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <texturefocus colordiffuse="FF12B2E7">Button/testbuttonfo.png</texturefocus>
+                <texturenofocus>Button/testbuttonnf.png</texturenofocus>
+                <onleft>201</onleft>
+                <onright>200</onright>
+                <onup>105</onup>
+                <ondown>105</ondown>
+            </control>
+                <control type="progress" id="5000">
+                    <description>Progressbar</description>
+                    <top>950</top>
+                    <left>450</left>
+                    <width>710</width>
+                    <height>25</height>
+                    <reveal>true</reveal>
+                </control>
+        </control>
+    </controls>
+</window>

@@ -43,6 +43,26 @@
         <screenshot />
     </assets>
     </extension>
+</addon><addon id="plugin.video.mando" name="Mando" version="6.4.0" provider-name="Darkness">
+  <requires>
+	
+
+	
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="main.py">
+        <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+  <reuselanguageinvoker>true</reuselanguageinvoker>
+    <summary lang="en">The single light in the Darkness</summary>
+    <description lang="en">All the media as fast as possible</description>
+	
+    <platform>all</platform>
+	<assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+    </assets>
+  </extension>
 </addon><addon id="plugin.video.shadow" name="Shadow" version="3.3.9" provider-name="Darkness">
   <requires>
 	
@@ -122,18 +142,22 @@
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
-</addon><addon id="repository.Chameleon" name="[COLOR red]Chame[/COLOR][COLOR blue]leon[/COLOR] [COLOR yellow]TV[/COLOR] [COLOR green] Repository [/COLOR] " version="5.0.1" provider-name="Chameleon">
-        <extension point="xbmc.addon.repository" name="CPTV">
-                <info compressed="false">http://cha1m.com/oper1/addons.xml</info>
-                <checksum>http://cha1m.com/oper1/addons.xml.md5</checksum>
-                <datadir zip="true">http://cha1m.com/oper1/zips</datadir>
-        </extension>
-        <extension point="xbmc.addon.metadata">
-                <summary />
-                <description lang="he" />
-                <disclaimer />
-                <platform>all</platform>
-        </extension>
+</addon><addon id="repository.Chameleon" name="[COLOR red]Chame[/COLOR][COLOR blue]leon20[/COLOR] [COLOR yellow]TV[/COLOR] [COLOR green] Repository [/COLOR] " version="5.1.1" provider-name="Chameleon">
+	<extension point="xbmc.addon.repository" name="Chameleon repo">
+		<dir>
+			<info compressed="false">https://cha1m20.github.io/oper/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/cha1m20/oper/main/addons.xml.md5</checksum>
+			<datadir zip="true">https://cha1m20.github.io/oper/zips</datadir>
+		</dir>
+	</extension>
+	<extension point="xbmc.addon.metadata">
+		<assets>
+			<icon>icon.png</icon>
+		</assets>
+		<summary>Chameleon repo</summary>
+		<description>Chameleon repo</description>
+		<platform>all</platform>
+	</extension>
 </addon><addon id="repository.Fido" name="[COLOR aqua]Fido Repository[/COLOR]" version="1.5c" provider-name="Fido">
         <extension point="xbmc.addon.repository" name="[COLOR aqua]Fido Repository[/COLOR]">
 		    <dir>
@@ -541,6 +565,20 @@
             <fanart>fanart.jpg</fanart>
         </assets>
     </extension>
+</addon><addon id="repository.frenchdj" name="frenchdj repository" version="0.0.3" provider-name="frenchdj">
+	<extension point="xbmc.addon.repository" name="frenchdj Add-on Repository">
+		<dir>
+			<info compressed="false">https://raw.githubusercontent.com/frenchdj/repository.frenchdj/master/_repo/addons.xml</info>
+			<checksum>https://raw.githubusercontent.com/frenchdj/repository.frenchdj/master/_repo/addons.xml.md5</checksum>
+			<datadir zip="true">https://raw.githubusercontent.com/frenchdj/repository.frenchdj/master/_repo/</datadir>
+		</dir>
+	</extension>
+	<extension point="xbmc.addon.metadata">
+		<summary>frenchdj repository</summary>
+		<description>frenchdj addons repository</description>
+		<disclaimer />
+		<platform>all</platform>
+	</extension>
 </addon><addon id="repository.hasamba" name="Hasamba Private Repo" version="2.0.0" provider-name="nacho">
     <extension point="xbmc.addon.repository" name="Example Repository">
         <dir>
@@ -677,6 +715,24 @@
         <assets>
             <icon>icon.png</icon>
             <fanart>fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon><addon id="repository.ytmusic" name="Ytmusic's Repository" version="1.0" provider-name="Goldenfreddy0703">
+    <extension point="xbmc.addon.repository" name="Ytmusic's Repository">
+        <dir>
+            <info compressed="false">https://raw.githubusercontent.com/Goldenfreddy0703/repository.ytmusic/master/repo/zips/addons.xml</info>
+            <checksum>https://raw.githubusercontent.com/Goldenfreddy0703/repository.ytmusic/master/repo/zips/addons.xml.md5</checksum>
+            <datadir zip="true">https://raw.githubusercontent.com/Goldenfreddy0703/repository.ytmusic/master/repo/zips/</datadir>
+        </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>Ytmusic's Repository</summary>
+        <description>A repository for Ytmusic</description>
+        <disclaimer />
+        <platform>all</platform>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.png</fanart>
         </assets>
     </extension>
 </addon><addon id="repository.zachmorris" name="Zach Morris Add-ons" version="1.0.0" provider-name="zachmorris">
