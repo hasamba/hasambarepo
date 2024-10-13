@@ -4,7 +4,7 @@ from os import listdir
 from os.path import isfile, join
 file = codecs.open('settings.xml', 'r', 'UTF-8') 
 fans= file.read()
-print (fans)
+
 file.close()
 types=['Movie','TV']
 for i in types:

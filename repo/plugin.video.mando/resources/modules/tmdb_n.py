@@ -2,7 +2,7 @@
 # countasync.py
 
 
-#('https://api.themoviedb.org/3/movie/603?api_key=34142515d9d23817496eeb4ff1d223d0&language=en-US',verify=False).json()
+#('https://api.themoviedb.org/3/movie/603?api_key=b370b60447737762ca38457bd77579b3&language=en-US',verify=False).json()
 
 
 import time,sys,random,os
@@ -17,6 +17,7 @@ from urllib.parse import urlencode
 from resources.modules import log
 from  resources.modules.general import addon_id
 cacheFile=os.path.join(user_dataDir,'database.db')
+from resources.modules.general import tmdb_key
 import xbmcaddon
 try:
     from sqlite3 import dbapi2 as database
@@ -28,11 +29,11 @@ backup_resolutions, writer_credits = {'poster': 'w780', 'fanart': 'w1280', 'stil
 KODI_VERSION = int(xbmc.getInfoLabel("System.BuildVersion").split('.', 1)[0])
 def get_html_g():
     try:
-        url_g='https://api.themoviedb.org/3/genre/tv/list?api_key=34142515d9d23817496eeb4ff1d223d0&language='+lang
+        url_g=f'https://api.themoviedb.org/3/genre/tv/list?api_key={tmdb_key}&language='+lang
         html_g_tv=get_html(url_g).json()
          
    
-        url_g='https://api.themoviedb.org/3/genre/movie/list?api_key=34142515d9d23817496eeb4ff1d223d0&language='+lang
+        url_g=f'https://api.themoviedb.org/3/genre/movie/list?api_key={tmdb_key}&language='+lang
         html_g_movie=get_html(url_g).json()
     except Exception as e:
         log.warning('Err in HTML_G:'+str(e))
@@ -246,7 +247,7 @@ class tmdb:
         data=cache.get(self.get_response,24,self.url, table='posters') 
         log.warning(self.url)
         log.warning(data)
-        all_urls = ["https://api.themoviedb.org/3/%s/%s?api_key=34142515d9d23817496eeb4ff1d223d0&language=en&append_to_response=external_ids,videos,credits,release_dates,alternative_titles,translations"%(self.tv_movie,i['id']) for i in data['results']]
+        all_urls = [f"https://api.themoviedb.org/3/%s/%s?api_key={tmdb_key}&language=en&append_to_response=external_ids,videos,credits,release_dates,alternative_titles,translations"%(self.tv_movie,i['id']) for i in data['results']]
         
         self.all_ids=[i['id'] for i in data['results']]
         self.main_data={}
@@ -330,7 +331,7 @@ class tmdb:
         
         if not self.is_in_english(original_name,new_name):
             
-            url="https://api.themoviedb.org/3/%s/%s?api_key=34142515d9d23817496eeb4ff1d223d0&language=en&append_to_response=external_ids,videos,credits,release_dates,alternative_titles,translations"%(self.tv_movie,id)
+            url=f"https://api.themoviedb.org/3/%s/%s?api_key={tmdb_key}&language=en&append_to_response=external_ids,videos,credits,release_dates,alternative_titles,translations"%(self.tv_movie,id)
             
             x=get_html(url, timeout=10,verify=False).json()
             original_name=x.get('title',None)
@@ -942,7 +943,7 @@ class tmdb:
              
              if not stop_data:
                  
-                 url='https://api.themoviedb.org/3/tv/%s/season/%s?api_key=34142515d9d23817496eeb4ff1d223d0&language=%s&append_to_response=external_ids'%(id,season,lang)
+                 url=f'https://api.themoviedb.org/3/tv/%s/season/%s?api_key={tmdb_key}&language=%s&append_to_response=external_ids'%(id,season,lang)
    
                  params={}
                  params['iconimage']=icon

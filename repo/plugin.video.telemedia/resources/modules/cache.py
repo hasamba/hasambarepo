@@ -19,7 +19,7 @@
 '''
 
 from resources.modules import log
-import re,hashlib,time,os,logging
+import xbmc,re,hashlib,time,os,logging
 
 try:
     from sqlite3 import dbapi2 as database
@@ -30,10 +30,18 @@ try:
     import xbmcaddon
 except:
     pass
-import xbmcvfs
-from urllib.parse import parse_qsl
-xbmc_tranlate_path=xbmcvfs.translatePath
 
+KODI_VERSION = int(xbmc.getInfoLabel("System.BuildVersion").split('.', 1)[0])
+if KODI_VERSION<=18:
+    xbmc_tranlate_path=xbmc.translatePath
+else:
+    import xbmcvfs
+    xbmc_tranlate_path=xbmcvfs.translatePath
+def set_PRAGMAS( dbcon):
+        dbcur = dbcon.cursor()
+        dbcur.execute('''PRAGMA synchronous = OFF''')
+        dbcur.execute('''PRAGMA journal_mode = OFF''')
+        return dbcur
 def get(function, timeout, *args, **table):
     import linecache,sys
     try:
@@ -43,7 +51,7 @@ def get(function, timeout, *args, **table):
         f = re.sub('.+\smethod\s|.+function\s|\sat\s.+|\sof\s.+', '', f)
 
         a = hashlib.md5()
-        for i in args: a.update(str(i))
+        for i in args: a.update(str(i).encode('utf-8'))
         a = str(a.hexdigest())
     except Exception as e:
       
@@ -54,9 +62,9 @@ def get(function, timeout, *args, **table):
       linecache.checkcache(filename)
       line = linecache.getline(filename, lineno, fail.f_globals)
       
-      log.warning('CACHE err:'+str(lineno))
-      log.warning('inline:'+line)
-      log.warning(e)
+      log.error('CACHE err:'+str(lineno))
+      log.error('inline:'+line)
+      log.error(e)
       
      
     
@@ -73,7 +81,7 @@ def get(function, timeout, *args, **table):
         try:
             import xbmc
             addonInfo = xbmcaddon.Addon().getAddonInfo
-            dataPath = xbmc_tranlate_path(addonInfo('profile')).decode('utf-8')
+            dataPath = xbmc_tranlate_path(addonInfo('profile'))
         except:
            
             dataPath = os.path.dirname(os.path.realpath(__file__))
@@ -83,6 +91,7 @@ def get(function, timeout, *args, **table):
     
            
         dbcon = database.connect(os.path.join(mypath,'sources.db'))
+        dbcur = set_PRAGMAS(dbcon)
         dbcur = dbcon.cursor()
         dbcur.execute("SELECT count(*) FROM sqlite_master WHERE type='table' AND name='%s';"%table)
         match = dbcur.fetchone()
@@ -108,9 +117,9 @@ def get(function, timeout, *args, **table):
         linecache.checkcache(filename)
         line = linecache.getline(filename, lineno, fail.f_globals)
       
-        log.warning('CACHE2 err:'+str(lineno))
-        log.warning('inline:'+line)
-        log.warning(e)
+        log.error('CACHE2 err:'+str(lineno))
+        log.error('inline:'+line)
+        log.error(e)
         
         pass
     
@@ -130,9 +139,9 @@ def get(function, timeout, *args, **table):
         linecache.checkcache(filename)
         line = linecache.getline(filename, lineno, fail.f_globals)
       
-        log.warning('CACHE3 err:'+str(lineno))
-        log.warning('inline:'+line)
-        log.warning(e)
+        log.error('CACHE3 err:'+str(lineno))
+        log.error('inline:'+line)
+        log.error(e)
         return
 
     try:
@@ -151,9 +160,9 @@ def get(function, timeout, *args, **table):
         linecache.checkcache(filename)
         line = linecache.getline(filename, lineno, fail.f_globals)
       
-        log.warning('CACHE4 err:'+str(lineno))
-        log.warning('inline:'+line)
-        log.warning(e)
+        log.error('CACHE4 err:'+str(lineno))
+        log.error('inline:'+line)
+        log.error(e)
         pass
 
     try:
@@ -166,9 +175,9 @@ def get(function, timeout, *args, **table):
         linecache.checkcache(filename)
         line = linecache.getline(filename, lineno, fail.f_globals)
       
-        log.warning('CACHE5 err:'+str(lineno))
-        log.warning('inline:'+line)
-        log.warning(e)
+        log.error('CACHE5 err:'+str(lineno))
+        log.error('inline:'+line)
+        log.error(e)
         pass
 
 
@@ -181,7 +190,7 @@ def clear(table=None):
         try:
             import xbmc
             addonInfo = xbmcaddon.Addon().getAddonInfo
-            dataPath = xbmc_tranlate_path(addonInfo('profile')).decode('utf-8')
+            dataPath = xbmc_tranlate_path(addonInfo('profile'))
         except:
             dataPath = os.path.dirname(os.path.realpath(__file__))
        
@@ -199,7 +208,7 @@ def clear(table=None):
             except:
                 pass
     except Exception as e:
-        log.warning('Error cleaning: '+str(e))
+        log.error('Error cleaning: '+str(e))
         
         pass
 

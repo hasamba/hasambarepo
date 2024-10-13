@@ -25,6 +25,7 @@ import urllib,logging,base64,json
 color=all_colors[65]
 
 from  resources.modules.client import get_html
+from resources.modules.general import tmdb_key
 def res_q(quality):
     f_q=' '
     if '4k' in quality.lower():
@@ -180,14 +181,14 @@ def get_links(tv_movie,original_title,season_n,episode_n,season,episode,show_ori
     if 1:#try:
         
 
-        tmdbKey='653bb8af90162bd98fc7ee32bcbbfb3d'
+        tmdbKey='b370b60447737762ca38457bd77579b3'
         if tv_movie=='tv':
       
-           url2='http://api.themoviedb.org/3/tv/%s?api_key=%s&append_to_response=external_ids&language=he'%(id,tmdbKey)
+           url2=f'https://api.themoviedb.org/3/tv/%s?api_key={tmdb_key}&append_to_response=external_ids&language=he'%(id)
            n_value='name'
         else:
            
-           url2='http://api.themoviedb.org/3/movie/%s?api_key=%s&append_to_response=external_ids&language=he'%(id,tmdbKey)
+           url2=f'https://api.themoviedb.org/3/movie/%s?api_key={tmdb_key}&append_to_response=external_ids&language=he'%(id)
            n_value='title'
         try:
             

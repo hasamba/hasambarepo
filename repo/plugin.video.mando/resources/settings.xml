@@ -52,6 +52,8 @@
 		<setting label="trakt refresh token" id="trakt_refresh_token" type="text" visible="false" />
 		<setting label="trakt refresh token" id="trakt_expires_at" type="text" visible="false" />
 		
+		<setting label="tmdb_api" id="tmdb_api" type="text" default="b370b60447737762ca38457bd77579b3" visible="false" />
+		
 	</category>
 	<category label="32221">
 		<setting label="[COLOR khaki][I]$ADDON[plugin.video.mando 32124][/I][/COLOR]" type="lsep"/>
@@ -160,29 +162,23 @@
 		<!--Movie Sources-->
 
 		<setting id="1337x" label="1337x" type="bool"  default="true" />
-		<setting id="api" label="api" type="bool"  default="true" />
 		<setting id="apibay" label="apibay" type="bool"  default="true" />
 		<setting id="bay" label="bay" type="bool"  default="true" />
 		<setting id="bitcq" label="bitcq" type="bool"  default="true" />
 		<setting id="bitlord" label="bitlord" type="bool"  default="true" />
 		<setting id="bitsearch" label="bitsearch" type="bool"  default="true" />
+		<setting id="debridm" label="debridm" type="bool"  default="true" />
 		<setting id="dl" label="dl" type="bool"  default="true" />
-		<setting id="extbay" label="extbay" type="bool"  default="true" />
-		<setting id="extra" label="extra" type="bool"  default="true" />
-		<setting id="ez" label="ez" type="bool"  default="true" />
 		<setting id="ezio" label="ezio" type="bool"  default="true" />
-		<setting id="filel" label="filel" type="bool"  default="true" />
 		<setting id="glorls" label="glorls" type="bool"  default="true" />
 		<setting id="kass" label="kass" type="bool"  default="true" />
 		<setting id="pirp" label="pirp" type="bool"  default="true" />
-		<setting id="sdr" label="sdr" type="bool"  default="true" />
 		<setting id="shrss" label="shrss" type="bool"  default="true" />
 		<setting id="snow" label="snow" type="bool"  default="true" />
 		<setting id="sol" label="sol" type="bool"  default="true" />
 		<setting id="tech" label="tech" type="bool"  default="true" />
 		<setting id="tele" label="tele [COLOR lightblue](Free)[/COLOR]" type="bool"  default="true" />
 		<setting id="torio" label="torio" type="bool"  default="true" />
-		<setting id="torrz" label="torrz" type="bool"  default="true" />
 		<setting id="tsdl" label="tsdl" type="bool"  default="true" />
 		<setting id="yts" label="yts" type="bool"  default="true" />
 
@@ -196,29 +192,23 @@
 		<!--TV Sources-->
 
 		<setting id="1337x_tv" label="1337x" type="bool"  default="true" />
-		<setting id="api_tv" label="api" type="bool"  default="true" />
 		<setting id="apibay_tv" label="apibay" type="bool"  default="true" />
 		<setting id="bay_tv" label="bay" type="bool"  default="true" />
 		<setting id="bitcq_tv" label="bitcq" type="bool"  default="true" />
 		<setting id="bitlord_tv" label="bitlord" type="bool"  default="true" />
 		<setting id="bitsearch_tv" label="bitsearch" type="bool"  default="true" />
+		<setting id="debridm_tv" label="debridm" type="bool"  default="true" />
 		<setting id="dl_tv" label="dl" type="bool"  default="true" />
-		<setting id="extbay_tv" label="extbay" type="bool"  default="true" />
-		<setting id="extra_tv" label="extra" type="bool"  default="true" />
-		<setting id="ez_tv" label="ez" type="bool"  default="true" />
 		<setting id="ezio_tv" label="ezio" type="bool"  default="true" />
-		<setting id="filel_tv" label="filel" type="bool"  default="true" />
 		<setting id="glorls_tv" label="glorls" type="bool"  default="true" />
 		<setting id="kass_tv" label="kass" type="bool"  default="true" />
 		<setting id="pirp_tv" label="pirp" type="bool"  default="true" />
-		<setting id="sdr_tv" label="sdr" type="bool"  default="true" />
 		<setting id="shrss_tv" label="shrss" type="bool"  default="true" />
 		<setting id="snow_tv" label="snow" type="bool"  default="true" />
 		<setting id="sol_tv" label="sol" type="bool"  default="true" />
 		<setting id="tech_tv" label="tech" type="bool"  default="true" />
 		<setting id="tele_tv" label="tele [COLOR lightblue](Free)[/COLOR]" type="bool"  default="true" />
 		<setting id="torio_tv" label="torio" type="bool"  default="true" />
-		<setting id="torrz_tv" label="torrz" type="bool"  default="true" />
 		<setting id="tsdl_tv" label="tsdl" type="bool"  default="true" />
 		<setting id="yts_tv" label="yts" type="bool"  default="true" />
 

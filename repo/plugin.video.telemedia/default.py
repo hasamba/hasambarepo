@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import socket,xbmcaddon,os,xbmc,xbmcgui,urllib,urllib,re,xbmcplugin,sys,logging,shutil,time,xbmcvfs,json
+import socket,xbmcaddon,os,xbmc,xbmcgui,urllib,urllib,re,xbmcplugin,sys,logging,shutil,time,xbmcvfs,json,glob
 __USERAGENT__ = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.97 Safari/537.11'
 __addon__ = xbmcaddon.Addon()
 import xbmcvfs
@@ -10,8 +10,8 @@ __cwd__ = xbmc_tranlate_path(__addon__.getAddonInfo('path'))
 Addon = xbmcaddon.Addon()
 from resources.modules import log
 from  resources.modules.client import get_html
-
-
+from  resources.modules.general import tmdb_key
+from resources.modules import cache
 from threading import Thread
 from resources.modules.public import addNolink,addDir3,addLink,lang,user_dataDir
 from resources.modules.general import clean_name,check_link,server_data,replaceHTMLCodes,domain_s,similar,cloudflare_request,fix_q,call_trakt,post_trakt,reset_trakt,cloudflare_request,base_header
@@ -44,7 +44,10 @@ if Addon.getSetting("debug")=='false':
         pass
 KIDS_CHAT_ID=-1001251653717
 HEBREW_GROUP=-1001106800100
-WORLD_GROUP=-1001000750206
+DUB_GROUP=-1001537597189
+NEW_GROUP=-1001546700948  
+REQ_GROUP=-1001702553167
+
 id=0
 listen_port=Addon.getSetting("port")
 seek_time=0
@@ -64,6 +67,21 @@ if KODI_VERSION<=18:
 else:
     import xbmcvfs
     xbmc_tranlate_path=xbmcvfs.translatePath
+
+def meta_get(video_data,item):
+    if item=='year' or item=='rating' or item=='votes' or item=='duration':
+        try:
+            int(video_data.get(item,'0'))
+        except:
+            try:
+                float(video_data.get(item,'0'))
+            except:
+                video_data[item]='0'
+        return video_data.get(item,'0')
+    if item=='country' or item=='cast':
+        return video_data.get(item,[])
+    return video_data.get(item,' ')
+    return video_data.get(item,' ')
 class OverlayText:
     def __init__(self):
         log.warning('(Overlay) Initialize overlay text')
@@ -73,7 +91,7 @@ class OverlayText:
         self._window     = xbmcgui.Window(12005)
         self._label      = xbmcgui.ControlLabel(x, y, w, h, '', alignment=0x00000002 | 0x00000004)
         media_path=os.path.join(xbmc_tranlate_path(Addon.getAddonInfo("path")),'resources','media')
-        self._background = xbmcgui.ControlImage(x, y, w, h, os.path.join(media_path, "black.png"))
+        self._background = xbmcgui.ControlImage(x, y, w, h, os.path.join(media_path, ""))
 
         self._background.setColorDiffuse("0xD0000000")
 
@@ -194,6 +212,7 @@ def clear_files():
     else:
         all_folders=[temp_path]
     try:
+        errors=""
         for items in all_folders:
             db_path=os.path.join(items, 'temp')
             if os.path.exists(db_path):
@@ -207,6 +226,7 @@ def clear_files():
                       try:
                         os.remove(re_fl)
                       except Exception as e:
+                        errors+=str(e)
                         log.warning('Err:'+str(e))
                         pass
             
@@ -220,7 +240,8 @@ def clear_files():
                     if os.path.exists(re_fl):
                       try:
                         os.remove(re_fl)
-                      except:
+                      except Exception as e:
+                        errors+=str(e)
                         pass
             
             db_path=os.path.join(items, 'videos')
@@ -232,7 +253,7 @@ def clear_files():
                     if os.path.exists(re_fl):
                       try:
                         os.remove(re_fl)
-                      except:
+                      except Exception as e:
                         pass
             db_path=os.path.join(items, 'photos')
             if os.path.exists(db_path):
@@ -243,7 +264,8 @@ def clear_files():
                     if os.path.exists(re_fl):
                       try:
                         os.remove(re_fl)
-                      except:
+                      except Exception as e:
+                        errors+=str(e)
                         pass
             db_path=os.path.join(items, 'music')
             if os.path.exists(db_path):
@@ -254,11 +276,13 @@ def clear_files():
                     if os.path.exists(re_fl):
                       try:
                         os.remove(re_fl)
-                      except:
+                      except Exception as e:
+                        errors+=str(e)
                         pass
+        return errors
     except Exception as e:
         log.warning('Error removing files:'+str(e))
-
+        return 'Error:'+str(e)
     
 def is_hebrew(input_str):    
        try:
@@ -599,6 +623,8 @@ class TelePlayer(xbmc.Player):
         return set_runtime
     def playTeleFile(self, id_pre,data,name,no_subs,tmdb,season,episode,original_title,description,resume,l_data,iconimage='',fanart='',r_art='',r_logo=''):
       try:
+        t = Thread(target=forward_messages, args=(l_data,))
+        t.start()
         dp = xbmcgui . DialogProgress ( )
         dp.create('Telemedia', '[B][COLOR=yellow]%s[/COLOR][/B]'%Addon.getLocalizedString(32044))
         try:
@@ -652,15 +678,16 @@ class TelePlayer(xbmc.Player):
            video_data['mediatype']='movies'
         if season!=None and season!="%20" and season!="0":
            tv_movie='tv'
-           url2='http://api.themoviedb.org/3/tv/%s?api_key=%s&append_to_response=external_ids'%(tmdb,'653bb8af90162bd98fc7ee32bcbbfb3d')
+           url2=f'http://api.themoviedb.org/3/tv/%s?api_key={tmdb_key}&append_to_response=external_ids'%(tmdb)
         else:
            tv_movie='movie'
            
-           url2='http://api.themoviedb.org/3/movie/%s?api_key=%s&append_to_response=external_ids'%(tmdb,'653bb8af90162bd98fc7ee32bcbbfb3d')
+           url2=f'http://api.themoviedb.org/3/movie/%s?api_key={tmdb_key}&append_to_response=external_ids'%(tmdb)
+        
         if 'tt' not in tmdb:
              try:
-                
-                
+                log.warning(url2)
+                log.warning(get_html(url2).json())
                 imdb_id=get_html(url2).json()['external_ids']['imdb_id']
                 
              except Exception as e:
@@ -684,6 +711,11 @@ class TelePlayer(xbmc.Player):
                         nm.pop(ind)
                     ind+=1
                 name='.'.join(nm)
+            
+            
+                
+
+                
             video_data['title']=name.replace('.mkv','').replace('.avi','').replace('.mp4','')
             log.warning('New Name:'+name)
             video_data['Writer']=tmdb
@@ -696,15 +728,60 @@ class TelePlayer(xbmc.Player):
             video_data['imdbnumber']=imdb_id
             
             video_data['imdb_id']=imdb_id
+            video_data['imdb']=imdb_id
             video_data['IMDBNumber']=imdb_id
             video_data['genre']=imdb_id
             video_data['OriginalTitle']=original_title.replace('.mkv','').replace('.avi','').replace('.mp4','')
             log.warning('New Name Hebrew:'+str(name))
-           
             if no_subs=='1' or is_hebrew(str(name)):
                 video_data[u'mpaa']=str('heb')
-        
-        listItem.setInfo(type=types, infoLabels=video_data)
+                
+            info_tag = listItem.getVideoInfoTag()
+            info_tag.setMediaType(meta_get(video_data,'mediatype'))
+            info_tag.setTitle(meta_get(video_data,'title'))
+            if (tv_movie=='tv'):
+                info_tag.setTvShowTitle(meta_get(video_data,'TVshowtitle'))
+                try:
+                    info_tag.setSeason(int(season))
+                    info_tag.setEpisode(int(episode))
+                except:
+                    pass
+            info_tag.setPlot(meta_get(video_data,'plot'))
+            try:
+                year_info=int(meta_get(video_data,'year'))
+                if (year_info>0):
+                    info_tag.setYear(year_info)
+            except:
+                pass
+            try:
+                info_tag.setRating(float(meta_get(video_data,'rating')))
+            except:
+                pass
+            info_tag.setVotes(int(meta_get(video_data,'votes')))
+            info_tag.setMpaa(meta_get(video_data,'mpaa'))
+            info_tag.setDuration(int(meta_get(video_data,'duration')))
+            info_tag.setCountries(meta_get(video_data,'country'))
+            
+            info_tag.setTrailer(meta_get(video_data,'trailer'))
+            info_tag.setPremiered(meta_get(video_data,'premiered'))
+            
+            info_tag.setStudios((meta_get(video_data,'studio') or '',))
+            
+            info_tag.setUniqueIDs({'imdb': imdb_id, 'tmdb':tmdb})
+            info_tag.setIMDBNumber(imdb_id)
+            try:
+                info_tag.setGenres(meta_get(video_data,'genre').split(', '))
+            except:
+                pass
+            info_tag.setWriters(meta_get(video_data,'writer').split(', '))
+            info_tag.setDirectors(meta_get(video_data,'director').split(', '))
+            info_tag.setOriginalTitle(original_title)
+            info_tag.setTagLine(original_title)
+            
+            
+        if KODI_VERSION<19:
+            listItem.setInfo(type=types, infoLabels=video_data)
+            listItem.setUniqueIDs({ 'imdb': imdb_id, 'tmdb' : tmdb }, "imdb")
         listItem.setArt({'clearlogo':r_logo,'clearart':r_art,'icon': iconimage, 'thumb': iconimage, 'poster': iconimage,'tvshow.poster': iconimage, 'season.poster': iconimage})
         if not resume:
             resume_time=self.get_resume()
@@ -713,9 +790,12 @@ class TelePlayer(xbmc.Player):
         broken_play=True
         resume_time=float(resume_time)
         if resume_time!=-1:
-            
-            self.play(link,listitem=listItem,windowed=False)
-            
+            log.warning('Play link media:')
+            log.warning(video_data)
+            log.warning(info_tag)
+           
+            #self.play(link,listitem=listItem,windowed=False)
+            xbmcplugin.setResolvedUrl(int(sys.argv[1]), True, listItem)
             #Waiting for play
             #Please Wait
             
@@ -819,12 +899,26 @@ class TelePlayer(xbmc.Player):
              'info':json.dumps({'@type': 'cancelDownloadFile','file_id':int(id), '@extra': num})
              }
         event=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
+        log.warning('download done')
+        log.warning(event)
+        time.sleep(2)
+        num=random.randint(0,60000)
+        data={'type':'td_send',
+             'info':json.dumps({'@type': 'deleteFile','file_id':int(id), '@extra': num})
+             }
+        event=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
+        log.warning('Delete file tele:')
+        log.warning(event)
         
         #dp.update(0, 'Please Wait...','Removing File', '' )
         if resume_time!=-1:
             self.update_db()
         time.sleep(1)
-        clear_files()
+        #ret=clear_files()
+        
+            
+        xbmc.executebuiltin(u'Notification(%s,%s)' % ('Telemedia ','קבצים נוקו'))
+        
         playing_file=True
         #dp.close()
         return broken_play,resume_time
@@ -840,7 +934,7 @@ class TelePlayer(xbmc.Player):
             log.warning('inline:'+str(line))
             log.warning(str(e))
             xbmcgui.Dialog().ok('Error occurred','Err:'+str(e)+'Line:'+str(lineno))
-       
+            
             
         
         
@@ -866,16 +960,13 @@ def get_params():
 def download_photo(id,counter,f_name,mv_name):
    try:
     
-    log.warning('mv_name:'+mv_name)
-    #if xbmcvfs.exists(mv_name):
-    #    return mv_name
-    log.warning('mv_name Not found:'+mv_name)
+
     data={'type':'download_photo',
              'info':id
              }
     log.warning('Sending')
     file=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
-    log.warning('file:'+file)
+
     xbmc.sleep(100)
     if xbmcvfs.exists(file):
         try:
@@ -903,177 +994,265 @@ def download_photo(id,counter,f_name,mv_name):
         xbmc.executebuiltin(u'Notification(%s,%s)' % ('Telemedia ERR','Err:'+str(e)+'Line:'+str(lineno)))
 
         return ''
-
-
-def infiniteReceiver(all_d,last_id,archive='chatListMain',chat_filter_id='0',next_page='0'):
-   global exit_now
-   try:
-    log.warning('next_page:'+str(next_page))
-    log.warning('sending')
-    dp = xbmcgui . DialogProgress ( )
-    if KODI_VERSION<19:
-        dp.create('Please Wait...','Adding Groups', '','')
-        dp.update(0, 'Please Wait...','Adding Groups', '' )
-    else:
-        dp.create('Please Wait...'+'\n'+ 'Adding Groups'+'\n'+ ''+'\n'+ '')
-        dp.update(0, 'Please Wait...'+'\n'+ 'Adding Groups'+'\n'+  '' )
-    num=random.randint(0,60000)
-    order=last_id.split('$$$')[1]
-    leid=last_id.split('$$$')[0]
-    
-    if chat_filter_id=='0':
-        data={'type':'td_send',
-             'info':json.dumps({'@type': 'getChats','offset_chat_id':leid,'offset_order':order, 'limit': '15000','chat_list':{'@type': archive}, '@extra': num})
-             }
-    else:
-        data={'type':'td_send',
-             'info':json.dumps({'@type': 'getChats','offset_chat_id':leid,'offset_order':order, 'limit': '15000','chat_list':{'@type': 'chatListFilter','chat_filter_id':int(chat_filter_id)}, '@extra': num})
-             }
-    event=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
-    xbmc.sleep(1000)
-    event=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
-    exit_now=0
-   
-    if 'status' in event:
-        xbmcgui.Dialog().ok('Error occurred',event['status'])
-        exit_now=1
-    if exit_now==0:
-       
-
+def get_photos(download_photos):
+    for icon_id,counter_ph,f_name,mv_name in download_photos:
         
+        if not os.path.exists(mv_name):
+            download_photo(icon_id,counter_ph,f_name,mv_name)
         
-        counter=0
-        counter_ph=10000
-    
-        j_enent_o=(event)
-        zzz=0
-        items=''
-        next_page=int(next_page)
-        start_value=next_page*100
-        
-        log.warning('start_value:'+str(start_value))
-        next_page_exist=False
-        len_size=len(j_enent_o['chat_ids'])
-        if len_size>100:
-            len_size=100
-        for items in j_enent_o['chat_ids']:
-            log.warning('counter:'+str(counter))
-            counter+=1
-            if (counter<start_value):
-                continue
-               
-            if (counter>(start_value+100)):
-                next_page_exist=True
-                break
-            
-            data={'type':'td_send',
-                 'info':json.dumps({'@type': 'getChat','chat_id':items, '@extra':counter})
-                 }
-            event=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
-            log.warning(json.dumps(event))
-            if 'status' in event:
-                xbmcgui.Dialog().ok('Error occurred',event['status'])
-                exit_now=1
-                break
-            
-            order=''
-            try:
-                order=event['positions'][0]['order']
-            except:
-                pass
-            
-            if dp.iscanceled():
-                          dp.close()
-                         
-                          break
-            j_enent=(event)
+def c_get_groups(last_id,archive,chat_filter_id,next_page):
+    global exit_now
+    Addon = xbmcaddon.Addon()
+    show_progress=Addon.getSetting("show_progress")=='true'
+    try:
+        all_data=[]
+        download_photos=[]
+        log.warning('next_page:'+str(next_page))
+        log.warning('sending')
+        if (show_progress):
+            dp = xbmcgui . DialogProgress ( )
             if KODI_VERSION<19:
-                dp.update(int(((zzz* 100.0)/(len_size)) ), 'Please Wait...','Adding Groups', j_enent['@type'].encode('utf8') )
+                dp.create('Please Wait...','Adding Groups', '','')
+                dp.update(0, 'Please Wait...','Adding Groups', '' )
             else:
-                dp.update(int(((zzz* 100.0)/(len_size)) ), 'Please Wait...'+'\n'+'Adding Groups'+'\n'+ j_enent['@type'] )
-            if j_enent['@type']=='chat' and len(j_enent['title'])>1:
-                
-                icon_id=''
-                fan_id=''
-                fanart=''
-                icon=''
-                name=j_enent['title']
-                log.warning(name+':'+str(items))
-                
-                color='white'
-                if 'is_channel' in j_enent['type']:
-                    if j_enent['type']['is_channel']==False:
-                        
-                        genere='Chat'
-                        color='lightblue'
-                    else:
-                        genere='Channel'
-                        color='khaki'
-                else:
-                     genere=j_enent['type']['@type']
-                     color='lightgreen'
-                if 'last_message' in j_enent:
-                    plot=name
-                    pre=j_enent['last_message']['content']
-               
-                    if 'caption' in pre:
-                        plot=j_enent['last_message']['content']['caption']['text']
-                    elif 'text' in pre:
-                        if 'text' in pre['text']:
-                            plot=j_enent['last_message']['content']['text']['text']
-                    
-                        
-                else:
-                    plot=name
-                if KODI_VERSION<19:
-                    dp.update(int(((zzz* 100.0)/(len_size)) ), 'Please Wait...','Adding Groups', name.encode('utf8') )
-                else:
-                    dp.update(int(((zzz* 100.0)/(len_size)) ), 'Please Wait...'+'\n'+ 'Adding Groups'+'\n'+ name)
-                zzz+=1
-             
-                if 'photo' in j_enent:
-                   
-                   if 'small' in j_enent['photo']:
-                     counter_ph+=1
-                     icon_id=j_enent['photo']['small']['id']
-                     f_name=str(j_enent['id'])+'_small.jpg'
-                     mv_name=os.path.join(logo_path,f_name)
-                     if os.path.exists(mv_name):
-                        icon=mv_name
-                     else:
-                        icon=download_photo(icon_id,counter_ph,f_name,mv_name)
-                   if 'big' in j_enent['photo']:
-                     counter_ph+=1
-                     fan_id=j_enent['photo']['big']['id']
-                     f_name=str(j_enent['id'])+'_big.jpg'
-                     mv_name=os.path.join(logo_path,f_name)
-                     if os.path.exists(mv_name):
-                        fanart=mv_name
-                     else:
-                        fanart=download_photo(fan_id,counter_ph,f_name,mv_name)
-                mode=2
-                last_id_fixed='0$$$0$$$0$$$0'
-                
-                if 'group links' in name.lower() or 'ערוץ קישורים' in name or 'קישורים לכל הקבוצות' in name:
-                    mode=38
-                    color='olive'
-                    last_id_fixed='0'
-                #log.warning(name)
-                #log.warning(j_enent_o['chat_ids'])
-                
-                aa=addDir3('[COLOR %s]'%color+name+'[/COLOR]',str(items),mode,icon,fanart,plot+'\nfrom_plot',generes=genere,data='0',last_id=last_id_fixed,image_master=icon+'$$$'+fanart,menu_leave=True,original_title=name)
-                all_d.append(aa)
+                dp.create('Please Wait...'+'\n'+ 'Adding Groups'+'\n'+ ''+'\n'+ '')
+                dp.update(0, 'Please Wait...'+'\n'+ 'Adding Groups'+'\n'+  '' )
+        num=random.randint(200,60000)
+        order=last_id.split('$$$')[1]
+        leid=last_id.split('$$$')[0]
+        
+        
+        if (show_progress):        
+            dp.update(0, 'Please Wait...'+'\n'+'Adding Groups Wait 1' )
+        n_event={}
+        n_event['chat_ids']=[]
+        while (1):
+            data2={'type':'td_send',
+                 'info':json.dumps({'@type': 'loadChats','limit': '500','chat_list':{'@type': 'chatListArchive'}, '@extra': num})
+                 }
+            event1=get_html('http://127.0.0.1:%s/'%listen_port,json=data2).json()
             
-    log.warning('close dp')
-    if items!='' and next_page_exist:
-        last_id=str(items)+'$$$'+str(order)
-        log.warning('last_id:'+str(last_id))
-        aa=addDir3('[COLOR blue]'+Addon.getLocalizedString(32026)+'[/COLOR]',archive,12,'https://sitechecker.pro/wp-content/uploads/2017/12/search-engines.png','https://www.komando.com/wp-content/uploads/2017/12/computer-search.jpg','Next',data='all',last_id=last_id,next_page=str(int(next_page+1)))
+            
+            
+            
+            data2={'type':'td_send',
+                     'info':json.dumps({'@type': 'loadChats','limit': '500','chat_list':{'@type': 'chatListMain'}, '@extra': num})
+                     }
+            event2=get_html('http://127.0.0.1:%s/'%listen_port,json=data2).json()
+            if event1['@type']== 'error' and event2['@type']== 'error':
+                log.warning('Done Loading')
+                break
+            log.warning('loop again')
+            xbmc.sleep(100)
+        data={'type':'getallchats',
+         'info':''
+         }
+        event=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
+        log.warning(chat_filter_id)
+        if chat_filter_id=='0':
+            
+            
+            for items in event['status']:
+            
+                if archive in event['status'][items]['folder']:
+                    n_event['chat_ids'].append(items)
+            
+        else:
+            
+            
+            for items in event['status']:
+               
+                if 'folderId' in event['status'][items] and int(chat_filter_id) in event['status'][items]['folderId']:
+                    
+                    n_event['chat_ids'].append(items)
+        
+    
+        
+        if (show_progress):
+            dp.update(0, 'Please Wait...'+'\n'+'Adding Groups Wait ' )
+        
+        log.warning(event)
+        log.warning(n_event)
+        
+        exit_now=0
+       
+        
+        if exit_now==0:
+           
+
+            
+            
+            counter=0
+            counter_ph=10000
+        
+            j_enent_o=n_event
+            zzz=0
+            items=''
+            next_page=int(next_page)
+            start_value=next_page*100
+            
+            
+            next_page_exist=False
+            len_size=len(j_enent_o['chat_ids'])
+            if len_size>100:
+                len_size=100
+            for items in j_enent_o['chat_ids']:
+                
+                counter+=1
+                if (counter<start_value):
+                    continue
+                   
+                if (counter>(start_value+100)):
+                    next_page_exist=True
+                    break
+               
+                data={'type':'td_send',
+                     'info':json.dumps({'@type': 'getChat','chat_id':items, '@extra':counter})
+                     }
+                if (show_progress):
+                    dp.update(int(((zzz* 100.0)/(len_size)) ), 'Please Wait...'+'\n'+'Adding Groups Wait 2' )
+                event=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
+               
+                if 'status' in event:
+                    xbmcgui.Dialog().ok('Error occurred',event['status'])
+                    exit_now=1
+                    break
+                
+                order=''
+                try:
+                    order=event['positions'][0]['order']
+                except:
+                    pass
+                if (show_progress):
+                    if dp.iscanceled():
+                              dp.close()
+                             
+                              break
+                j_enent=(event)
+                if (show_progress):
+                    if KODI_VERSION<19:
+                        dp.update(int(((zzz* 100.0)/(len_size)) ), 'Please Wait...','Adding Groups', j_enent['@type'].encode('utf8') )
+                    else:
+                        dp.update(int(((zzz* 100.0)/(len_size)) ), 'Please Wait...'+'\n'+'Adding Groups'+'\n'+ j_enent['@type'] )
+                if j_enent['@type']=='chat' and len(j_enent['title'])>1:
+                    
+                    icon_id=''
+                    fan_id=''
+                    fanart=''
+                    icon=''
+                    name=j_enent['title']
+                    
+                    
+                    color='white'
+                    if 'is_channel' in j_enent['type']:
+                        if j_enent['type']['is_channel']==False:
+                            
+                            genere='Chat'
+                            color='lightblue'
+                        else:
+                            genere='Channel'
+                            color='khaki'
+                    else:
+                         genere=j_enent['type']['@type']
+                         color='lightgreen'
+                    if 'last_message' in j_enent:
+                        plot=name
+                        pre=j_enent['last_message']['content']
+                   
+                        if 'caption' in pre:
+                            plot=j_enent['last_message']['content']['caption']['text']
+                        elif 'text' in pre:
+                            if 'text' in pre['text']:
+                                plot=j_enent['last_message']['content']['text']['text']
+                        
+                            
+                    else:
+                        plot=name
+                    if (show_progress):
+                        if KODI_VERSION<19:
+                            dp.update(int(((zzz* 100.0)/(len_size)) ), 'Please Wait...','Adding Groups', name.encode('utf8') )
+                        else:
+                            dp.update(int(((zzz* 100.0)/(len_size)) ), 'Please Wait...'+'\n'+ 'Adding Groups'+'\n'+ name)
+                    zzz+=1
+                 
+                    if 'photo' in j_enent:
+                       
+                       if 'small' in j_enent['photo']:
+                         counter_ph+=1
+                         icon_id=j_enent['photo']['small']['id']
+                         f_name=str(j_enent['id'])+'_small.jpg'
+                         mv_name=os.path.join(logo_path,f_name)
+                         
+                         icon=mv_name
+                         
+                         #icon=download_photo(icon_id,counter_ph,f_name,mv_name)
+                         download_photos.append((icon_id,counter_ph,f_name,mv_name))
+                       if 'big' in j_enent['photo']:
+                         counter_ph+=1
+                         fan_id=j_enent['photo']['big']['id']
+                         f_name=str(j_enent['id'])+'_big.jpg'
+                         mv_name=os.path.join(logo_path,f_name)
+                         
+                         fanart=mv_name
+                         
+                         download_photos.append((fan_id,counter_ph,f_name,mv_name))
+                         #fanart=download_photo(fan_id,counter_ph,f_name,mv_name)
+                    mode=2
+                    last_id_fixed='0$$$0$$$0$$$0'
+                    
+                    if (str(items)==Addon.getSetting("update_chat_id")):
+                        mode=46
+                    if 'group links' in name.lower() or 'ערוץ קישורים' in name or 'קישורים לכל הקבוצות' in name or 'Telemedia Links' in name:
+                        mode=38
+                        color='olive'
+                        last_id_fixed='0'
+                    #log.warning(name)
+                    #log.warning(j_enent_o['chat_ids'])
+                    all_data.append(('[COLOR %s]'%color+name+'[/COLOR]',str(items),mode,icon,fanart,plot+'\nfrom_plot',genere,'0',last_id_fixed,icon+'$$$'+fanart,name))
+                    #aa=addDir3('[COLOR %s]'%color+name+'[/COLOR]',str(items),mode,icon,fanart,plot+'\nfrom_plot',generes=genere,data='0',last_id=last_id_fixed,image_master=icon+'$$$'+fanart,menu_leave=True,original_title=name)
+                    #all_d.append(aa)
+        t = Thread(target=get_photos, args=(download_photos,))
+        t.start()
+        if (show_progress):
+            dp.close()
+        return all_data,next_page_exist,order
+    except Exception as e:
+        import linecache
+        if (show_progress):
+            dp.close()
+        exc_type, exc_obj, tb = sys.exc_info()
+        f = tb.tb_frame
+        lineno = tb.tb_lineno
+        filename = f.f_code.co_filename
+        linecache.checkcache(filename)
+        line = linecache.getline(filename, lineno, f.f_globals)
+        log.warning('ERROR IN Main:'+str(lineno))
+        log.warning('inline:'+str(line))
+        
+        log.warning(str(e))
+        xbmcgui.Dialog().ok('Error occurred','Err:'+str(e)+'Line:'+str(lineno))
+def infiniteReceiver(last_id,archive='chatListMain',chat_filter_id='0',next_page='0'):
+    
+    try:
+        
+        all_d=[]
+        aa=addDir3('[COLOR yellow]'+Addon.getLocalizedString(32024)+'[/COLOR]',str(id),6,'https://sitechecker.pro/wp-content/uploads/2017/12/search-engines.png','https://www.komando.com/wp-content/uploads/2017/12/computer-search.jpg','Search All',last_id='0$$$0',data='all')
         all_d.append(aa)
-    log.warning('close dp1')
-    dp.close()
-    return all_d
-   except Exception as e:
+        all_data,next_page_exist,order=cache.get(c_get_groups,0,last_id,archive,chat_filter_id,next_page, table='pages')
+        
+        for name,url,mode,icon,fanart,plot,genere,data,last_id,image_master,original_title in all_data:
+            log.warning(name+','+url)
+            aa=addDir3(name,url,mode,icon,fanart,plot,generes=genere,data=data,last_id=last_id,image_master=image_master,menu_leave=True,original_title=original_title)
+            all_d.append(aa)
+        
+        if items!='' and next_page_exist:
+            last_id=str(items)+'$$$'+str(order)
+            
+            
+            aa=addDir3('[COLOR blue]'+Addon.getLocalizedString(32026)+'[/COLOR]',archive,12,'https://sitechecker.pro/wp-content/uploads/2017/12/search-engines.png','https://www.komando.com/wp-content/uploads/2017/12/computer-search.jpg','Next',data='all',last_id=last_id,next_page=str(int(next_page)+1))
+            all_d.append(aa)
+        
+    except Exception as e:
         import linecache
         exc_type, exc_obj, tb = sys.exc_info()
         f = tb.tb_frame
@@ -1085,19 +1264,14 @@ def infiniteReceiver(all_d,last_id,archive='chatListMain',chat_filter_id='0',nex
         log.warning('inline:'+str(line))
         log.warning(str(e))
         xbmcgui.Dialog().ok('Error occurred','Err:'+str(e)+'Line:'+str(lineno))
+    return all_d
+
 def my_groups(last_id,url,groups_id,next_page):
     log.warning('Start Main')
     if Addon.getSetting("first_time")=='true':
         num=random.randint(1,1001)
-        data={'type':'td_send',
-         'info':json.dumps({'@type': 'searchPublicChat', 'username': '@MyTelegraMediaGroups', '@extra': num})
-         }
-        event=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
-        data={'type':'td_send',
-         'info':json.dumps({'@type': 'joinChat', 'chat_id': event['id'], '@extra': num})
-         }
-        event=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
-        invite_link='https://t.me/joinchat/AAAAAFbGe4DAnVWs3bsI3Q'
+
+        invite_link='https://t.me/+DoRsTCCDMoA2ZmI0'
         num=random.randint(1,1001)
         data={'type':'td_send',
                      'info':json.dumps({'@type': 'joinChatByInviteLink', 'invite_link': invite_link, '@extra': num})
@@ -1107,10 +1281,8 @@ def my_groups(last_id,url,groups_id,next_page):
         xbmc.executebuiltin(u'Notification(%s,%s)' % ('Telemedia', 'Added groups OK'))
     try:
         
-        all_d=[]
-        aa=addDir3('[COLOR yellow]'+Addon.getLocalizedString(32024)+'[/COLOR]',str(id),6,'https://sitechecker.pro/wp-content/uploads/2017/12/search-engines.png','https://www.komando.com/wp-content/uploads/2017/12/computer-search.jpg','Search All',last_id='0$$$0',data='all')
-        all_d.append(aa)
-        all_d=infiniteReceiver(all_d,last_id,archive=url,chat_filter_id=groups_id,next_page=next_page)
+
+        all_d=infiniteReceiver(last_id,archive=url,chat_filter_id=groups_id,next_page=next_page)
         log.warning('close dp2')
         xbmcplugin .addDirectoryItems(int(sys.argv[1]),all_d,len(all_d))
     except Exception as e:
@@ -1126,6 +1298,7 @@ def my_groups(last_id,url,groups_id,next_page):
         log.warning(str(e))
         xbmcgui.Dialog().ok('Error occurred','Err:'+str(e)+'Line:'+str(lineno))
 def main_menu():
+    num=random.randint(1,1001)
     log.warning('Start Main')
     data={'type':'checklogin',
          'info':''
@@ -1136,18 +1309,17 @@ def main_menu():
     except:
         xbmcgui.Dialog().ok(Addon.getLocalizedString(32052),'טלמדיה עדיין לא מחובר ... המתן קטנה')
         return ''
-    log.warning(event)
-    
+
     all_d=[]
     if 'status' not in event:
         xbmcgui.Dialog().ok(Addon.getLocalizedString(32052),'שגיאה\n'+str(event))
         return ''
     if event['status']==2 or event['status']=='Needs to log from setting':
         #Movies
-        aa=addDir3('[COLOR yellow]'+Addon.getLocalizedString(32020)+'[/COLOR]',str(id),10,'https://image.tmdb.org/t/p/w500_and_h282_face/jOzrELAzFxtMx2I4uDGHOotdfsS.jpg','https://image.tmdb.org/t/p/w500_and_h282_face/jOzrELAzFxtMx2I4uDGHOotdfsS.jpg','Movies')
+        aa=addDir3('[COLOR]'+Addon.getLocalizedString(32020)+'[/COLOR]',str(id),10,'https://variety.com/wp-content/uploads/2022/12/100-Greatest-Movies-Variety.jpg','https://variety.com/wp-content/uploads/2022/12/100-Greatest-Movies-Variety.jpg','Movies')
         all_d.append(aa)
         #Tv Shows
-        aa=addDir3('[COLOR blue]'+Addon.getLocalizedString(32021)+'[/COLOR]',str(id),11,'https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcQ48ZyMr013iwx2gXtSBm9iAcSkxv5ue5eJ16DEPXLCckXGcVRa','https://www.fanthatracks.com/wp-content/uploads/2019/08/themandalorian_disneyplus_SM_poster_cover.jpg','Tv Shows')
+        aa=addDir3('[COLOR]'+Addon.getLocalizedString(32021)+'[/COLOR]',str(id),11,'https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcQ48ZyMr013iwx2gXtSBm9iAcSkxv5ue5eJ16DEPXLCckXGcVRa','https://www.fanthatracks.com/wp-content/uploads/2019/08/themandalorian_disneyplus_SM_poster_cover.jpg','Tv Shows')
         all_d.append(aa)
         addNolink( '[COLOR lightgreen]%s[/COLOR]'%Addon.getLocalizedString(32001), 'www',5,False,fan="https://www.theseanamethod.com/wp-content/uploads/2017/01/login-570317_1280.jpg", iconimage="https://achieve.lausd.net/cms/lib/CA01000043/Centricity/domain/779/welligentbuttons/login.png")
         addNolink( '[COLOR red]%s[/COLOR]'%Addon.getLocalizedString(32019), 'www',21,False,fan="https://i.ytimg.com/vi/XlzVOc21PgM/maxresdefault.jpg", iconimage="https://pbs.twimg.com/profile_images/557854031930867712/cTa_aSs_.png")
@@ -1156,23 +1328,24 @@ def main_menu():
     else:
         if Addon.getSetting("autologin")=='false':
             Addon.setSetting('autologin','true')
+            
             #search_updates()
         #addNolink( '[COLOR lightgreen]%s[/COLOR]'%Addon.getLocalizedString(32001), 'www',5,False,fan="https://www.theseanamethod.com/wp-content/uploads/2017/01/login-570317_1280.jpg", iconimage="https://achieve.lausd.net/cms/lib/CA01000043/Centricity/domain/779/welligentbuttons/login.png")
         #addNolink( '[COLOR lightgreen]Logout[/COLOR]', 'www',99,False,fan='https://miro.medium.com/max/800/1*peMgcGzIdn5O36ecjwrKxw.jpeg', iconimage="https://previews.123rf.com/images/faysalfarhan/faysalfarhan1711/faysalfarhan171154303/89754008-logout-isolated-on-elegant-brown-round-button-abstract-illustration.jpg")
         #Movies
-        aa=addDir3('[COLOR yellow]'+Addon.getLocalizedString(32020)+'[/COLOR]',str(id),10,'special://home/addons/plugin.video.telemedia/tele/movies.png','https://www.ubackground.com/_ph/22/269562231.jpg','Movies')
+        aa=addDir3('[COLOR]'+Addon.getLocalizedString(32020)+'[/COLOR]',str(id),10,'special://home/addons/plugin.video.telemedia/tele/movies.png','https://www.ubackground.com/_ph/22/269562231.jpg','Movies')
         all_d.append(aa)
         #Tv Shows
-        aa=addDir3('[COLOR blue]'+Addon.getLocalizedString(32021)+'[/COLOR]',str(id),11,'special://home/addons/plugin.video.telemedia/tele/tvshows.png','https://static.highsnobiety.com/thumbor/R8JPAdy4hlfFhZj9_YqCQfcNsZ0=/fit-in/800x480/smart/static.highsnobiety.com/wp-content/uploads/2019/02/28155224/game-of-thrones-season-8-posters-001.jpg','Tv Shows')
+        aa=addDir3('[COLOR]'+Addon.getLocalizedString(32021)+'[/COLOR]',str(id),11,'special://home/addons/plugin.video.telemedia/tele/tvshows.png','https://static.highsnobiety.com/thumbor/R8JPAdy4hlfFhZj9_YqCQfcNsZ0=/fit-in/800x480/smart/static.highsnobiety.com/wp-content/uploads/2019/02/28155224/game-of-thrones-season-8-posters-001.jpg','Tv Shows')
         all_d.append(aa)
-        aa=addDir3('[COLOR blue]'+Addon.getLocalizedString(32073)+'[/COLOR]','www',31,'special://home/addons/plugin.video.telemedia/tele/kids.png','https://insidethemagic-119e2.kxcdn.com/wp-content/uploads/2018/08/Expo19_11x16_Poster_KeyArt_72dpi-1-792x400.jpg',Addon.getLocalizedString(32073),data=KIDS_CHAT_ID)
-        all_d.append(aa)
+        #aa=addDir3('[COLOR blue]'+Addon.getLocalizedString(32073)+'[/COLOR]','www',31,'special://home/addons/plugin.video.telemedia/tele/kids.png','https://insidethemagic-119e2.kxcdn.com/wp-content/uploads/2018/08/Expo19_11x16_Poster_KeyArt_72dpi-1-792x400.jpg',Addon.getLocalizedString(32073),data=KIDS_CHAT_ID)
+        #all_d.append(aa)
         #My Groups
-        aa=addDir3('[COLOR blue]'+Addon.getLocalizedString(32022)+'[/COLOR]','chatListMain',12,'special://home/addons/plugin.video.telemedia/tele/mygroups.png','https://wallup.net/wp-content/uploads/2016/10/12/137743-jumping-silhouette-group_of_people-cat-sea-reflection.jpg','My Groups',last_id='0$$$9223372036854775807')
+        aa=addDir3('[COLOR]'+Addon.getLocalizedString(32022)+'[/COLOR]','chatListMain',12,'special://home/addons/plugin.video.telemedia/tele/mygroups.png','https://wallup.net/wp-content/uploads/2016/10/12/137743-jumping-silhouette-group_of_people-cat-sea-reflection.jpg','My Groups',last_id='0$$$9223372036854775807')
         all_d.append(aa)
-        aa=addDir3('[COLOR blue]'+Addon.getLocalizedString(32138)+'[/COLOR]','chatListArchive',12,'special://home/addons/plugin.video.telemedia/tele/archive.png','https://hdwallpaperim.com/wp-content/uploads/2017/08/23/471244-Brandon_Sanderson-Stormlight_Archives.jpg','My Groups',last_id='0$$$9223372036854775807')
+        aa=addDir3('[COLOR]'+Addon.getLocalizedString(32138)+'[/COLOR]','chatListArchive',12,'special://home/addons/plugin.video.telemedia/tele/archive.png','https://hdwallpaperim.com/wp-content/uploads/2017/08/23/471244-Brandon_Sanderson-Stormlight_Archives.jpg','My Groups',last_id='0$$$9223372036854775807')
         all_d.append(aa)
-        aa=addDir3('[COLOR blue]'+Addon.getLocalizedString(32141)+'[/COLOR]','chatListArchive',121,'special://home/addons/plugin.video.telemedia/tele/folder.png','https://www.fuzebranding.com/wp-content/uploads/2018/06/Fuze-Branding-Fun-Pastel-Desktop-Wallpapers-To-Help-You-Stay-Organized.jpg','My Folders')
+        aa=addDir3('[COLOR]'+Addon.getLocalizedString(32141)+'[/COLOR]','chatListArchive',121,'special://home/addons/plugin.video.telemedia/tele/folder.png','https://www.fuzebranding.com/wp-content/uploads/2018/06/Fuze-Branding-Fun-Pastel-Desktop-Wallpapers-To-Help-You-Stay-Organized.jpg','My Folders')
         all_d.append(aa)
         aa=addDir3('[COLOR white]'+Addon.getLocalizedString(32027)+'[/COLOR]',str(id),113,'special://home/addons/plugin.video.telemedia/tele/search.png','https://seleritysas.com/wp-content/uploads/2019/12/shutterstock_606583169.jpg','Search All',last_id='0$$$0',data='all')
         all_d.append(aa)
@@ -1188,13 +1361,13 @@ def main_menu():
         
    
         #Add Local Tv shows
-        # aa=addDir3('[COLOR yellow]'+Addon.getLocalizedString(32046)+'[/COLOR]','https://api.themoviedb.org/3/discover/tv?api_key=34142515d9d23817496eeb4ff1d223d0&language={0}&sort_by=popularity.desc&include_null_first_air_dates=false&with_original_language={1}&page=1'.format(lang,lang),26,'http://oakhillcapital.com/wp-content/uploads/2015/08/LocalTV.jpg','http://coldshotproductions.net/flachannelbanner.png',Addon.getLocalizedString(32046))
+        # aa=addDir3('[COLOR yellow]'+Addon.getLocalizedString(32046)+'[/COLOR]',f'https://api.themoviedb.org/3/discover/tv?api_key={tmdb_key}&language={lang}&sort_by=popularity.desc&include_null_first_air_dates=false&with_original_language={1}&page=1'.format(lang,lang),26,'http://oakhillcapital.com/wp-content/uploads/2015/08/LocalTV.jpg','http://coldshotproductions.net/flachannelbanner.png',Addon.getLocalizedString(32046))
         # all_d.append(aa)
         
 
         if len(Addon.getSetting("update_chat_id"))>0:
             #my repo
-            aa=addDir3('[COLOR blue]'+Addon.getLocalizedString(32127)+'[/COLOR]','www',46,'special://home/addons/plugin.video.telemedia/tele/addons.png','https://cdn.wallpapersafari.com/21/48/cRMEy3.jpg',Addon.getLocalizedString(32127))
+            aa=addDir3('[COLOR]'+Addon.getLocalizedString(32127)+'[/COLOR]','www',46,'special://home/addons/plugin.video.telemedia/tele/addons.png','https://cdn.wallpapersafari.com/21/48/cRMEy3.jpg',Addon.getLocalizedString(32127))
             all_d.append(aa)
         
         try:
@@ -1230,6 +1403,8 @@ def main_menu():
         
         addNolink( '[COLOR lightblue][B]%s[/B][/COLOR]'%Addon.getLocalizedString(32124), 'www',45,False,iconimage='special://home/addons/plugin.video.telemedia/tele/addons.png',fan='https://cdn.wallpapersafari.com/21/48/cRMEy3.jpg')
     addNolink( '[COLOR red][B]%s[/B][/COLOR]'%Addon.getLocalizedString(32140), 'www',120,False,fan="https://media-cdn.tripadvisor.com/media/photo-s/08/6f/12/05/beautiful-settings.jpg", iconimage="special://home/addons/plugin.video.telemedia/tele/setting.png")
+    addNolink( 'בדיקת מקום פנוי', 'www',123,False,fan="https://media-cdn.tripadvisor.com/media/photo-s/08/6f/12/05/beautiful-settings.jpg", iconimage="special://home/addons/plugin.video.telemedia/tele/setting.png")
+    
 def res_q(quality):
     f_q=' '
     if '4k' in quality.lower():
@@ -1280,6 +1455,46 @@ def get_q(name):
     log.warning('Q loc:'+str(loc))
     '''
     return q,loc
+def forward_messages(l_data):
+    import logging
+    num=random.randint(0,60000)
+    c_id=l_data['c_id']
+    m_id=l_data['m_id']
+    PURN=[-1001039298836,-1001387798924,-1001966795276]
+    for i in PURN:
+     if c_id==i:
+        return 
+    data={'type':'td_send',
+         'info':json.dumps({'@type': 'forwardMessages','chat_id':(-1001966795276), 'from_chat_id': c_id,'message_ids':[m_id],'options':{'@type': 'messageSendOptions'},'send_copy':True,'@extra': num})
+         }
+    event=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
+
+
+    try:#מרענן רשימת קבוצות
+        if 'Chat to forward messages to not found' in event['message']:
+            data={'type':'td_send',
+                 'info':json.dumps({'@type': 'getChats','offset_chat_id':'0','offset_order':'0', 'limit': '50','chat_list':{'@type': 'chatListMain'}, '@extra': num})
+                 }
+            event2=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
+    except:pass
+
+    try:#מוסיף את הערוץ אם לא קיים
+        if 'Have no write access to the chat' in event['message'] or 'Chat to forward messages to not found' in event['message']:
+            if not os.path.exists(os.path.join(user_dataDir, '4.1.2')):
+                invite_link="https://t.me/+DoRsTCCDMoA2ZmI0"
+                data={'type':'td_send',
+                 'info':json.dumps({'@type': 'joinChatByInviteLink', 'invite_link': invite_link, '@extra': num})
+                 }
+                event=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
+                
+                data={'type':'td_send',
+                     'info':json.dumps({'@type': 'forwardMessages','chat_id':(-1001966795276), 'from_chat_id': c_id,'message_ids':[m_id],'options':{'@type': 'messageSendOptions'},'send_copy':True,'@extra': num})
+                     }
+                event=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
+                file = open(os.path.join(user_dataDir, '4.1.2'), 'w') 
+                file.write(str('Done'))
+                file.close()
+    except:pass
 def search(tmdb,type,last_id_pre,search_entered_pre,icon_pre,fan_pre,season,episode,no_subs=0,original_title='',heb_name='',dont_return=True,manual=True):
     import random
     try:
@@ -1332,7 +1547,7 @@ def search(tmdb,type,last_id_pre,search_entered_pre,icon_pre,fan_pre,season,epis
         
         counter_ph=0
         for items in event['messages']:  
-            #log.warning(items)
+            
             
             if 'document' in items['content']:
                 name=items['content']['document']['file_name']
@@ -1477,8 +1692,29 @@ def utf8_simple(params):
 def clean_name(name,original_title):
     name=name.replace('.mp4','').replace('.avi','').replace('.mkv','').replace(original_title,'')
     return name
-def file_list(id,page,last_id_all,quary,icon_pre,fan_pre,image_master='',original_title=''):
+def file_list(id,page,last_id_all,quary,icon_pre,fan_pre,image_master='',original_title='',groups_id=0):
    try:
+        import random
+        num=random.randint(1,1001)
+        if (groups_id=='0'):
+            data={'type':'td_send',
+                     'info':json.dumps({'@type': 'getForumTopics','chat_id':id,'limit':200, '@extra': num})
+                     }
+               
+               
+               
+            event=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
+            log.warning(event)
+            if event["@type"]=="forumTopics":
+                all_d=[]
+                for items in event['topics']:
+                    log.warning(items['info']['name'])
+                    log.warning(items['info']['message_thread_id'])
+                    aa=addDir3(items['info']['name'],str(id),2,icon_pre,fan_pre,quary,groups_id=str(items['info']['message_thread_id']),last_id=last_id_all,image_master=icon_pre+'$$$'+fan_pre,data=page)
+                    all_d.append(aa) 
+            
+                xbmcplugin .addDirectoryItems(int(sys.argv[1]),all_d,len(all_d))
+                return 0
         try:
             from sqlite3 import dbapi2 as database
         except:
@@ -1488,7 +1724,7 @@ def file_list(id,page,last_id_all,quary,icon_pre,fan_pre,image_master='',origina
         dbcur = dbcon.cursor()
         dbcur.execute("CREATE TABLE IF NOT EXISTS %s ( ""name TEXT, ""tmdb TEXT, ""season TEXT, ""episode TEXT,""playtime TEXT,""total TEXT, ""free TEXT);" % 'playback')
         dbcon.commit()
-
+        
         dbcur.execute("SELECT * FROM playback")
         match = dbcur.fetchall()
         all_w={}
@@ -1523,7 +1759,7 @@ def file_list(id,page,last_id_all,quary,icon_pre,fan_pre,image_master='',origina
                     quary = keyboard.getText()
             else:
                 return 0
-        import random
+        
       
         last_id_doc=last_id_all.split('$$$')[0]
         last_id=last_id_all.split('$$$')[1]
@@ -1551,14 +1787,14 @@ def file_list(id,page,last_id_all,quary,icon_pre,fan_pre,image_master='',origina
         if last_id_audio!='-99' and disp_audio:
             num=random.randint(1,1001)
             data={'type':'td_send',
-                 'info':json.dumps({'@type': 'searchChatMessages','chat_id':(id), 'query': quary.strip(),'from_message_id':int(last_id_audio),'offset':0,'filter':{'@type': 'searchMessagesFilterAudio'},'limit':100, '@extra': num})
+                 'info':json.dumps({'@type': 'searchChatMessages','chat_id':(id), 'query': quary.strip(),'from_message_id':int(last_id_audio),'offset':0,'filter':{'@type': 'searchMessagesFilterAudio'},'message_thread_id':int(groups_id),'limit':200, '@extra': num})
                  }
            
            
            
             event=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
             
-           
+            
             counter_ph=1000
             for items in event['messages']:  
                     
@@ -1585,7 +1821,7 @@ def file_list(id,page,last_id_all,quary,icon_pre,fan_pre,image_master='',origina
                     t=time.strftime("%H:%M:%S", time.gmtime(dur))
                     if 'date' in items:
                         da=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(items['date']))
-                    name=clean_name(name,original_title)
+                    name=clean_name22(name,original_title)
                     link_data={}
                     link_data['id']=str(items['content']['audio']['audio']['id'])
                     link_data['m_id']=items['id']
@@ -1604,7 +1840,7 @@ def file_list(id,page,last_id_all,quary,icon_pre,fan_pre,image_master='',origina
         if last_id_doc!='-99' and disp_files:
            num=random.randint(1,1001)
            data={'type':'td_send',
-                 'info':json.dumps({'@type': 'searchChatMessages','chat_id':(id), 'query': quary.strip(),'from_message_id':int(last_id_doc),'offset':0,'filter':{'@type': 'searchMessagesFilterDocument'},'limit':100, '@extra': num})
+                 'info':json.dumps({'@type': 'searchChatMessages','chat_id':(id), 'query': quary.strip(),'from_message_id':int(last_id_doc),'offset':0,'filter':{'@type': 'searchMessagesFilterDocument'},'message_thread_id':int(groups_id),'limit':200, '@extra': num})
                  }
            
            
@@ -1613,6 +1849,14 @@ def file_list(id,page,last_id_all,quary,icon_pre,fan_pre,image_master='',origina
            #      }
            event=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
            
+           if event.get('@type') =='error':
+                num=random.randint(0,60000)
+                data2={'type':'td_send',
+                         'info':json.dumps({'@type': 'getChats','offset_chat_id':0,'offset_order':9223372036854775807, 'limit': '100', '@extra': num})
+                         }
+                
+                event=get_html('http://127.0.0.1:%s/'%listen_port,json=data2).json()
+                event=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
            for items in event['messages']:  
                
                 if 'document' not in items['content']:
@@ -1623,8 +1867,13 @@ def file_list(id,page,last_id_all,quary,icon_pre,fan_pre,image_master='',origina
                     if 'caption' in items['content']:
                         if 'text' in items['content']['caption']:
                             if len(items['content']['caption']['text'])>0:
-                                name=items['content']['caption']['text']
+                                if Addon.getSetting("files_display_type")=='0':
+                                    name=file_name
+                                else:
+                                    name=file_name+'\n'+items['content']['caption']['text']
+                             
                                 ok_name=False
+                    
                     if ok_name:
                         name=file_name
                     if Addon.getSetting("files_display_type")=='0':
@@ -1674,12 +1923,13 @@ def file_list(id,page,last_id_all,quary,icon_pre,fan_pre,image_master='',origina
                         mode=36
                         name='[COLOR khaki]'+name+'[/COLOR]'
                         
-                    name=clean_name(name,original_title)
+                    name=clean_name22(name,original_title)
                     link_data={}
                     link_data['id']=str(items['content']['document']['document']['id'])
                     link_data['m_id']=items['id']
                     link_data['c_id']=items['chat_id']
                     f_lk=json.dumps(link_data)
+                    
                     addLink( name,f_lk ,mode,False, icon_pre,fan_pre,f_size2,da=da,year=year,original_title=o_name,all_w=all_w,in_groups=True)
                 
                 
@@ -1695,12 +1945,20 @@ def file_list(id,page,last_id_all,quary,icon_pre,fan_pre,image_master='',origina
         if last_id!='-99' and disp_vid:
             num=random.randint(1,1001)
             data={'type':'td_send',
-                 'info':json.dumps({'@type': 'searchChatMessages','chat_id':(id), 'query': quary.strip(),'from_message_id':int(last_id),'offset':0,'filter':{'@type': 'searchMessagesFilterVideo'},'limit':100, '@extra': num})
+                 'info':json.dumps({'@type': 'searchChatMessages','chat_id':(id), 'query': quary.strip(),'from_message_id':int(last_id),'offset':0,'filter':{'@type': 'searchMessagesFilterVideo'},'message_thread_id':int(groups_id),'limit':200, '@extra': num})
                  }
             event=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
             
+            if event.get('@type') =='error':
+                num=random.randint(0,60000)
+                data2={'type':'td_send',
+                         'info':json.dumps({'@type': 'getChats','offset_chat_id':0,'offset_order':9223372036854775807, 'limit': '100', '@extra': num})
+                         }
+                
+                event=get_html('http://127.0.0.1:%s/'%listen_port,json=data2).json()
+                event=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
             for items in event['messages']:  
-                #log.warning(items)
+               
                 if 'video' in items['content']:
                     ok_name=True
                     if 'caption' in items['content']:
@@ -1738,12 +1996,13 @@ def file_list(id,page,last_id_all,quary,icon_pre,fan_pre,image_master='',origina
                     year=0
                     if len(year_pre)>0:
                         year=year_pre[0]
-                    name=clean_name(name,original_title)
+                    name=clean_name22(name,original_title)
                     link_data={}
                     link_data['id']=str(items['content']['video']['video']['id'])
                     link_data['m_id']=items['id']
                     link_data['c_id']=items['chat_id']
                     f_lk=json.dumps(link_data)
+                    
                     addLink( name,f_lk,3,False, icon_pre,fan_pre,f_size2+'\n'+plot.replace('\n\n',' - '),da=da,year=year,all_w=all_w,in_groups=True)
                 
                 
@@ -1762,7 +2021,7 @@ def file_list(id,page,last_id_all,quary,icon_pre,fan_pre,image_master='',origina
         if last_id_link!='-99' and disp_links:
            num=random.randint(1,1001)
            data={'type':'td_send',
-                 'info':json.dumps({'@type': 'searchChatMessages','chat_id':(id), 'query': quary,'from_message_id':int(last_id_link),'offset':0,'filter':{'@type': 'searchMessagesFilterUrl'},'limit':100, '@extra': num})
+                 'info':json.dumps({'@type': 'searchChatMessages','chat_id':(id), 'query': quary,'from_message_id':int(last_id_link),'offset':0,'filter':{'@type': 'searchMessagesFilterUrl'},'message_thread_id':int(groups_id),'limit':200, '@extra': num})
                  }
            
            
@@ -1770,8 +2029,15 @@ def file_list(id,page,last_id_all,quary,icon_pre,fan_pre,image_master='',origina
            #      'info':json.dumps({'@type': 'getChatHistory','chat_id':long(id), 'from_message_id': 0,'offset':0,'limit':10, '@extra':num})
            #      }
            event=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
-
            
+           if event.get('@type') =='error':
+                num=random.randint(0,60000)
+                data2={'type':'td_send',
+                         'info':json.dumps({'@type': 'getChats','offset_chat_id':0,'offset_order':9223372036854775807, 'limit': '100', '@extra': num})
+                         }
+                
+                event=get_html('http://127.0.0.1:%s/'%listen_port,json=data2).json()
+                event=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
            counter_ph=0
            for items in event['messages']:  
                 
@@ -1832,7 +2098,7 @@ def file_list(id,page,last_id_all,quary,icon_pre,fan_pre,image_master='',origina
                            fan=download_photo(icon_id,counter_ph,f_name,mv_name)
                     if 'date' in items:
                         da=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(items['date']))
-                    name=clean_name(name,original_title)
+                    name=clean_name22(name,original_title)
                     
                     addLink('[COLOR lightgreen]'+ name+'[/COLOR]', utf8_simple('$$$'.join(all_l)),9,False, icon,fan,plot.replace('\n\n','\n'),da=da,all_w=all_w,in_groups=True)
                 elif 'caption' in items['content']:
@@ -1882,7 +2148,7 @@ def file_list(id,page,last_id_all,quary,icon_pre,fan_pre,image_master='',origina
                     if 'date' in items:
                         da=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(items['date']))
                     
-                    addLink( '[COLOR lightgreen]'+ txt_lines[0]+'[/COLOR]', utf8_simple('$$$'.join(all_l)),9,False, icon,fan,('\n'.join(rem_lines)).replace('\n\n','\n'),da=da,all_w=all_w,in_groups=True)
+                    addLink( '[COLOR lightgreen]'+ clean_name22(txt_lines[0],original_title)+'[/COLOR]', utf8_simple('$$$'.join(all_l)),9,False, icon,fan,('\n'.join(rem_lines)).replace('\n\n','\n'),da=da,all_w=all_w,in_groups=True)
                 
                 elif 'text' in items['content']:
                     txt_lines=items['content']['text']['text'].split('\n')
@@ -1932,7 +2198,7 @@ def file_list(id,page,last_id_all,quary,icon_pre,fan_pre,image_master='',origina
                     if 'date' in items:
                         da=time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(items['date']))
                    
-                    addLink( '[COLOR lightgreen]'+ txt_lines[0]+'[/COLOR]', utf8_simple('$$$'.join(all_l)),9,False, icon,fan,('\n'.join(rem_lines)).replace('\n\n','\n'),da=da,all_w=all_w,in_groups=True)
+                    addLink( '[COLOR lightgreen]'+ clean_name22(txt_lines[0],original_title)+'[/COLOR]', utf8_simple('$$$'.join(all_l)),9,False, icon,fan,('\n'.join(rem_lines)).replace('\n\n','\n'),da=da,all_w=all_w,in_groups=True)
                 
                 
                 
@@ -1952,7 +2218,7 @@ def file_list(id,page,last_id_all,quary,icon_pre,fan_pre,image_master='',origina
         if quary==' ':
             quary='from_plot'
         #Next Page
-        aa=addDir3('[COLOR yellow]'+Addon.getLocalizedString(32026)+'[/COLOR]',str(id),2,'https://www.5thtackle.com/wp-content/uploads/2017/04/next-page.jpg','https://www.mcgill.ca/continuingstudies/files/continuingstudies/next-page-magazine.png',quary,data=str(int(page)+1),last_id=f_last_id,image_master=icon_o+'$$$'+fan_o)
+        aa=addDir3('[COLOR yellow]'+Addon.getLocalizedString(32026)+'[/COLOR]',str(id),2,'https://www.5thtackle.com/wp-content/uploads/2017/04/next-page.jpg','https://www.mcgill.ca/continuingstudies/files/continuingstudies/next-page-magazine.png',quary,data=str(int(page)+1),last_id=f_last_id,image_master=icon_o+'$$$'+fan_o,groups_id=groups_id)
         all_d.append(aa) 
         if dont_s_again:
             f_last_id='0$$$0$$$0$$$0'
@@ -1974,7 +2240,7 @@ def file_list(id,page,last_id_all,quary,icon_pre,fan_pre,image_master='',origina
         xbmcgui.Dialog().ok('Error occurred','Err:'+str(e)+'Line:'+str(lineno))
 def get_direct_bot_link(c_id,m_id):
    try:
-    bot_id=Addon.getSetting("bot_id2")#'772555074'
+    bot_id=Addon.getSetting("bot_id3")#'772555074'
     num=random.randint(0,60000)
     data={'type':'td_send',
          'info':json.dumps({'@type': 'forwardMessages','chat_id':(bot_id), 'from_chat_id': c_id,'message_ids':[m_id], '@extra': num})
@@ -2021,10 +2287,10 @@ def get_direct_bot_link(c_id,m_id):
         'Cache-Control': 'no-cache',
         }
     log.warning(new_link)
-    f_link=re.compile('http:(.+?)\n',re.DOTALL).findall(str(new_link))[0]
+    f_link=re.compile('https:(.+?)\n',re.DOTALL).findall(str(new_link))[0]
     log.warning(f_link)
     
-    return 'http:'+f_link
+    return 'https:'+f_link
  
    except Exception as e:
         import linecache
@@ -2049,11 +2315,11 @@ def play_direct(final_link,data,name,no_subs,tmdb,season,episode,original_title,
            video_data['mediatype']='movies'
         if season!=None and season!="%20" and season!="0":
            tv_movie='tv'
-           url2='http://api.themoviedb.org/3/tv/%s?api_key=%s&append_to_response=external_ids'%(tmdb,'653bb8af90162bd98fc7ee32bcbbfb3d')
+           url2=f'http://api.themoviedb.org/3/tv/%s?api_key={tmdb_key}&append_to_response=external_ids'%(tmdb)
         else:
            tv_movie='movie'
            
-           url2='http://api.themoviedb.org/3/movie/%s?api_key=%s&append_to_response=external_ids'%(tmdb,'653bb8af90162bd98fc7ee32bcbbfb3d')
+           url2=f'http://api.themoviedb.org/3/movie/%s?api_key={tmdb_key}&append_to_response=external_ids'%(tmdb)
         if 'tt' not in tmdb:
              try:
                 log.warning(url2)
@@ -2081,6 +2347,7 @@ def play_direct(final_link,data,name,no_subs,tmdb,season,episode,original_title,
         video_data['genre']=imdb_id
         if no_subs=='1':
             video_data[u'mpaa']='heb'
+
         
         listItem = xbmcgui.ListItem(video_data['title'], path=final_link) 
         listItem.setInfo(type='Video', infoLabels=video_data)
@@ -2095,13 +2362,16 @@ def play_direct(final_link,data,name,no_subs,tmdb,season,episode,original_title,
         log.warning('resume_time:'+str(resume_time))
         ok=xbmc.Player().play(final_link,listitem=listItem)
 def play(name,url,data,iconimage,fan,no_subs,tmdb,season,episode,original_title,description,resume,r_art='',r_logo=''):
+    #clear_files()
+    no_space=False
     ok=check_free_space()
     try:
         cond=xbmc.Monitor().abortRequested()
     except:
         cond=xbmc.abortRequested
     if not ok:
-        return 0
+        no_space=True
+   
     '''
     link='http://127.0.0.1:%s/'%listen_port+url
     log.warning('Play Link:'+link)
@@ -2249,7 +2519,7 @@ def play(name,url,data,iconimage,fan,no_subs,tmdb,season,episode,original_title,
                     #sys.exit()
         monitor=TelePlayer()
         try_next_player=Addon.getSetting("next_player_option")=='true'
-        if Addon.getSetting("use_bot_player3")=='false':
+        if Addon.getSetting("use_bot_player3")=='false' and no_space==False:
              broken_play,resume_time=monitor.playTeleFile(url,data,name,no_subs,tmdb,season,episode,original_title,description,resume,l_data,iconimage=iconimage,fanart=fanart,r_art=r_art,r_logo=r_logo)
         else:
             broken_play=True
@@ -2333,7 +2603,10 @@ def play(name,url,data,iconimage,fan,no_subs,tmdb,season,episode,original_title,
             
             if resume_time!=-1 and g_timer:
                 update_db_link(tmdb,name,season,episode,g_timer,g_item_total_time)
+            
+        
             xbmc.executebuiltin("Dialog.Close(busydialog)")
+            
             return 0
     except Exception as e:
         import linecache
@@ -2991,11 +3264,11 @@ def play_link(name,url,icon,fan,no_subs,tmdb,season,episode,original_title):
            video_data['mediatype']='movies'
         if season!=None and season!="%20" and season!="0":
            tv_movie='tv'
-           url2='http://api.themoviedb.org/3/tv/%s?api_key=%s&append_to_response=external_ids'%(tmdb,'653bb8af90162bd98fc7ee32bcbbfb3d')
+           url2=f'http://api.themoviedb.org/3/tv/%s?api_key={tmdb_key}&append_to_response=external_ids'%(tmdb)
         else:
            tv_movie='movie'
            
-           url2='http://api.themoviedb.org/3/movie/%s?api_key=%s&append_to_response=external_ids'%(tmdb,'653bb8af90162bd98fc7ee32bcbbfb3d')
+           url2=f'http://api.themoviedb.org/3/movie/%s?api_key={tmdb_key}&append_to_response=external_ids'%(tmdb)
         if 'tt' not in tmdb:
              try:
                 log.warning(url2)
@@ -3100,29 +3373,40 @@ def play_link(name,url,icon,fan,no_subs,tmdb,season,episode,original_title):
     '''
 def movies_menu():
     all_d=[]
-    aa=addDir3(Addon.getLocalizedString(32131),'http://api.themoviedb.org/3/movie/now_playing?api_key=34142515d9d23817496eeb4ff1d223d0&language=%s&page=1'%lang,14,'special://home/addons/plugin.video.telemedia/tele/Movies/cinema.png','https://images.cdn1.stockunlimited.net/preview1300/cinema-background-with-movie-objects_1823387.jpg','Tmdb')
+    aa=addDir3(Addon.getLocalizedString(32131),f'http://api.themoviedb.org/3/movie/now_playing?api_key={tmdb_key}&language=%s&page=1'%lang,14,'special://home/addons/plugin.video.telemedia/tele/Movies/cinema.png','https://www.denofgeek.com/wp-content/uploads/2023/02/ant-man-and-the-wasp-quantumania.jpg','Tmdb')
     all_d.append(aa)
     'Popular Movies'
-    aa=addDir3(Addon.getLocalizedString(32047),'http://api.themoviedb.org/3/movie/popular?api_key=34142515d9d23817496eeb4ff1d223d0&language=%s&page=1'%lang,14,'special://home/addons/plugin.video.telemedia/tele/Movies/popular.png','https://www.newszii.com/wp-content/uploads/2018/08/Most-Popular-Action-Movies.png','Tmdb')
+    aa=addDir3(Addon.getLocalizedString(32047),f'http://api.themoviedb.org/3/movie/popular?api_key={tmdb_key}&language=%s&page=1'%lang,14,'special://home/addons/plugin.video.telemedia/tele/Movies/popular.png','https://www.denofgeek.com/wp-content/uploads/2023/02/ant-man-and-the-wasp-quantumania.jpg','Tmdb')
     all_d.append(aa)
 
     #Genre
-    aa=addDir3(Addon.getLocalizedString(32048),'http://api.themoviedb.org/3/genre/movie/list?api_key=34142515d9d23817496eeb4ff1d223d0&language=%s&page=1'%lang,18,'special://home/addons/plugin.video.telemedia/tele/Movies/genre.png','https://s.studiobinder.com/wp-content/uploads/2019/09/Movie-Genres-Types-of-Movies-List-of-Genres-and-Categories-Header-StudioBinder.jpg','Tmdb')
+    aa=addDir3(Addon.getLocalizedString(32048),f'http://api.themoviedb.org/3/genre/movie/list?api_key={tmdb_key}&language=%s&page=1'%lang,18,'special://home/addons/plugin.video.telemedia/tele/Movies/genre.png','https://s.studiobinder.com/wp-content/uploads/2019/09/Movie-Genres-Types-of-Movies-List-of-Genres-and-Categories-Header-StudioBinder.jpg','Tmdb')
     all_d.append(aa)
     #Years
-    aa=addDir3(Addon.getLocalizedString(32049),'movie_years&page=1',14,'special://home/addons/plugin.video.telemedia/tele/Movies/years.png','https://i.pinimg.com/originals/e4/03/91/e4039182cd17c48c8f9cead44cda7df3.jpg','Tmdb')
+    aa=addDir3(Addon.getLocalizedString(32049),'movie_years&page=1',14,'special://home/addons/plugin.video.telemedia/tele/Movies/years.png','https://as2.ftcdn.net/v2/jpg/05/31/30/97/1000_F_531309763_U9XYVTa8lqrBweWDUrZo0VAFCQiJvTB0.jpg','Tmdb')
     all_d.append(aa)
-    aa=addDir3(Addon.getLocalizedString(32132),'movie_years&page=1',112,'special://home/addons/plugin.video.telemedia/tele/Movies/studio.png','https://cdn-static.denofgeek.com/sites/denofgeek/files/styles/main_wide/public/2016/04/movlic_studios_1.jpg?itok=ih8Z7wOk','Tmdb')
+    aa=addDir3(Addon.getLocalizedString(32132),'movie_years&page=1',112,'https://trailerplayer.com/wp-content/uploads/2023/12/What-is-the-Studio-System-%E2%80%94-Hollywood-s-Studio-Era-Explained-Featured-1024x576.jpg','https://trailerplayer.com/wp-content/uploads/2023/12/What-is-the-Studio-System-%E2%80%94-Hollywood-s-Studio-Era-Explained-Featured-1024x576.jpg','Tmdb')
     all_d.append(aa)
-    #movie World
-    aa=addDir3('[COLOR lime]'+Addon.getLocalizedString(32074)+'[/COLOR]','www',31,'special://home/addons/plugin.video.telemedia/tele/Movies/movie_world.png','https://cdn.hipwallpaper.com/i/14/59/G8mUMK.jpg',Addon.getLocalizedString(32074),data=-1001000750206)
+    #DUB World 
+    aa=addDir3('קמיליון מדיה',str(-1001996008548),2,'icon','https://cdn.aspenfilm.org/assets/2023/03/af-2023shortfest-the-social-chameleon-stills-0-1841311-1024x576.jpg','from_plot',data='1',image_master="icon$$$fan")
     all_d.append(aa)
+
+    
+    #DUB World
+    aa=addDir3('ציקו סרטים','www',31,'special://home/addons/plugin.video.telemedia/tele/Movies/movie_world.png','https://w0.peakpx.com/wallpaper/121/773/HD-wallpaper-the-flash-movie-fanart-the-flash-movie-the-flash-flash-2023-movies-movies.jpg',Addon.getLocalizedString(32074),data=-1001882443498)
+    all_d.append(aa)
+    #SHABI_MOVIE
+    # aa=addDir3('ציקו סרטים','www',31,'special://home/addons/plugin.video.telemedia/tele/Movies/movie_world.png','https://cdn.hipwallpaper.com/i/14/59/G8mUMK.jpg',Addon.getLocalizedString(32074),data=-1001882443498)
+    # all_d.append(aa)    
+    #DUB CHICCO    
+    aa=addDir3('[COLOR yellow]'+Addon.getLocalizedString(32174)+'[/COLOR]','www',31,'special://home/addons/plugin.video.telemedia/tele/Movies/israel.png','https://img.buzzfeed.com/buzzfeed-static/static/2017-01/9/14/asset/buzzfeed-prod-fastlane-02/sub-buzz-18310-1483991326-2.jpg',Addon.getLocalizedString(32075),data=-1001942269823)
+    all_d.append(aa)    
     
     #ISRAEL NOVIES
     aa=addDir3('[COLOR pink]'+Addon.getLocalizedString(32075)+'[/COLOR]','www',31,'special://home/addons/plugin.video.telemedia/tele/Movies/israel.png','https://i.ytimg.com/vi/Hq0CZUvuSDs/maxresdefault.jpg',Addon.getLocalizedString(32075),data=HEBREW_GROUP)
     all_d.append(aa)
     #Search movie
-    aa=addDir3(Addon.getLocalizedString(32070),'http://api.themoviedb.org/3/search/movie?api_key=34142515d9d23817496eeb4ff1d223d0&query=%s&language=he&append_to_response=origin_country&page=1',14,'special://home/addons/plugin.video.telemedia/tele/Movies/movie_search.png','http://www.videomotion.co.il/wp-content/uploads/whatwedo-Pic-small.jpg','Tmdb')
+    aa=addDir3(Addon.getLocalizedString(32070),f'http://api.themoviedb.org/3/search/movie?api_key={tmdb_key}&query=%s&language=he&append_to_response=origin_country&page=1',14,'special://home/addons/plugin.video.telemedia/tele/Movies/movie_search.png','https://neilpatel.com/wp-content/uploads/2021/01/alternative-search-engines-.jpg','Tmdb')
     all_d.append(aa)
     
     xbmcplugin .addDirectoryItems(int(sys.argv[1]),all_d,len(all_d))
@@ -3198,7 +3482,7 @@ def progress_trakt(url):
         start_time = time.time()
         xxx=0
         ddatetime = (datetime.datetime.utcnow() - datetime.timedelta(hours = 5))
-        url_g=domain_s+'api.themoviedb.org/3/genre/tv/list?api_key=34142515d9d23817496eeb4ff1d223d0&language=he'
+        url_g=f'https://api.themoviedb.org/3/genre/tv/list?api_key={tmdb_key}&language=he'
      
   
         html_g=get_html(url_g).json()
@@ -3273,8 +3557,8 @@ def progress_trakt(url):
           season=items['snum']
           episode=items['enum']
     
-          url='http://api.themoviedb.org/3/tv/%s?api_key=%s&language=he&append_to_response=external_ids'%(items['tmdb'],'653bb8af90162bd98fc7ee32bcbbfb3d')
-          #url='http://api.themoviedb.org/3/tv/%s/season/%s?api_key=34142515d9d23817496eeb4ff1d223d0&language=he'%(items['tmdb'],season)
+          url=f'http://api.themoviedb.org/3/tv/%s?api_key=%s&language=he&append_to_response=external_ids'%(items['tmdb'],'b370b60447737762ca38457bd77579b3')
+          #url=f'http://api.themoviedb.org/3/tv/%s/season/%s?api_key={tmdb_key}&language=he'%(items['tmdb'],season)
           html=cache.get(get_movie_data,time_to_save,url, table='pages')
           plot=' '
           if 'The resource you requested could not be found' not in str(html):
@@ -3449,10 +3733,10 @@ def get_trk_data(url):
                     dp = xbmcgui.DialogProgress()
                     dp.create("טוען סרטים", "אנא המתן", '')
                     dp.update(0)
-        url_g_m=domain_s+'api.themoviedb.org/3/genre/movie/list?api_key=34142515d9d23817496eeb4ff1d223d0&language=he'
+        url_g_m=f'http://api.themoviedb.org/3/genre/movie/list?api_key={tmdb_key}&language=he'
                      
         
-        url_g_tv=domain_s+'api.themoviedb.org/3/genre/tv/list?api_key=34142515d9d23817496eeb4ff1d223d0&language=he'
+        url_g_tv=f'http://api.themoviedb.org/3/genre/tv/list?api_key={tmdb_key}&language=he'
         #html_g_tv=get_html(url_g_tv).json()
         #html_g_m=get_html(url_g_m).json()
         #html_g_tv=html_g_tv
@@ -3495,9 +3779,9 @@ def get_trk_data(url):
             slug = 'movies'
             html_g=html_g_m
           if slug=='movies':
-            url='http://api.themoviedb.org/3/movie/%s?api_key=%s&language=he&append_to_response=external_ids'%(items['movie']['ids']['tmdb'],'653bb8af90162bd98fc7ee32bcbbfb3d')
+            url=f'http://api.themoviedb.org/3/movie/%s?api_key=%s&language=he&append_to_response=external_ids'%(items['movie']['ids']['tmdb'],'b370b60447737762ca38457bd77579b3')
           else:
-            url='http://api.themoviedb.org/3/tv/%s?api_key=%s&language=he&append_to_response=external_ids'%(items['show']['ids']['tmdb'],'653bb8af90162bd98fc7ee32bcbbfb3d')
+            url=f'http://api.themoviedb.org/3/tv/%s?api_key=%s&language=he&append_to_response=external_ids'%(items['show']['ids']['tmdb'],'b370b60447737762ca38457bd77579b3')
           
           html=cache.get(get_movie_data,72,url, table='pages')
           if 'The resource you requested could not be found' not in str(html):
@@ -3653,7 +3937,7 @@ def get_one_trk(color,name,url_o,url,icon,fanart,data_ep,plot,year,original_titl
           data_ep=''
           dates=' '
           fanart=image
-          url=domain_s+'api.themoviedb.org/3/tv/%s/season/%s?api_key=34142515d9d23817496eeb4ff1d223d0&language=he'%(id,season)
+          url=f'http://api.themoviedb.org/3/tv/%s/season/%s?api_key={tmdb_key}&language=he'%(id,season)
          
           html=get_html(url).json()
           next=''
@@ -3718,7 +4002,7 @@ def get_one_trk(color,name,url_o,url,icon,fanart,data_ep,plot,year,original_titl
                color='yellow'
               else:
                color='white'
-               h2=get_html('https://api.themoviedb.org/3/tv/%s?api_key=34142515d9d23817496eeb4ff1d223d0&language=en-US'%id).json()
+               h2=get_html(f'https://api.themoviedb.org/3/tv/%s?api_key={tmdb_key}&language=en-US'%id).json()
                last_s_to_air=int(h2['last_episode_to_air']['season_number'])
                last_e_to_air=int(h2['last_episode_to_air']['episode_number'])
               
@@ -3789,7 +4073,7 @@ def get_Series_trk_data(url_o,match):
           data_ep=''
           dates=' '
           fanart=image
-          url=domain_s+'api.themoviedb.org/3/tv/%s/season/%s?api_key=34142515d9d23817496eeb4ff1d223d0&language=he'%(id,season)
+          url=f'http://api.themoviedb.org/3/tv/%s/season/%s?api_key={tmdb_key}&language=he'%(id,season)
          
           html=get_html(url).json()
           if 'status_message' in html:
@@ -3872,7 +4156,7 @@ def get_Series_trk_data(url_o,match):
                color='yellow'
               else:
                color='white'
-               h2=get_html('https://api.themoviedb.org/3/tv/%s?api_key=34142515d9d23817496eeb4ff1d223d0&language=en-US'%id).json()
+               h2=get_html(f'https://api.themoviedb.org/3/tv/%s?api_key={tmdb_key}&language=en-US'%id).json()
                last_s_to_air=int(h2['last_episode_to_air']['season_number'])
                last_e_to_air=int(h2['last_episode_to_air']['episode_number'])
               
@@ -3948,9 +4232,9 @@ def get_genere(link):
    image='https://wordsfromjalynn.files.wordpress.com/2014/12/movie-genres-1.png'
    for data in html['genres']:
      if '/movie' in link:
-       new_link='http://api.themoviedb.org/3/genre/%s/movies?api_key=34142515d9d23817496eeb4ff1d223d0&language=%s&page=1'%(str(data['id']),lang)
+       new_link=f'http://api.themoviedb.org/3/genre/%s/movies?api_key={tmdb_key}&language=%s&page=1'%(str(data['id']),lang)
      else:
-       new_link='http://api.themoviedb.org/3/discover/tv?api_key=34142515d9d23817496eeb4ff1d223d0&sort_by=popularity.desc&with_genres=%s&language=%s&page=1'%(str(data['id']),lang)
+       new_link=f'http://api.themoviedb.org/3/discover/tv?api_key={tmdb_key}&sort_by=popularity.desc&with_genres=%s&language=%s&page=1'%(str(data['id']),lang)
      if data['name'] in tv_images:
        image=tv_images[data['name']]
      elif data['name'] in movie_images:
@@ -3963,15 +4247,16 @@ def tv_show_menu():
     import datetime
     now = datetime.datetime.now()
     #Popular
-    aa=addDir3(Addon.getLocalizedString(32057),'http://api.themoviedb.org/3/tv/popular?api_key=34142515d9d23817496eeb4ff1d223d0&language=%s&page=1'%lang,14,'special://home/addons/plugin.video.telemedia/tele/Tv_Show/popular_tv.png','https://image.businessinsider.com/5d5ea69fcd97841fea3d3b36?width=1100&format=jpeg&auto=webp','TMDB')
+   
+    aa=addDir3(Addon.getLocalizedString(32057),f'https://api.themoviedb.org/3/discover/tv?api_key={tmdb_key}&language={lang}&sort_by=popularity.desc&include_null_first_air_dates=false&with_original_language=en&page=1',14,'special://home/addons/plugin.video.telemedia/tele/Tv_Show/popular_tv.png','https://image.businessinsider.com/5d5ea69fcd97841fea3d3b36?width=1100&format=jpeg&auto=webp','TMDB')
     all.append(aa)
-    aa=addDir3(Addon.getLocalizedString(32133),'https://api.themoviedb.org/3/tv/on_the_air?api_key=34142515d9d23817496eeb4ff1d223d0&language=%s&page=1'%lang,14,'special://home/addons/plugin.video.telemedia/tele/Tv_Show/on_air.png','https://i.pinimg.com/236x/1c/49/8f/1c498f196ef8818d3d01223b72678fc4--divergent-movie-poster-divergent-.jpg','TMDB')
+    aa=addDir3(Addon.getLocalizedString(32133),f'https://api.themoviedb.org/3/tv/on_the_air?api_key={tmdb_key}&language=%s&page=1'%lang,14,'special://home/addons/plugin.video.telemedia/tele/Tv_Show/on_air.png','https://i.pinimg.com/236x/1c/49/8f/1c498f196ef8818d3d01223b72678fc4--divergent-movie-poster-divergent-.jpg','TMDB')
     all.append(aa)
     #Genre
-    aa=addDir3(Addon.getLocalizedString(32048),'http://api.themoviedb.org/3/genre/tv/list?api_key=34142515d9d23817496eeb4ff1d223d0&language=%s&page=1'%lang,18,'special://home/addons/plugin.video.telemedia/tele/Tv_Show/genre.png','https://consequenceofsound.net/wp-content/uploads/2019/11/CoS_2010sDecades-TVShows.jpg?quality=80','TMDB')
+    aa=addDir3(Addon.getLocalizedString(32048),f'http://api.themoviedb.org/3/genre/tv/list?api_key={tmdb_key}&language=%s&page=1'%lang,18,'special://home/addons/plugin.video.telemedia/tele/Tv_Show/genre.png','https://consequenceofsound.net/wp-content/uploads/2019/11/CoS_2010sDecades-TVShows.jpg?quality=80','TMDB')
     all.append(aa)
 	#New_Tv_Shows
-    aa=addDir3(Addon.getLocalizedString(32139),'https://api.themoviedb.org/3/discover/tv?api_key=34142515d9d23817496eeb4ff1d223d0&language=en-US&sort_by=popularity.desc&first_air_date_year='+str(now.year)+'&timezone=America%2FNew_York&include_null_first_air_ates=false&language=he&page=1',14,
+    aa=addDir3(Addon.getLocalizedString(32139),f'https://api.themoviedb.org/3/discover/tv?api_key={tmdb_key}&language={lang}&sort_by=popularity.desc&first_air_date_year={now.year}&include_null_first_air_dates=false&with_original_language=en&page=1',14,
 	'special://home/addons/plugin.video.telemedia/tele/Tv_Show/new_tv.png',
 	'https://lh5.ggpht.com/cr6L4oleXlecZQBbM1EfxtGggxpRK0Q1cQ8JBtLjJdeUrqDnXAeBHU30trRRnMUFfSo=w300','TMDB')
     all.append(aa)	
@@ -3980,23 +4265,56 @@ def tv_show_menu():
     all.append(aa)
     aa=addDir3(Addon.getLocalizedString(32134),'tv_years&page=1',101,'special://home/addons/plugin.video.telemedia/tele/Tv_Show/network.png','https://images.pond5.com/tv-networks-logos-loop-footage-042898083_prevstill.jpeg','TMDB')
     all.append(aa)
-    aa=addDir3(Addon.getLocalizedString(32135),'https://api.themoviedb.org/3/discover/tv?api_key=34142515d9d23817496eeb4ff1d223d0&language={0}&sort_by=popularity.desc&include_null_first_air_dates=false&with_original_language={1}&page=1'.format(lang,lang),14,'special://home/addons/plugin.video.telemedia/tele/Tv_Show/israel.png','http://coldshotproductions.net/flachannelbanner.png',Addon.getLocalizedString(32135))
+    aa=addDir3(Addon.getLocalizedString(32135),f'https://api.themoviedb.org/3/discover/tv?api_key={tmdb_key}&language={lang}&sort_by=popularity.desc&include_null_first_air_dates=false&with_original_language={lang}&page=1',14,'special://home/addons/plugin.video.telemedia/tele/Tv_Show/israel.png','http://coldshotproductions.net/flachannelbanner.png',Addon.getLocalizedString(32135))
     all.append(aa)
+    #DUB World 
+    aa=addDir3('ציקו מדיה',str(-1002025674897),2,'icon','https://www.hindustantimes.com/ht-img/img/2023/12/10/550x309/upcoming_shows_1702234217498_1702234231309.png','from_plot',data='1',image_master="icon$$$fan")
+    all.append(aa)     
     #Add Turkish Tv shows
-    aa=addDir3(Addon.getLocalizedString(32101),'https://api.themoviedb.org/3/discover/tv?api_key=34142515d9d23817496eeb4ff1d223d0&language={0}&sort_by=popularity.desc&include_null_first_air_dates=false&with_original_language={1}&page=1'.format(lang,'tr'),14,'special://home/addons/plugin.video.telemedia/tele/Tv_Show/turkish.png','http://coldshotproductions.net/flachannelbanner.png',Addon.getLocalizedString(32046))
+    aa=addDir3(Addon.getLocalizedString(32101),f'https://api.themoviedb.org/3/discover/tv?api_key={tmdb_key}&language={lang}&sort_by=popularity.desc&include_null_first_air_dates=false&with_original_language=tr&page=1',14,'special://home/addons/plugin.video.telemedia/tele/Tv_Show/turkish.png','http://coldshotproductions.net/flachannelbanner.png',Addon.getLocalizedString(32046))
     all.append(aa)
-    aa=addDir3(Addon.getLocalizedString(32136),'https://api.themoviedb.org/3/discover/tv?api_key=34142515d9d23817496eeb4ff1d223d0&language={0}&sort_by=popularity.desc&include_null_first_air_dates=false&with_original_language={1}&page=1'.format(lang,'tr'),114,'special://home/addons/plugin.video.telemedia/tele/Tv_Show/my_tv.png','http://mjdtech.net/content/images/2016/02/traktfeat.jpg',Addon.getLocalizedString(32046))
+    aa=addDir3(Addon.getLocalizedString(32136),f'https://api.themoviedb.org/3/discover/tv?api_key={tmdb_key}&language={lang}&sort_by=popularity.desc&include_null_first_air_dates=false&with_original_language=tr&page=1',114,'special://home/addons/plugin.video.telemedia/tele/Tv_Show/my_tv.png','http://mjdtech.net/content/images/2016/02/traktfeat.jpg',Addon.getLocalizedString(32046))
     #all.append(aa)
     aa=addDir3(Addon.getLocalizedString(32055),'www',28,'special://home/addons/plugin.video.telemedia/tele/Tv_Show/my_tv.png','http://coldshotproductions.net/flachannelbanner.png',Addon.getLocalizedString(32055))
     all.append(aa)
     #Search tv
-    aa=addDir3(Addon.getLocalizedString(32071),'http://api.themoviedb.org/3/search/tv?api_key=34142515d9d23817496eeb4ff1d223d0&query=%s&language=he&page=1',14,'special://home/addons/plugin.video.telemedia/tele/Tv_Show/search.png','http://f.frogi.co.il/news/640x300/010170efc8f.jpg','TMDB')
+    aa=addDir3(Addon.getLocalizedString(32071),f'http://api.themoviedb.org/3/search/tv?api_key={tmdb_key}&query=%s&language=he&page=1',14,'special://home/addons/plugin.video.telemedia/tele/Tv_Show/search.png','http://f.frogi.co.il/news/640x300/010170efc8f.jpg','TMDB')
     all.append(aa)
     xbmcplugin .addDirectoryItems(int(sys.argv[1]),all,len(all))
+def search_nacho(heb_name,iconimage,fanart,season,episode,original_title,tmdb):
+    url='https://admin.nachosisrael.com/api/search/%s/4F5A9C3D9A86FA54EACEDDD635185/d15abfs-9fe2-4b84-b979-jeff21bcad13/'%que(heb_name)
+
+    x=get_html(url,headers=base_header).json()
+    
+    
+    if season!=None and season!="%20" and season!="0":
+        tv_movie='serie'
+    else:
+        tv_movie='movie'
+    for items in x['posters']:
+        if (items['type']=='serie'):
+            
+                url='https://admin.nachosisrael.com/api/season/by/serie/%s/email/4F5A9C3D9A86FA54EACEDDD635185/d15abfs-9fe2-4b84-b979-jeff21bcad13/'%str(items['id'])
+               
+                y=get_html(url,headers=base_header).json()
+                for items in y:
+           
+                    if 'עונה '+str(season) == items['title'] :
+                        for itt in items['episodes']:
+                            if 'פרק '+str(episode) == itt['title'] :
+                                addLink('[COLOR lightblue]-לינק ישיר-[/COLOR]'+itt['title'], itt['sources'][0]['url'],9,False, iconimage,fanart," ",no_subs=1,tmdb=tmdb,season=season,episode=episode,original_title=original_title)
+        else:
+            for items in x['posters']:
+           
+            
+                addLink('[COLOR lightblue]-לינק ישיר-[/COLOR]'+items['title'], items['sources'][0]['url'],9,False, iconimage,fanart," ",no_subs=1,tmdb=tmdb,season=season,episode=episode,original_title=original_title)
+            
+            
 def search_movies(heb_name,original_title,data,iconimage,fanart,tmdb,season,episode,remote=False):
     log.warning('Searching now:'+heb_name)
     log.warning('Searching now:'+original_title)
     original_title=original_title.replace('%20',' ')
+    #search_nacho(heb_name,iconimage,fanart,season,episode,original_title,tmdb)
     all_links=search(tmdb,'all','0$$$0',heb_name,iconimage,fanart,season,episode,no_subs=1,original_title=original_title,dont_return=False,manual=False)
     all_links=all_links+search(tmdb,'all','0$$$0',original_title,iconimage,fanart,season,episode,original_title=original_title,dont_return=False,manual=False)
     all_links=sorted(all_links, key=lambda x: x[4], reverse=False)
@@ -4045,14 +4363,16 @@ def search_tv(heb_name,original_title,data,iconimage,fanart,season,episode,tmdb,
     else:
       season_n=season
     all_links=[]
+    #search_nacho(heb_name,iconimage,fanart,season,episode,original_title,tmdb)
     c_original=original_title.replace('%20','.').replace(' ','.').replace('%27',"'").replace("'","").replace('%3a',":")
-    options=[heb_name+' ע%s פ%s'%(season,episode),heb_name+' ע%sפ%s'%(season,episode),heb_name+' עונה %s פרק %s'%(season,episode),c_original+'.S%sE%s'%(season_n,episode_n),c_original+'.S%sE%s'%(season,episode)]
+    options=[heb_name+' ע%s פ%s'%(season,episode),heb_name+' ע%sפ%s'%(season,episode),heb_name+' עונה %s פרק %s'%(season,episode),c_original+'.S%sE%s'%(season_n,episode_n),c_original+'.S%sE%s'%(season,episode),c_original.replace('&','and')+'.S%sE%s'%(season,episode),c_original.replace('&','and')+'.S%sE%s'%(season_n,episode_n)]
     #if 'the' in original_title.lower():
     #    options.append(c_original.replace('The','').replace('the','')+'.S%sE%s'%(season_n,episode_n))
     options2=[' ע%s פ%s'%(season,episode),'ע%s.פ%s'%(season,episode),' ע%sפ%s'%(season,episode),' עונה %s פרק %s'%(season,episode),'.S%sE%s'%(season_n,episode_n),'.S%sE%s'%(season,episode)]
     for items in options:
         log.warning(items)
         all_links=all_links+search(tmdb,'all','0$$$0',items.replace(':',''),iconimage,fanart,season,episode,no_subs=1,original_title=original_title,heb_name=heb_name,dont_return=False,manual=False)
+        
 
     if Addon.getSetting("order_by")=='0':
         
@@ -4268,23 +4588,17 @@ def leave_chan(name,url):
 def dis_or_enable_addon(addon_id, enable="true"):
     import json
     log.warning('ADDON ID:'+addon_id)
-    addon = '"%s"' % addon_id
-    if xbmc.getCondVisibility("System.HasAddon(%s)" % addon_id) and enable == "true":
-        log.warning('already Enabled')
-        return xbmc.log("### Skipped %s, reason = allready enabled" % addon_id)
-    elif not xbmc.getCondVisibility("System.HasAddon(%s)" % addon_id) and enable == "false":
-        log.warning('Not already Enabled')
-        return xbmc.log("### Skipped %s, reason = not installed" % addon_id)
+    addon = '%s' % addon_id
+
+    do_json = {"jsonrpc":"2.0","id":1,"method":"Addons.SetAddonEnabled","params":{"addonid":addon,"enabled":True}} 
+               
+    log.warning(do_json)
+    query = xbmc.executeJSONRPC(json.dumps(do_json))
+    response = json.loads(query)
+    if enable == "true":
+        log.warning("### Enabled %s, response = %s" % (addon_id, response))
     else:
-        do_json = {"jsonrpc":"2.0","id":1,"method":"Addons.SetAddonEnabled","params":{"addonid":addon,"enabled":enable}} 
-                   
-        log.warning(do_json)
-        query = xbmc.executeJSONRPC(json.dumps(do_json))
-        response = json.loads(query)
-        if enable == "true":
-            log.warning("### Enabled %s, response = %s" % (addon_id, response))
-        else:
-            log.warning("### Disabled %s, response = %s" % (addon_id, response))
+        log.warning("### Disabled %s, response = %s" % (addon_id, response))
     return xbmc.executebuiltin('Container.Update(%s)' % xbmc.getInfoLabel('Container.FolderPath'))
 def showText(heading, text):
     id = 10147
@@ -4672,6 +4986,36 @@ def pre_searches(url,data,last_id,description,iconimage,fanart):
         
     dbcur.close()
     dbcon.close()
+    
+def clean_name22(name,original_title):
+    #from resources.modules import PTN
+    if '@' in name and '.' in name:
+        nm=name.split('.')
+        ind=0
+        for items in nm:
+            if '@' in items:
+                nm.pop(ind)
+            ind+=1
+        name='.'.join(nm)
+ 
+
+    name=name.replace(' ','.').replace('_','.').replace('-','.').replace('%20',' ').replace('5.1','').replace('AAC','').replace('2CH','').replace('.mp4','').replace('.avi','').replace('.mkv','').replace(original_title,'').replace('מדובב','').replace('גוזלן','').replace('BDRip','').replace('BRRip','')
+
+    name=name.replace('1080p','').replace('720p','').replace('480p','').replace('360p','').replace('BluRay','').replace('ח1','').replace('ח2','').replace('נתי.מדיה','').replace('נ.מ.','').replace('..','.').replace('.',' ').replace('WEB-DL','').replace('WEB DL','').replace('נ מדיה','')
+
+    name=name.replace('HDTV','').replace('DVDRip','').replace('WEBRip','')
+
+    name=name.replace('דב סרטים','').replace('לולו סרטים','').replace('דב ס','').replace('()','').replace('חן סרטים','').replace('ק סרטים','').replace('חננאל סרטים','').replace('יוסי סרטים','').replace('נריה סרטים','').replace('HebDub','').replace('NF','').replace('HDCAM','').replace('@yosichen','')
+
+    name=name.replace('BIuRay','').replace('x264','').replace('Hebdub','').replace('XviD','')
+
+    name=name.replace('Silver007','').replace('Etamar','').replace('iSrael','').replace('DVDsot','').replace('אלי ה סרטים','').replace('PCD1','').replace('PCD2','').replace('CD1','').replace('CD2','').replace('CD3','').replace('Gramovies','').replace('BORip','').replace('200P','').replace('מס1','1').replace('מס2','2').replace('מס3','3').replace('מס4','4').replace('מס 3','3').replace('מס 2','2').replace('מס 1','1')
+
+    name=name.replace('900p','').replace('PDTV','').replace('VHSRip','').replace('UPLOAD','').replace('TVRip','').replace('Heb Dub','').replace('MP3','').replace('AC3','').replace('SMG','').replace('Rip','').replace('6CH','').replace('XVID','')
+
+    name=name.replace('HD','').replace('WEBDL','').replace('DVDrip','').replace('ISrTeLeG','').replace('זירה מדיה','')
+    name=name.replace('.mp4','').replace('.avi','').replace('.mkv','').replace(original_title,'')
+    return name
 def clean_name2(name,original_title,html_g,icon_pre,fan_pre):
     #from resources.modules import PTN
     if '@' in name and '.' in name:
@@ -4711,9 +5055,9 @@ def clean_name2(name,original_title,html_g,icon_pre,fan_pre):
     pre_year=year
     if year!=0:
         
-        url2='http://api.themoviedb.org/3/search/movie?api_key=34142515d9d23817496eeb4ff1d223d0&query=%s&year=%s&language=he&append_to_response=origin_country&page=1'%(que(name),year)
+        url2=f'http://api.themoviedb.org/3/search/movie?api_key={tmdb_key}&query=%s&year=%s&language=he&append_to_response=origin_country&page=1'%(que(name),year)
     else:
-        url2='http://api.themoviedb.org/3/search/movie?api_key=34142515d9d23817496eeb4ff1d223d0&query=%s&language=he&append_to_response=origin_country&page=1'%(que(name))
+        url2=f'http://api.themoviedb.org/3/search/movie?api_key={tmdb_key}&query=%s&language=he&append_to_response=origin_country&page=1'%(que(name))
     log.warning(url2)
     y=get_html(url2).json()
     
@@ -4759,7 +5103,7 @@ def clean_name2(name,original_title,html_g,icon_pre,fan_pre):
     return name,year,plot,genere,icon,fan,original_name,rating,tmdb
 def tmdb_world(last_id,icon,fan,chan_id):
     from resources.modules.tmdb import get_html_g
-    from resources.modules import cache
+    
     html_g_tv,html_g_movie=cache.get(get_html_g,72, table='posters_n')
     icon_pre=icon
     fan_pre=fan
@@ -4794,9 +5138,9 @@ def tmdb_world(last_id,icon,fan,chan_id):
             invite_link="https://t.me/joinchat/AAAAAEH4beTG18SsVmQn0Q"
             join_type=1
             
-        elif int(chan_id)==WORLD_GROUP:
+        elif int(chan_id)==DUB_GROUP:
             join_type=1
-            invite_link="https://t.me/joinchat/AAAAADumPH7RARDHtG0SoA"
+            invite_link="https://t.me/+AOrv2rgz5qYyZTdk"
         num=random.randint(1,1001)
         if 1:#'Chat not found' in event['message']:
             if join_type==1:
@@ -5242,7 +5586,14 @@ def join_group(url):
                 event2=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
     dp.close()
 def check_free_space():
+
     if xbmc.getCondVisibility('system.platform.android'):
+        total, used, free = shutil.disk_usage("/")
+
+        str1=("Total: %d GiB" % (total // (2**30)))+'\n'
+        str1=str1+("Used: %d GiB" % (used // (2**30)))+'\n'
+        str1=str1+("Free: %d GiB" % (free // (2**30)))
+
         from os import statvfs
         user_path=xbmc_tranlate_path(Addon.getSetting("files_folder"))
         
@@ -5254,7 +5605,8 @@ def check_free_space():
         log.warning('free:'+str(free_space))  
         
         if free_space<2:
-            xbmcgui.Dialog().ok("שגיאה","מקום פנוי %s , נדרש 2 גיגה לפחות"%(str(round(free_space,2))+'Gb'))
+            xbmc.executebuiltin(u'Notification(%s,%s)' % ('חסר מקום פנוי',"מקום פנוי %s , נדרש 2 גיגה לפחות"%(str(round(free_space,2))+'Gb'+str1)))
+            #xbmcgui.Dialog().ok("מקום פנוי","מקום פנוי %s , נדרש 2 גיגה לפחות"%(str(round(free_space,2))+'Gb\n'+str1))
             return False
         return True
         log.warning('free space:'+ str(free_space)+'Gb')
@@ -5263,8 +5615,10 @@ def check_free_space():
         free_bytes = ctypes.c_ulonglong(0)
         ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(user_dataDir), None, None, ctypes.pointer(free_bytes))
         free_space=free_bytes.value / 1024 / 1024/1024
+        
         if free_space<2:
-            xbmcgui.Dialog().ok("שגיאה","מקום פנוי %s , נדרש 2 גיגה לפחות"%str(free_space))
+            xbmc.executebuiltin(u'Notification(%s,%s)' % ("חסר מקום פנוי","מקום פנוי %s , נדרש 2 גיגה לפחות"%str(free_space)))
+            #xbmcgui.Dialog().ok("מקום פנוי","מקום פנוי %s , נדרש 2 גיגה לפחות"%str(free_space))
             return False
         return True
         log.warning('free space:'+ str(free_bytes.value / 1024 / 1024/1024)+'Gb')
@@ -5666,7 +6020,7 @@ def set_bot_id(name):
         if selected_group_id!=-1:
             if name=='backup':
                 
-                Addon.setSetting('bot_id2',str(ids[ret]))
+                Addon.setSetting('bot_id3',str(ids[ret]))
                 
             else:
                 log.warning('ret_bot:'+str(ret_bot))
@@ -6110,42 +6464,62 @@ def movie_prodiction():
     elif Addon.getSetting("order_networks")=='1':
         order_by='first_air_date.desc'
    
+    aa=addDir3('[COLOR lightblue]Disney+[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=b370b60447737762ca38457bd77579b3&watch_region=US&with_watch_providers=337&language=he&sort_by={0}&vote_count.gte=100&page=1'.format(order_by),14,'https://lumiere-a.akamaihd.net/v1/images/image_308e48ed.png','https://allears.net/wp-content/uploads/2018/11/wonderful-world-of-animation-disneys-hollywood-studios.jpg','Disney')
+    all_d.append(aa)
+    aa=addDir3('[COLOR blue]Apple TV+[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=b370b60447737762ca38457bd77579b3&watch_region=US&with_watch_providers=2&language=he&sort_by={0}&vote_count.gte=100&page=1'.format(order_by),14,'https://ksassets.timeincuk.net/wp/uploads/sites/55/2019/03/Apple-TV-screengrab-920x584.png','https://www.apple.com/newsroom/videos/apple-tv-plus-/posters/Apple-TV-app_571x321.jpg.large.jpg','Apple')
+    all_d.append(aa)
     
-    aa=addDir3('[COLOR red]Marvel[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=34142515d9d23817496eeb4ff1d223d0&with_companies=7505&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://yt3.ggpht.com/a-/AN66SAwQlZAow0EBMi2-tFht-HvmozkqAXlkejVc4A=s900-mo-c-c0xffffffff-rj-k-no','https://images-na.ssl-images-amazon.com/images/I/91YWN2-mI6L._SL1500_.jpg','Marvel')
+    
+    aa=addDir3('[COLOR red]NetFlix[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=b370b60447737762ca38457bd77579b3&watch_region=US&with_watch_providers=8&language=he&sort_by={0}&vote_count.gte=100&page=1'.format(order_by),14,'https://art.pixilart.com/705ba833f935409.png','https://i.ytimg.com/vi/fJ8WffxB2Pg/maxresdefault.jpg','NetFlix')
     all_d.append(aa)
-    aa=addDir3('[COLOR lightblue]DC Studios[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=34142515d9d23817496eeb4ff1d223d0&with_companies=9993&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://pmcvariety.files.wordpress.com/2013/09/dc-comics-logo.jpg?w=1000&h=563&crop=1','http://www.goldenspiralmedia.com/wp-content/uploads/2016/03/DC_Comics.jpg','DC Studios')
+    aa=addDir3('[COLOR gray]HBO[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=b370b60447737762ca38457bd77579b3&watch_region=US&with_watch_providers=384&language=he&sort_by={0}&vote_count.gte=100&page=1'.format(order_by),14,'https://filmschoolrejects.com/wp-content/uploads/2018/01/hbo-logo.jpg','https://www.hbo.com/content/dam/hbodata/brand/hbo-static-1920.jpg','HBO')
     all_d.append(aa)
-    aa=addDir3('[COLOR lightgreen]Lucasfilm[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=34142515d9d23817496eeb4ff1d223d0&with_companies=1&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://fontmeme.com/images/lucasfilm-logo.png','https://i.ytimg.com/vi/wdYaG3o3bgE/maxresdefault.jpg','Lucasfilm')
+
+    aa=addDir3('[COLOR purple]AMC+[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=b370b60447737762ca38457bd77579b3&watch_region=US&with_watch_providers=526&language=he&sort_by={0}&vote_count.gte=100&page=1'.format(order_by),14,'http://cdn.collider.com/wp-content/uploads/syfy-logo1.jpg','https://imagesvc.timeincapp.com/v3/mm/image?url=https%3A%2F%2Fewedit.files.wordpress.com%2F2017%2F05%2Fdefault.jpg&w=1100&c=sc&poi=face&q=85','SyFy')
     all_d.append(aa)
-    aa=addDir3('[COLOR yellow]Warner Bros.[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=34142515d9d23817496eeb4ff1d223d0&with_companies=174&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'http://looking.la/wp-content/uploads/2017/10/warner-bros.png','https://cdn.arstechnica.net/wp-content/uploads/2016/09/warner.jpg','SyFy')
+
+
+    aa=addDir3('[COLOR yellow]NBC[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=b370b60447737762ca38457bd77579b3&watch_region=US&with_watch_providers=8&language=he&sort_by={0}&vote_count.gte=100&page=1'.format(order_by),14,'https://designobserver.com/media/images/mondrian/39684-NBC_logo_m.jpg','https://www.nbcstore.com/media/catalog/product/cache/1/image/1000x/040ec09b1e35df139433887a97daa66f/n/b/nbc_logo_black_totebagrollover.jpg','NBC')
     all_d.append(aa)
-    aa=addDir3('[COLOR blue]Walt Disney Pictures[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=34142515d9d23817496eeb4ff1d223d0&with_companies=2&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://i.ytimg.com/vi/9wDrIrdMh6o/hqdefault.jpg','https://vignette.wikia.nocookie.net/logopedia/images/7/78/Walt_Disney_Pictures_2008_logo.jpg/revision/latest?cb=20160720144950','Walt Disney Pictures')
+    aa=addDir3('[COLOR gold]AMAZON[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=b370b60447737762ca38457bd77579b3&watch_region=US&with_watch_providers=9&language=he&sort_by={0}&vote_count.gte=100&page=1'.format(order_by),14,'http://g-ec2.images-amazon.com/images/G/01/social/api-share/amazon_logo_500500._V323939215_.png','https://cdn.images.express.co.uk/img/dynamic/59/590x/Amazon-Fire-TV-Amazon-Fire-TV-users-Amazon-Fire-TV-stream-Amazon-Fire-TV-Free-Dive-TV-channel-Amazon-Fire-TV-news-Amazon-1010042.jpg?r=1535541629130','AMAZON')
     all_d.append(aa)
-    aa=addDir3('[COLOR skyblue]Pixar[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=34142515d9d23817496eeb4ff1d223d0&with_companies=3&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://elestoque.org/wp-content/uploads/2017/12/Pixar-lamp.png','https://wallpapercave.com/wp/GysuwJ2.jpg','Pixar')
+    aa=addDir3('[COLOR green]hulu[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=b370b60447737762ca38457bd77579b3&watch_region=US&with_watch_providers=15&language=he&sort_by={0}&vote_count.gte=100&page=1'.format(order_by),14,'https://i1.wp.com/thetalkinggeek.com/wp-content/uploads/2012/03/hulu_logo_spiced-up.png?resize=300%2C225&ssl=1','https://www.google.com/url?sa=i&rct=j&q=&esrc=s&source=images&cd=&cad=rja&uact=8&ved=2ahUKEwi677r77IbeAhURNhoKHeXyB-AQjRx6BAgBEAU&url=https%3A%2F%2Fwww.hulu.com%2F&psig=AOvVaw0xW2rhsh4UPsbe8wPjrul1&ust=1539638077261645','hulu')
     all_d.append(aa)
-    aa=addDir3('[COLOR deepskyblue]Paramount[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=34142515d9d23817496eeb4ff1d223d0&with_companies=4&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://upload.wikimedia.org/wikipedia/en/thumb/4/4d/Paramount_Pictures_2010.svg/1200px-Paramount_Pictures_2010.svg.png','https://vignette.wikia.nocookie.net/logopedia/images/a/a1/Paramount_Pictures_logo_with_new_Viacom_byline.jpg/revision/latest?cb=20120311200405&format=original','Paramount')
+    aa=addDir3('[COLOR red]Marvel[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=b370b60447737762ca38457bd77579b3&with_companies=7505&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://yt3.ggpht.com/a-/AN66SAwQlZAow0EBMi2-tFht-HvmozkqAXlkejVc4A=s900-mo-c-c0xffffffff-rj-k-no','https://images-na.ssl-images-amazon.com/images/I/91YWN2-mI6L._SL1500_.jpg','Marvel')
     all_d.append(aa)
-    aa=addDir3('[COLOR burlywood]Columbia Pictures[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=34142515d9d23817496eeb4ff1d223d0&with_companies=5&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://static.tvtropes.org/pmwiki/pub/images/lady_columbia.jpg','https://vignette.wikia.nocookie.net/marveldatabase/images/1/1c/Columbia_Pictures_%28logo%29.jpg/revision/latest/scale-to-width-down/1000?cb=20141130063022','Columbia Pictures')
+    aa=addDir3('[COLOR lightblue]DC Studios[/COLOR]',f'http://api.themoviedb.org/3/discover/movie?api_key={tmdb_key}&with_companies=9993&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://pmcvariety.files.wordpress.com/2013/09/dc-comics-logo.jpg?w=1000&h=563&crop=1','http://www.goldenspiralmedia.com/wp-content/uploads/2016/03/DC_Comics.jpg','DC Studios')
     all_d.append(aa)
-    aa=addDir3('[COLOR powderblue]DreamWorks[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=34142515d9d23817496eeb4ff1d223d0&with_companies=7&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://www.dreamworksanimation.com/share.jpg','https://www.verdict.co.uk/wp-content/uploads/2017/11/DA-hero-final-final.jpg','DreamWorks')
+    aa=addDir3('[COLOR lightgreen]Lucasfilm[/COLOR]',f'http://api.themoviedb.org/3/discover/movie?api_key={tmdb_key}&with_companies=1&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://fontmeme.com/images/lucasfilm-logo.png','https://i.ytimg.com/vi/wdYaG3o3bgE/maxresdefault.jpg','Lucasfilm')
     all_d.append(aa)
-    aa=addDir3('[COLOR lightsaltegray]Miramax[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=34142515d9d23817496eeb4ff1d223d0&with_companies=14&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://vignette.wikia.nocookie.net/disney/images/8/8b/1000px-Miramax_1987_Print_Logo.png/revision/latest?cb=20140902041428','https://i.ytimg.com/vi/4keXxB94PJ0/maxresdefault.jpg','Miramax')
+    aa=addDir3('[COLOR yellow]Warner Bros.[/COLOR]',f'http://api.themoviedb.org/3/discover/movie?api_key={tmdb_key}&with_companies=174&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'http://looking.la/wp-content/uploads/2017/10/warner-bros.png','https://cdn.arstechnica.net/wp-content/uploads/2016/09/warner.jpg','SyFy')
     all_d.append(aa)
-    aa=addDir3('[COLOR gold]20th Century Fox[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=34142515d9d23817496eeb4ff1d223d0&with_companies=25&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://pmcdeadline2.files.wordpress.com/2017/03/20th-century-fox-cinemacon1.jpg?w=446&h=299&crop=1','https://vignette.wikia.nocookie.net/simpsons/images/8/80/TCFTV_logo_%282013-%3F%29.jpg/revision/latest?cb=20140730182820','20th Century Fox')
+    aa=addDir3('[COLOR blue]Walt Disney Pictures[/COLOR]',f'http://api.themoviedb.org/3/discover/movie?api_key={tmdb_key}&with_companies=2&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://i.ytimg.com/vi/9wDrIrdMh6o/hqdefault.jpg','https://vignette.wikia.nocookie.net/logopedia/images/7/78/Walt_Disney_Pictures_2008_logo.jpg/revision/latest?cb=20160720144950','Walt Disney Pictures')
     all_d.append(aa)
-    aa=addDir3('[COLOR bisque]Sony Pictures[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=34142515d9d23817496eeb4ff1d223d0&with_companies=34&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/Sony_Pictures_Television_logo.svg/1200px-Sony_Pictures_Television_logo.svg.png','https://vignette.wikia.nocookie.net/logopedia/images/2/20/Sony_Pictures_Digital.png/revision/latest?cb=20140813002921','Sony Pictures')
+    aa=addDir3('[COLOR skyblue]Pixar[/COLOR]',f'http://api.themoviedb.org/3/discover/movie?api_key={tmdb_key}&with_companies=3&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://elestoque.org/wp-content/uploads/2017/12/Pixar-lamp.png','https://wallpapercave.com/wp/GysuwJ2.jpg','Pixar')
     all_d.append(aa)
-    aa=addDir3('[COLOR navy]Lions Gate Films[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=34142515d9d23817496eeb4ff1d223d0&with_companies=35&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'http://image.wikifoundry.com/image/1/QXHyOWmjvPRXhjC98B9Lpw53003/GW217H162','https://vignette.wikia.nocookie.net/fanon/images/f/fe/Lionsgate.jpg/revision/latest?cb=20141102103150','Lions Gate Films')
+    aa=addDir3('[COLOR deepskyblue]Paramount[/COLOR]',f'http://api.themoviedb.org/3/discover/movie?api_key={tmdb_key}&with_companies=4&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://upload.wikimedia.org/wikipedia/en/thumb/4/4d/Paramount_Pictures_2010.svg/1200px-Paramount_Pictures_2010.svg.png','https://vignette.wikia.nocookie.net/logopedia/images/a/a1/Paramount_Pictures_logo_with_new_Viacom_byline.jpg/revision/latest?cb=20120311200405&format=original','Paramount')
     all_d.append(aa)
-    aa=addDir3('[COLOR beige]Orion Pictures[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=34142515d9d23817496eeb4ff1d223d0&with_companies=41&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://i.ytimg.com/vi/43OehM_rz8o/hqdefault.jpg','https://i.ytimg.com/vi/g58B0aSIB2Y/maxresdefault.jpg','Lions Gate Films')
+    aa=addDir3('[COLOR burlywood]Columbia Pictures[/COLOR]',f'http://api.themoviedb.org/3/discover/movie?api_key={tmdb_key}&with_companies=5&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://static.tvtropes.org/pmwiki/pub/images/lady_columbia.jpg','https://vignette.wikia.nocookie.net/marveldatabase/images/1/1c/Columbia_Pictures_%28logo%29.jpg/revision/latest/scale-to-width-down/1000?cb=20141130063022','Columbia Pictures')
     all_d.append(aa)
-    aa=addDir3('[COLOR yellow]MGM[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=34142515d9d23817496eeb4ff1d223d0&with_companies=21&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://pbs.twimg.com/profile_images/958755066789294080/L9BklGz__400x400.jpg','https://assets.entrepreneur.com/content/3x2/2000/20150818171949-metro-goldwun-mayer-trade-mark.jpeg','MGM')
+    aa=addDir3('[COLOR powderblue]DreamWorks[/COLOR]',f'http://api.themoviedb.org/3/discover/movie?api_key={tmdb_key}&with_companies=7&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://www.dreamworksanimation.com/share.jpg','https://www.verdict.co.uk/wp-content/uploads/2017/11/DA-hero-final-final.jpg','DreamWorks')
     all_d.append(aa)
-    aa=addDir3('[COLOR gray]New Line Cinema[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=34142515d9d23817496eeb4ff1d223d0&with_companies=12&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://upload.wikimedia.org/wikipedia/en/thumb/0/04/New_Line_Cinema.svg/1200px-New_Line_Cinema.svg.png','https://vignette.wikia.nocookie.net/theideas/images/a/aa/New_Line_Cinema_logo.png/revision/latest?cb=20180210122847','New Line Cinema')
+    aa=addDir3('[COLOR lightsaltegray]Miramax[/COLOR]',f'http://api.themoviedb.org/3/discover/movie?api_key={tmdb_key}&with_companies=14&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://vignette.wikia.nocookie.net/disney/images/8/8b/1000px-Miramax_1987_Print_Logo.png/revision/latest?cb=20140902041428','https://i.ytimg.com/vi/4keXxB94PJ0/maxresdefault.jpg','Miramax')
     all_d.append(aa)
-    aa=addDir3('[COLOR darkblue]Gracie Films[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=34142515d9d23817496eeb4ff1d223d0&with_companies=18&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://i.ytimg.com/vi/q_slAJmZBeQ/hqdefault.jpg','https://i.ytimg.com/vi/yGofbuJTb4g/maxresdefault.jpg','Gracie Films')
+    aa=addDir3('[COLOR gold]20th Century Fox[/COLOR]',f'http://api.themoviedb.org/3/discover/movie?api_key={tmdb_key}&with_companies=25&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://pmcdeadline2.files.wordpress.com/2017/03/20th-century-fox-cinemacon1.jpg?w=446&h=299&crop=1','https://vignette.wikia.nocookie.net/simpsons/images/8/80/TCFTV_logo_%282013-%3F%29.jpg/revision/latest?cb=20140730182820','20th Century Fox')
     all_d.append(aa)
-    aa=addDir3('[COLOR goldenrod]Imagine Entertainment[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=34142515d9d23817496eeb4ff1d223d0&with_companies=23&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://s3.amazonaws.com/fs.goanimate.com/files/thumbnails/movie/2813/1661813/9297975L.jpg','https://www.24spoilers.com/wp-content/uploads/2004/06/Imagine-Entertainment-logo.jpg','Imagine Entertainment')
+    aa=addDir3('[COLOR bisque]Sony Pictures[/COLOR]',f'http://api.themoviedb.org/3/discover/movie?api_key={tmdb_key}&with_companies=34&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/Sony_Pictures_Television_logo.svg/1200px-Sony_Pictures_Television_logo.svg.png','https://vignette.wikia.nocookie.net/logopedia/images/2/20/Sony_Pictures_Digital.png/revision/latest?cb=20140813002921','Sony Pictures')
+    all_d.append(aa)
+    aa=addDir3('[COLOR navy]Lions Gate Films[/COLOR]',f'http://api.themoviedb.org/3/discover/movie?api_key={tmdb_key}&with_companies=35&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'http://image.wikifoundry.com/image/1/QXHyOWmjvPRXhjC98B9Lpw53003/GW217H162','https://vignette.wikia.nocookie.net/fanon/images/f/fe/Lionsgate.jpg/revision/latest?cb=20141102103150','Lions Gate Films')
+    all_d.append(aa)
+    aa=addDir3('[COLOR beige]Orion Pictures[/COLOR]',f'http://api.themoviedb.org/3/discover/movie?api_key={tmdb_key}&with_companies=41&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://i.ytimg.com/vi/43OehM_rz8o/hqdefault.jpg','https://i.ytimg.com/vi/g58B0aSIB2Y/maxresdefault.jpg','Lions Gate Films')
+    all_d.append(aa)
+    aa=addDir3('[COLOR yellow]MGM[/COLOR]',f'http://api.themoviedb.org/3/discover/movie?api_key={tmdb_key}&with_companies=21&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://pbs.twimg.com/profile_images/958755066789294080/L9BklGz__400x400.jpg','https://assets.entrepreneur.com/content/3x2/2000/20150818171949-metro-goldwun-mayer-trade-mark.jpeg','MGM')
+    all_d.append(aa)
+    aa=addDir3('[COLOR gray]New Line Cinema[/COLOR]',f'http://api.themoviedb.org/3/discover/movie?api_key={tmdb_key}&with_companies=12&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://upload.wikimedia.org/wikipedia/en/thumb/0/04/New_Line_Cinema.svg/1200px-New_Line_Cinema.svg.png','https://vignette.wikia.nocookie.net/theideas/images/a/aa/New_Line_Cinema_logo.png/revision/latest?cb=20180210122847','New Line Cinema')
+    all_d.append(aa)
+    aa=addDir3('[COLOR darkblue]Gracie Films[/COLOR]',f'http://api.themoviedb.org/3/discover/movie?api_key={tmdb_key}&with_companies=18&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://i.ytimg.com/vi/q_slAJmZBeQ/hqdefault.jpg','https://i.ytimg.com/vi/yGofbuJTb4g/maxresdefault.jpg','Gracie Films')
+    all_d.append(aa)
+    aa=addDir3('[COLOR goldenrod]Imagine Entertainment[/COLOR]',f'http://api.themoviedb.org/3/discover/movie?api_key={tmdb_key}&with_companies=23&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://s3.amazonaws.com/fs.goanimate.com/files/thumbnails/movie/2813/1661813/9297975L.jpg','https://www.24spoilers.com/wp-content/uploads/2004/06/Imagine-Entertainment-logo.jpg','Imagine Entertainment')
     all_d.append(aa)
     xbmcplugin .addDirectoryItems(int(sys.argv[1]),all_d,len(all_d))
 def tv_neworks():
@@ -6156,29 +6530,66 @@ def tv_neworks():
         order_by='vote_average.desc'
     elif Addon.getSetting("order_networks")=='1':
         order_by='first_air_date.desc'
-    aa=addDir3('[COLOR lightblue]Disney+[/COLOR]',domain_s+'api.themoviedb.org/3/discover/tv?api_key=34142515d9d23817496eeb4ff1d223d0&with_networks=2739&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://lumiere-a.akamaihd.net/v1/images/image_308e48ed.png','https://allears.net/wp-content/uploads/2018/11/wonderful-world-of-animation-disneys-hollywood-studios.jpg','Disney')
+    aa=addDir3('[COLOR lightblue]Disney+[/COLOR]',f'http://api.themoviedb.org/3/discover/tv?api_key={tmdb_key}&with_networks=2739&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://lumiere-a.akamaihd.net/v1/images/image_308e48ed.png','https://allears.net/wp-content/uploads/2018/11/wonderful-world-of-animation-disneys-hollywood-studios.jpg','Disney')
     all_d.append(aa)
-    aa=addDir3('[COLOR blue]Apple TV+[/COLOR]',domain_s+'api.themoviedb.org/3/discover/tv?api_key=34142515d9d23817496eeb4ff1d223d0&with_networks=2552&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://ksassets.timeincuk.net/wp/uploads/sites/55/2019/03/Apple-TV-screengrab-920x584.png','https://www.apple.com/newsroom/videos/apple-tv-plus-/posters/Apple-TV-app_571x321.jpg.large.jpg','Apple')
+    aa=addDir3('[COLOR blue]Apple TV+[/COLOR]',f'http://api.themoviedb.org/3/discover/tv?api_key={tmdb_key}&with_networks=2552&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://ksassets.timeincuk.net/wp/uploads/sites/55/2019/03/Apple-TV-screengrab-920x584.png','https://www.apple.com/newsroom/videos/apple-tv-plus-/posters/Apple-TV-app_571x321.jpg.large.jpg','Apple')
     all_d.append(aa)
-    aa=addDir3('[COLOR red]NetFlix[/COLOR]',domain_s+'api.themoviedb.org/3/discover/tv?api_key=34142515d9d23817496eeb4ff1d223d0&with_networks=213&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://art.pixilart.com/705ba833f935409.png','https://i.ytimg.com/vi/fJ8WffxB2Pg/maxresdefault.jpg','NetFlix')
+    aa=addDir3('[COLOR red]NetFlix[/COLOR]',f'http://api.themoviedb.org/3/discover/tv?api_key={tmdb_key}&with_networks=213&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://art.pixilart.com/705ba833f935409.png','https://i.ytimg.com/vi/fJ8WffxB2Pg/maxresdefault.jpg','NetFlix')
     all_d.append(aa)
-    aa=addDir3('[COLOR gray]HBO[/COLOR]',domain_s+'api.themoviedb.org/3/discover/tv?api_key=34142515d9d23817496eeb4ff1d223d0&with_networks=49&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://filmschoolrejects.com/wp-content/uploads/2018/01/hbo-logo.jpg','https://www.hbo.com/content/dam/hbodata/brand/hbo-static-1920.jpg','HBO')
+    aa=addDir3('[COLOR gray]HBO[/COLOR]',f'http://api.themoviedb.org/3/discover/tv?api_key={tmdb_key}&with_networks=49&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://filmschoolrejects.com/wp-content/uploads/2018/01/hbo-logo.jpg','https://www.hbo.com/content/dam/hbodata/brand/hbo-static-1920.jpg','HBO')
     all_d.append(aa)
-    aa=addDir3('[COLOR lightblue]CBS[/COLOR]',domain_s+'api.themoviedb.org/3/discover/tv?api_key=34142515d9d23817496eeb4ff1d223d0&with_networks=16&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://cdn.freebiesupply.com/logos/large/2x/cbs-logo-png-transparent.png','https://tvseriesfinale.com/wp-content/uploads/2014/10/cbs40-590x221.jpg','HBO')
+    aa=addDir3('[COLOR lightblue]CBS[/COLOR]',f'http://api.themoviedb.org/3/discover/tv?api_key={tmdb_key}&with_networks=16&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://cdn.freebiesupply.com/logos/large/2x/cbs-logo-png-transparent.png','https://tvseriesfinale.com/wp-content/uploads/2014/10/cbs40-590x221.jpg','HBO')
     all_d.append(aa)
-    aa=addDir3('[COLOR purple]SyFy[/COLOR]',domain_s+'api.themoviedb.org/3/discover/tv?api_key=34142515d9d23817496eeb4ff1d223d0&with_networks=77&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'http://cdn.collider.com/wp-content/uploads/syfy-logo1.jpg','https://imagesvc.timeincapp.com/v3/mm/image?url=https%3A%2F%2Fewedit.files.wordpress.com%2F2017%2F05%2Fdefault.jpg&w=1100&c=sc&poi=face&q=85','SyFy')
+    aa=addDir3('[COLOR purple]SyFy[/COLOR]',f'http://api.themoviedb.org/3/discover/tv?api_key={tmdb_key}&with_networks=77&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'http://cdn.collider.com/wp-content/uploads/syfy-logo1.jpg','https://imagesvc.timeincapp.com/v3/mm/image?url=https%3A%2F%2Fewedit.files.wordpress.com%2F2017%2F05%2Fdefault.jpg&w=1100&c=sc&poi=face&q=85','SyFy')
     all_d.append(aa)
-    aa=addDir3('[COLOR lightgreen]The CW[/COLOR]',domain_s+'api.themoviedb.org/3/discover/tv?api_key=34142515d9d23817496eeb4ff1d223d0&with_networks=71&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://www.broadcastingcable.com/.image/t_share/MTU0Njg3Mjc5MDY1OTk5MzQy/tv-network-logo-cw-resized-bc.jpg','https://i2.wp.com/nerdbastards.com/wp-content/uploads/2016/02/The-CW-Banner.jpg','The CW')
+    aa=addDir3('[COLOR lightgreen]The CW[/COLOR]',f'http://api.themoviedb.org/3/discover/tv?api_key={tmdb_key}&with_networks=71&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://www.broadcastingcable.com/.image/t_share/MTU0Njg3Mjc5MDY1OTk5MzQy/tv-network-logo-cw-resized-bc.jpg','https://i2.wp.com/nerdbastards.com/wp-content/uploads/2016/02/The-CW-Banner.jpg','The CW')
     all_d.append(aa)
-    aa=addDir3('[COLOR silver]ABC[/COLOR]',domain_s+'api.themoviedb.org/3/discover/tv?api_key=34142515d9d23817496eeb4ff1d223d0&with_networks=2&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'http://logok.org/wp-content/uploads/2014/03/abc-gold-logo-880x660.png','https://i.ytimg.com/vi/xSOp4HJTxH4/maxresdefault.jpg','ABC')
+    aa=addDir3('[COLOR silver]ABC[/COLOR]',f'http://api.themoviedb.org/3/discover/tv?api_key={tmdb_key}&with_networks=2&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'http://logok.org/wp-content/uploads/2014/03/abc-gold-logo-880x660.png','https://i.ytimg.com/vi/xSOp4HJTxH4/maxresdefault.jpg','ABC')
     all_d.append(aa)
-    aa=addDir3('[COLOR yellow]NBC[/COLOR]',domain_s+'api.themoviedb.org/3/discover/tv?api_key=34142515d9d23817496eeb4ff1d223d0&with_networks=6&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://designobserver.com/media/images/mondrian/39684-NBC_logo_m.jpg','https://www.nbcstore.com/media/catalog/product/cache/1/image/1000x/040ec09b1e35df139433887a97daa66f/n/b/nbc_logo_black_totebagrollover.jpg','NBC')
+    aa=addDir3('[COLOR yellow]NBC[/COLOR]',f'http://api.themoviedb.org/3/discover/tv?api_key={tmdb_key}&with_networks=6&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://designobserver.com/media/images/mondrian/39684-NBC_logo_m.jpg','https://www.nbcstore.com/media/catalog/product/cache/1/image/1000x/040ec09b1e35df139433887a97daa66f/n/b/nbc_logo_black_totebagrollover.jpg','NBC')
     all_d.append(aa)
-    aa=addDir3('[COLOR gold]AMAZON[/COLOR]',domain_s+'api.themoviedb.org/3/discover/tv?api_key=34142515d9d23817496eeb4ff1d223d0&with_networks=1024&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'http://g-ec2.images-amazon.com/images/G/01/social/api-share/amazon_logo_500500._V323939215_.png','https://cdn.images.express.co.uk/img/dynamic/59/590x/Amazon-Fire-TV-Amazon-Fire-TV-users-Amazon-Fire-TV-stream-Amazon-Fire-TV-Free-Dive-TV-channel-Amazon-Fire-TV-news-Amazon-1010042.jpg?r=1535541629130','AMAZON')
+    aa=addDir3('[COLOR gold]AMAZON[/COLOR]',f'http://api.themoviedb.org/3/discover/tv?api_key={tmdb_key}&with_networks=1024&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'http://g-ec2.images-amazon.com/images/G/01/social/api-share/amazon_logo_500500._V323939215_.png','https://cdn.images.express.co.uk/img/dynamic/59/590x/Amazon-Fire-TV-Amazon-Fire-TV-users-Amazon-Fire-TV-stream-Amazon-Fire-TV-Free-Dive-TV-channel-Amazon-Fire-TV-news-Amazon-1010042.jpg?r=1535541629130','AMAZON')
     all_d.append(aa)
-    aa=addDir3('[COLOR green]hulu[/COLOR]',domain_s+'api.themoviedb.org/3/discover/tv?api_key=34142515d9d23817496eeb4ff1d223d0&with_networks=453&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://i1.wp.com/thetalkinggeek.com/wp-content/uploads/2012/03/hulu_logo_spiced-up.png?resize=300%2C225&ssl=1','https://www.google.com/url?sa=i&rct=j&q=&esrc=s&source=images&cd=&cad=rja&uact=8&ved=2ahUKEwi677r77IbeAhURNhoKHeXyB-AQjRx6BAgBEAU&url=https%3A%2F%2Fwww.hulu.com%2F&psig=AOvVaw0xW2rhsh4UPsbe8wPjrul1&ust=1539638077261645','hulu')
+    aa=addDir3('[COLOR green]hulu[/COLOR]',f'http://api.themoviedb.org/3/discover/tv?api_key={tmdb_key}&with_networks=453&language=he&sort_by={0}&timezone=America%2FNew_York&include_null_first_air_dates=false&page=1'.format(order_by),14,'https://i1.wp.com/thetalkinggeek.com/wp-content/uploads/2012/03/hulu_logo_spiced-up.png?resize=300%2C225&ssl=1','https://www.google.com/url?sa=i&rct=j&q=&esrc=s&source=images&cd=&cad=rja&uact=8&ved=2ahUKEwi677r77IbeAhURNhoKHeXyB-AQjRx6BAgBEAU&url=https%3A%2F%2Fwww.hulu.com%2F&psig=AOvVaw0xW2rhsh4UPsbe8wPjrul1&ust=1539638077261645','hulu')
     all_d.append(aa)
     xbmcplugin .addDirectoryItems(int(sys.argv[1]),all_d,len(all_d))
+    
+    
+def movie_neworks():
+    all_d=[]
+    # if Addon.getSetting("order_networks")=='0':
+        # order_by='popularity.desc'
+    # elif Addon.getSetting("order_networks")=='2':
+        # order_by='vote_average.desc'
+    # elif Addon.getSetting("order_networks")=='1':
+        # order_by='first_air_date.desc'
+    order_by='popularity.desc'
+    aa=addDir3('[COLOR lightblue]Disney+[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=b370b60447737762ca38457bd77579b3&watch_region=US&with_watch_providers=337&language=he&sort_by={0}&vote_count.gte=100&page=1'.format(order_by),14,'https://lumiere-a.akamaihd.net/v1/images/image_308e48ed.png','https://allears.net/wp-content/uploads/2018/11/wonderful-world-of-animation-disneys-hollywood-studios.jpg','Disney')
+    all_d.append(aa)
+    aa=addDir3('[COLOR blue]Apple TV+[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=b370b60447737762ca38457bd77579b3&watch_region=US&with_watch_providers=2&language=he&sort_by={0}&vote_count.gte=100&page=1'.format(order_by),14,'https://ksassets.timeincuk.net/wp/uploads/sites/55/2019/03/Apple-TV-screengrab-920x584.png','https://www.apple.com/newsroom/videos/apple-tv-plus-/posters/Apple-TV-app_571x321.jpg.large.jpg','Apple')
+    all_d.append(aa)
+    
+    
+    aa=addDir3('[COLOR red]NetFlix[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=b370b60447737762ca38457bd77579b3&watch_region=US&with_watch_providers=8&language=he&sort_by={0}&vote_count.gte=100&page=1'.format(order_by),14,'https://art.pixilart.com/705ba833f935409.png','https://i.ytimg.com/vi/fJ8WffxB2Pg/maxresdefault.jpg','NetFlix')
+    all_d.append(aa)
+    aa=addDir3('[COLOR gray]HBO[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=b370b60447737762ca38457bd77579b3&watch_region=US&with_watch_providers=384&language=he&sort_by={0}&vote_count.gte=100&page=1'.format(order_by),14,'https://filmschoolrejects.com/wp-content/uploads/2018/01/hbo-logo.jpg','https://www.hbo.com/content/dam/hbodata/brand/hbo-static-1920.jpg','HBO')
+    all_d.append(aa)
+
+    aa=addDir3('[COLOR purple]AMC+[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=b370b60447737762ca38457bd77579b3&watch_region=US&with_watch_providers=526&language=he&sort_by={0}&vote_count.gte=100&page=1'.format(order_by),14,'http://cdn.collider.com/wp-content/uploads/syfy-logo1.jpg','https://imagesvc.timeincapp.com/v3/mm/image?url=https%3A%2F%2Fewedit.files.wordpress.com%2F2017%2F05%2Fdefault.jpg&w=1100&c=sc&poi=face&q=85','SyFy')
+    all_d.append(aa)
+
+
+    aa=addDir3('[COLOR yellow]NBC[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=b370b60447737762ca38457bd77579b3&watch_region=US&with_watch_providers=8&language=he&sort_by={0}&vote_count.gte=100&page=1'.format(order_by),14,'https://designobserver.com/media/images/mondrian/39684-NBC_logo_m.jpg','https://www.nbcstore.com/media/catalog/product/cache/1/image/1000x/040ec09b1e35df139433887a97daa66f/n/b/nbc_logo_black_totebagrollover.jpg','NBC')
+    all_d.append(aa)
+    aa=addDir3('[COLOR gold]AMAZON[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=b370b60447737762ca38457bd77579b3&watch_region=US&with_watch_providers=9&language=he&sort_by={0}&vote_count.gte=100&page=1'.format(order_by),14,'http://g-ec2.images-amazon.com/images/G/01/social/api-share/amazon_logo_500500._V323939215_.png','https://cdn.images.express.co.uk/img/dynamic/59/590x/Amazon-Fire-TV-Amazon-Fire-TV-users-Amazon-Fire-TV-stream-Amazon-Fire-TV-Free-Dive-TV-channel-Amazon-Fire-TV-news-Amazon-1010042.jpg?r=1535541629130','AMAZON')
+    all_d.append(aa)
+    aa=addDir3('[COLOR green]hulu[/COLOR]',domain_s+'api.themoviedb.org/3/discover/movie?api_key=b370b60447737762ca38457bd77579b3&watch_region=US&with_watch_providers=15&language=he&sort_by={0}&vote_count.gte=100&page=1'.format(order_by),14,'https://i1.wp.com/thetalkinggeek.com/wp-content/uploads/2012/03/hulu_logo_spiced-up.png?resize=300%2C225&ssl=1','https://www.google.com/url?sa=i&rct=j&q=&esrc=s&source=images&cd=&cad=rja&uact=8&ved=2ahUKEwi677r77IbeAhURNhoKHeXyB-AQjRx6BAgBEAU&url=https%3A%2F%2Fwww.hulu.com%2F&psig=AOvVaw0xW2rhsh4UPsbe8wPjrul1&ust=1539638077261645','hulu')
+    all_d.append(aa)
+    xbmcplugin .addDirectoryItems(int(sys.argv[1]),all_d,len(all_d))
+    
+    
+    
+    
 def get_free_space():
     import subprocess
     if xbmc .getCondVisibility ('system.platform.android'):#line:1878
@@ -6274,13 +6685,14 @@ def get_version():
                  }
     event4=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
     
-    xbmcgui.Dialog().ok('Tdlib Version','Name:'+event4['first_name']+'\n'+'User name:'+event4['username']+'\n'+'Phone Number:'+event4['phone_number']+'\n'+event2['value'])
+    xbmcgui.Dialog().ok('Tdlib Version','Name:'+event4['first_name']+'\n'+'Phone Number:'+event4['phone_number']+'\n'+event2['value'])
 def get_folders(iconimage,fanart):
+    addNolink( '[COLOR lightgreen]%s[/COLOR]'%'כל הסרטים', 'www',124,False,fan="https://www.fantastic-library.com/wp-content/uploads/2023/04/Mavka-The-Forst-Song-01.jpg", iconimage="https://m.media-amazon.com/images/I/91zqGNzwk5L._AC_UF894,1000_QL80_.jpg")
     data={'type':'getfolders',
          'info':''
          }
     event=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
-    log.warning(json.dumps(event))
+    log.warning(event)
     all_d=[]
     for items in event['status']:
         aa=addDir3(event['status'][items],str(items),12,iconimage,fanart,event['status'][items],groups_id=items,last_id='0$$$9223372036854775807')
@@ -6291,17 +6703,62 @@ def select_file_browser():
             items  = xbmcvfs.listdir('androidapp://sources/apps/')[1]
             select = selectDialog("Select File Explorer",items)
             Addon.setSetting('Custom_Manager',select)
-            
+def check_free_space_local():
+    files_path=os.path.join(xbmc_tranlate_path(Addon.getSetting("files_folder")), 'files')
+    log.warning(files_path)
+    if xbmc.getCondVisibility('system.platform.android'):
+        from os import statvfs
+        user_path=xbmc_tranlate_path(Addon.getSetting("files_folder"))
+        
+        st = statvfs(user_path)
+        free_space = float(st.f_bavail * st.f_frsize)/ (1024*1024*1024) 
+    elif xbmc.getCondVisibility('system.platform.windows'):
+        import ctypes
+        free_bytes = ctypes.c_ulonglong(0)
+        ctypes.windll.kernel32.GetDiskFreeSpaceExW(ctypes.c_wchar_p(user_dataDir), None, None, ctypes.pointer(free_bytes))
+        free_space=free_bytes.value / 1024 / 1024/1024
+        
+        
+        
+    size = 0
+     
+    # assign folder path
+    Folderpath = files_path
+     
+    # get size
+    for path, dirs, files in os.walk(Folderpath):
+        for f in files:
+            fp = os.path.join(path, f)
+            size += os.path.getsize(fp)
+     
+    # display size
+    folder_size=("גודל ספריה: " + "{:.2f}".format((size/(1024*1024*1024)))+'Gb')
+    
+    total, used, free = shutil.disk_usage("/")
+
+    str1=("כללי: %d GiB" % (total // (2**30)))+", בשימוש: %d GiB" % (used // (2**30))+",פנוי: %d GiB" % (free // (2**30))+'\n'
+    str1=str1+"פנוי אחרון:"+"{:.2f}".format(free_space)+'\n'
+ 
+    str1=str1+folder_size
+    
+
+    
+   
+    
+        
+    xbmcgui.Dialog().ok("שגיאה",str1)
+    
+
 params=get_params()
 
-log.warning(params)
+
 for items in params:
    params[items]=params[items].replace(" ","%20")
 url=None
 name=None
 mode=None
-iconimage=None
-fanart=None
+iconimage=" "
+fanart=" "
 resume=None
 c_id=None
 m_id=None
@@ -6317,7 +6774,7 @@ no_subs=0
 season="%20"
 episode="%20"
 show_original_year=0
-groups_id=0
+groups_id='0'
 heb_name=' '
 tmdbid=' '
 eng_name=' '
@@ -6466,37 +6923,82 @@ try:
 except:
     pass
 
-log.warning(params)
+
 episode=str(episode).replace('+','%20')
 season=str(season).replace('+','%20')
 if season=='0':
     season='%20'
 if episode=='0':
     episode='%20'
-log.warning('Mode:'+str(mode))
+log.warning('Telemedia Mode:'+str(mode))
 log.warning('url:'+str(url))
+
+    
 #strn=get_free_space()
 #xbmcgui.Dialog().ok('Error occurred',strn)
 if (mode==None or url==None or len(url)<1) and len(sys.argv)>1:
         
         main_menu()
 elif mode==2:
-  
-    file_list(url,data,last_id,description,iconimage,fanart,image_master=image_master,original_title=original_title)
+   
+    file_list(url,data,last_id,description,iconimage,fanart,image_master=image_master,original_title=original_title,groups_id=groups_id)
 elif mode==3:
-    
+    files_path=os.path.join(xbmc_tranlate_path(Addon.getSetting("files_folder")), 'files')
+    log.warning('files_path:'+files_path)
+    try:
+        
+       
+        for root, dirs, files in os.walk(files_path, topdown=True):
+            for folder in dirs:
+                full_path = os.path.join(root, folder)
+                log.warning(full_path)
+                shutil.rmtree(full_path)
+     
+    except Exception as e:
+        log.warning('Remove Dir error2:'+str(e))
+        pass
+        
     play(name,url,data,iconimage,fanart,no_subs,tmdb,season,episode,original_title,description,resume)
+    
+                
 elif mode==4:
     data={'type':'logout',
          'info':''
          }
     event=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
+    
+    Addon.setSetting('autologin','false')
 elif mode==5:
     data={'type':'login',
          'info':''
          }
     event=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
-    log.warning(event)
+    
+    
+    invite_link='https://t.me/+sLBNTVQ43VRlNDc0'
+    if (invite_link!='your invite link'):
+        event={'status': 'Still on login'}
+        count=0
+        while(event['status']== 'Still on login'):
+            num=random.randint(1,1001)
+       
+            data={'type':'td_send','info':json.dumps({'@type': 'joinChatByInviteLink', 'invite_link': invite_link, '@extra': num})}
+        
+        
+            event=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
+            log.warning(event)
+            if 'status' not in event:
+                break
+            
+            time.sleep(1)
+            count+=1
+            if count>60:
+                break
+    xbmc.executebuiltin('Container.Refresh')
+
+elif mode==2 :
+     xbmcplugin.setContent(int(sys.argv[1]), 'movies')
+
 elif mode==6:
     
     search(url,data,last_id,description,iconimage,fanart,'0','0',no_subs=0)
@@ -6610,17 +7112,20 @@ elif mode==121:
     get_folders(iconimage,fanart)
 elif mode==122:
     select_file_browser()
-log.warning('exit_now:'+str(exit_now))
-log.warning(sys.argv)
+elif mode==123:
+    check_free_space_local()
+elif mode==124:
+    xbmc.executebuiltin('ActivateWindow(10025,"library://video/movies/titles.xml/",return)')
+
 if len(sys.argv)>1:# and exit_now==0:
-    '''
-    if mode!=None and mode!=15 and mode!=20:
+    
+    if 1:#mode!=None and mode!=15 and mode!=20:
         xbmcplugin.addSortMethod(int(sys.argv[1]), xbmcplugin.SORT_METHOD_DATEADDED)
         xbmcplugin.addSortMethod(int(sys.argv[1]), xbmcplugin.SORT_METHOD_VIDEO_SORT_TITLE)
         xbmcplugin.addSortMethod(int(sys.argv[1]), xbmcplugin.SORT_METHOD_VIDEO_YEAR)
-    '''
+    
     if mode==2 or mode==12 :
-        xbmcplugin.setContent(int(sys.argv[1]), 'files')
+        xbmcplugin.setContent(int(sys.argv[1]), 'movies')
     else:
         xbmcplugin.setContent(int(sys.argv[1]), 'movies')
 

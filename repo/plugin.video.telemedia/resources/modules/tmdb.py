@@ -13,13 +13,14 @@ Addon = xbmcaddon.Addon()
 from resources.modules import cache
 log.warning('LANG:'+lang)
 domain_s='https://'
+tmdb_key=Addon.getSetting("tmdb_api")
 def get_html_g():
     try:
-        url_g='https://api.themoviedb.org/3/genre/tv/list?api_key=34142515d9d23817496eeb4ff1d223d0&language='+lang
+        url_g=f'https://api.themoviedb.org/3/genre/tv/list?api_key={tmdb_key}&language='+lang
         html_g_tv=get_html(url_g).json()
          
    
-        url_g='https://api.themoviedb.org/3/genre/movie/list?api_key=34142515d9d23817496eeb4ff1d223d0&language='+lang
+        url_g=f'https://api.themoviedb.org/3/genre/movie/list?api_key={tmdb_key}&language='+lang
         html_g_movie=get_html(url_g).json()
     except Exception as e:
         log.warning('Err in HTML_G:'+str(e))
@@ -112,7 +113,7 @@ def get_tmdb_data(new_name_array,html_g,fav_search_f,fav_servers_en,fav_servers,
                  f_subs=cache.get(get_links,9999,'movie',original_name,original_name,'0','0','0','0',year,id,True, table='pages')
                if data['original_language']!='en':
                 
-                html2=get_html('http://api.themoviedb.org/3/movie/%s?api_key=34142515d9d23817496eeb4ff1d223d0'%id).json()
+                html2=get_html(f'http://api.themoviedb.org/3/movie/%s?api_key={tmdb_key}'%id).json()
                 original_name=html2['title']
                 
                
@@ -124,11 +125,9 @@ def get_tmdb_data(new_name_array,html_g,fav_search_f,fav_servers_en,fav_servers,
                
                if data['original_language']!='en':
                 
-                    html2=get_html('http://api.themoviedb.org/3/tv/%s?api_key=34142515d9d23817496eeb4ff1d223d0'%id).json()
-                    if 'name' in html2:
-                        original_name=html2['name']
-                    #if 'name' in data:
-                    #    original_name=data['name']
+                    
+                    if 'name' in data:
+                        original_name=data['name']
              
              if data['poster_path']==None:
               icon=' '
@@ -237,11 +236,11 @@ def get_all_data(first,last,url,link,new_name_array,isr):
               
               
         if '/tv/' in url:
-             url_g='https://api.themoviedb.org/3/genre/tv/list?api_key=34142515d9d23817496eeb4ff1d223d0&language='+lang
+             url_g=f'https://api.themoviedb.org/3/genre/tv/list?api_key={tmdb_key}&language='+lang
              
              html_g=html_g_tv
         else:
-             url_g='https://api.themoviedb.org/3/genre/movie/list?api_key=34142515d9d23817496eeb4ff1d223d0&language='+lang
+             url_g=f'https://api.themoviedb.org/3/genre/movie/list?api_key={tmdb_key}&language='+lang
              html_g=html_g_movie
         #html_g=get_html(url_g).json()
         log.warning('3')
@@ -333,7 +332,7 @@ def get_movies(url,local=False,reco=0):
         end_y=window.toy
     
         del window
-        url='http://api.themoviedb.org/3/discover/%s?api_key=34142515d9d23817496eeb4ff1d223d0&language=%s&sort_by=popularity.desc&primary_release_date.gte=%s-01-01&primary_release_date.lte=%s-12-31&with_genres=%s&page=1'%(url.split('_')[1],lang,start_y,end_y,','.join(all_g))
+        url=f'http://api.themoviedb.org/3/discover/%s?api_key={tmdb_key}&language=%s&sort_by=popularity.desc&primary_release_date.gte=%s-01-01&primary_release_date.lte=%s-12-31&with_genres=%s&page=1'%(url.split('_')[1],lang,start_y,end_y,','.join(all_g))
    if url=='movie_years&page=1':
      
       
@@ -341,14 +340,14 @@ def get_movies(url,local=False,reco=0):
           ret=ret = xbmcgui.Dialog().select("Choose", all_years)
           if ret!=-1:
             
-              url='https://api.themoviedb.org/3/discover/movie?api_key=34142515d9d23817496eeb4ff1d223d0&language=%s&sort_by=popularity.desc&include_adult=false&include_video=false&primary_release_year=%s&with_original_language=en&page=1'%(lang,all_years[ret])
+              url=f'https://api.themoviedb.org/3/discover/movie?api_key={tmdb_key}&language=%s&sort_by=popularity.desc&include_adult=false&include_video=false&primary_release_year=%s&with_original_language=en&page=1'%(lang,all_years[ret])
             
           else:
             return 0
       else:
         for items in all_years:
             
-            url='https://api.themoviedb.org/3/discover/movie?api_key=34142515d9d23817496eeb4ff1d223d0&language=%s&sort_by=popularity.desc&include_adult=false&include_video=false&primary_release_year=%s&with_original_language=en&page=1'%(lang,items)
+            url=f'https://api.themoviedb.org/3/discover/movie?api_key={tmdb_key}&language=%s&sort_by=popularity.desc&include_adult=false&include_video=false&primary_release_year=%s&with_original_language=en&page=1'%(lang,items)
             if 0:
                if  name not in all_n:
                 all_n.append(name)
@@ -363,13 +362,13 @@ def get_movies(url,local=False,reco=0):
       if Addon.getSetting("dip_dialog")=='0':
           ret=ret = xbmcgui.Dialog().select("Choose", all_years)
           if ret!=-1:
-            url='https://api.themoviedb.org/3/discover/tv?api_key=34142515d9d23817496eeb4ff1d223d0&language=%s&sort_by=popularity.desc&first_air_date_year=%s&include_null_first_air_dates=false&with_original_language=en&page=1'%(lang,all_years[ret])
+            url=f'https://api.themoviedb.org/3/discover/tv?api_key={tmdb_key}&language=%s&sort_by=popularity.desc&first_air_date_year=%s&include_null_first_air_dates=false&with_original_language=en&page=1'%(lang,all_years[ret])
            
           else:
             sys.exit()
       else:
         for items in all_years:
-            url='https://api.themoviedb.org/3/discover/tv?api_key=34142515d9d23817496eeb4ff1d223d0&language=%s&sort_by=popularity.desc&first_air_date_year=%s&include_null_first_air_dates=false&with_original_language=en&page=1'%(lang,items)
+            url=f'https://api.themoviedb.org/3/discover/tv?api_key={tmdb_key}&language=%s&sort_by=popularity.desc&first_air_date_year=%s&include_null_first_air_dates=false&with_original_language=en&page=1'%(lang,items)
             
             aa=addDir3(items,url,14,'https://www.techniquetuesday.com/mm5/graphics/00000001/Technique-Tuesday-Calendar-Years-Clear-Stamps-Large_329x400.jpg','https://images.livemint.com/rf/Image-621x414/LiveMint/Period2/2018/08/16/Photos/Processed/investment-knrG--621x414@LiveMint.jpg',items,collect_all=True)
             all_d.append(aa)
@@ -493,12 +492,12 @@ def get_seasons(name,url,iconimage,fanart,description,data,original_title,id,heb
                     "userkey": "",
                     "username": ""
    }
-   tmdbKey = '653bb8af90162bd98fc7ee32bcbbfb3d'
+   tmdbKey = 'b370b60447737762ca38457bd77579b3'
    #headers = {'Content-Type': 'application/json', 'Accept': 'application/json', 'Accept-Language': 'he'}
    #r = requests.post(domain_s+'api.thetvdb.com/login', json=payload, headers=headers)
    #r_json = r.json()
 
-   url=domain_s+'api.themoviedb.org/3/tv/%s?api_key=34142515d9d23817496eeb4ff1d223d0&language=he,en&append_to_response=external_ids'%id
+   url=f'http://api.themoviedb.org/3/tv/%s?api_key={tmdb_key}&language=he&append_to_response=external_ids'%id
    log.warning(url)
    html=get_html(url).json()
    if 'first_air_date' in html:
@@ -538,7 +537,7 @@ def get_seasons(name,url,iconimage,fanart,description,data,original_title,id,heb
        all_season.append(str(s_number))
        all_season_tvdb_data.append({"name":ep_name,"episode_number":ep_num,"air_date":aired,"season_number":s_number,"poster_path":iconimage})
    try:
-       url2='http://api.themoviedb.org/3/tv/%s?api_key=%s&language=he&append_to_response=external_ids'%(id,tmdbKey)
+       url2=f'http://api.themoviedb.org/3/tv/%s?api_key={tmdb_key}&language=he&append_to_response=external_ids'%(id)
       
        
        imdb_id=get_html(url2).json()['external_ids']['imdb_id']
@@ -570,9 +569,12 @@ def get_seasons(name,url,iconimage,fanart,description,data,original_title,id,heb
        html['seasons'].append(all_season_imdb_data[all_season_imdb.index(items_a)])
    plot=html['overview']
    original_name=html['original_name']
+   if html['original_language']!='en':
+        original_name=html['name']
+               
    for data in html['seasons']:
    
-     new_name=' Season '+str(data['season_number'])
+     new_name=' עונה '+str(data['season_number'])
      if data['air_date']!=None:
          year=str(data['air_date'].split("-")[0])
      else:
@@ -627,18 +629,18 @@ def get_seasons(name,url,iconimage,fanart,description,data,original_title,id,heb
              
              datea=''
              color='red'
-     if 'season 0' in new_name:
+     if 'עונה 0' in new_name:
         continue
      aa=addDir3( '[COLOR %s]'%color+new_name+'[/COLOR]',url,19,icon,fan,datea+plot,data=year,original_title=original_name,id=id,season=season,tmdbid=tmdbid,show_original_year=show_original_year,heb_name=heb_name,isr=isr,ep_number=ep_number,watched_ep=watched,remain=remain)
      all_d.append(aa)
    xbmcplugin .addDirectoryItems(int(sys.argv[1]),all_d,len(all_d))
 def get_episode_data(id,season,episode,yjump=True):
-    url='http://api.themoviedb.org/3/tv/%s/season/%s/episode/%s?api_key=653bb8af90162bd98fc7ee32bcbbfb3d&language=%s&append_to_response=external_ids'%(id,season,episode,lang)
+    url=f'http://api.themoviedb.org/3/tv/%s/season/%s/episode/%s?api_key={tmdb_key}&language=%s&append_to_response=external_ids'%(id,season,episode,lang)
     
     html=get_html(url).json()
     if yjump:
       if 'status_code' in html:
-        url='http://api.themoviedb.org/3/tv/%s/season/%s/episode/%s?api_key=653bb8af90162bd98fc7ee32bcbbfb3d&language=%s&append_to_response=external_ids'%(id,str(int(season)+1),'1',lang)
+        url=f'http://api.themoviedb.org/3/tv/%s/season/%s/episode/%s?api_key={tmdb_key}&language=%s&append_to_response=external_ids'%(id,str(int(season)+1),'1',lang)
         html=get_html(url).json()
         episode='1'
         season=str(int(season)+1)
@@ -655,13 +657,13 @@ def get_episode_data(id,season,episode,yjump=True):
 def get_episode(name,url,iconimage,fanart,description,data,original_title,id,season,tmdbid,show_original_year,heb_name,isr):
    import _strptime
    all_d=[]
-   url=domain_s+'api.themoviedb.org/3/tv/%s/season/%s?api_key=34142515d9d23817496eeb4ff1d223d0&language=%s'%(id,season,lang)
-   tmdbKey = '653bb8af90162bd98fc7ee32bcbbfb3d'
+   url=f'http://api.themoviedb.org/3/tv/%s/season/%s?api_key={tmdb_key}&language=%s'%(id,season,lang)
+   tmdbKey = 'b370b60447737762ca38457bd77579b3'
    html=get_html(url).json()
    #tmdb data
    if 'episodes'  in html:
        if html['episodes'][0]['name']=='':
-         url=domain_s+'api.themoviedb.org/3/tv/%s/season/%s?api_key=34142515d9d23817496eeb4ff1d223d0&language=eng'%(id,season)
+         url=f'http://api.themoviedb.org/3/tv/%s/season/%s?api_key={tmdb_key}&language=eng'%(id,season)
          html=get_html(url).json()
    response = get_html('http://thetvdb.com/api/0629B785CE550C8D/series/%s/all/he.xml'%tmdbid).content()
    
@@ -693,7 +695,7 @@ def get_episode(name,url,iconimage,fanart,description,data,original_title,id,sea
            all_episodes.append(str(ep_num))
            all_season_tvdb_data.append({"name":ep_name,"episode_number":ep_num,"air_date":aired,"overview":overview,"season_number":s_number,"still_path":iconimage,"poster_path":image2})
    
-   url2='http://api.themoviedb.org/3/tv/%s?api_key=%s&language=he&append_to_response=external_ids'%(id,tmdbKey)
+   url2=f'http://api.themoviedb.org/3/tv/%s?api_key={tmdb_key}&language=he&append_to_response=external_ids'%(id)
       
        
     

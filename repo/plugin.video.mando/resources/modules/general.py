@@ -2,7 +2,9 @@
 import re,time,os
 from resources.modules import cache
 from resources.modules import log
-global local
+global local,tmdb_key
+
+
 local=False
 try:
     import urllib3
@@ -14,12 +16,14 @@ try:
    import xbmcgui,xbmc
    import xbmcaddon
    Addon = xbmcaddon.Addon()
+   
    local=False
 except:
   import Addon
   local=True
   rd_domains=[u'4shared.com', u'openload.co', u'rapidgator.net', u'sky.fm', u'1fichier.com', u'docs.google.com', u'depositfiles.com', u'hitfile.net', u'rapidvideo.com', u'filerio.com', u'solidfiles.com', u'mega.co.nz', u'scribd.com', u'flashx.tv', u'canalplus.fr', u'dailymotion.com', u'salefiles.com', u'youtube.com', u'faststore.org', u'turbobit.net', u'big4shared.com', u'filefactory.com', u'youporn.com', u'oboom.com', u'vimeo.com', u'redtube.com', u'zippyshare.com', u'file.al', u'clicknupload.me', u'soundcloud.com', u'gigapeta.com', u'datafilehost.com', u'datei.to', u'rutube.ru', u'load.to', u'streamango.com', u'sendspace.com', u'vidoza.net', u'tusfiles.net', u'unibytes.com', u'ulozto.net', u'hulkshare.com', u'dl.free.fr', u'streamcherry.com', u'vidlox.tv', u'mediafire.com', u'vk.com', u'uploaded.net', u'userscloud.com']
   pass
+tmdb_key=Addon.getSetting("tmdb_api")
 hostprDict = ['1fichier.com', 'oboom.com', 'rapidgator.net', 'rg.to', 'uploaded.net',
                    'uploaded.to', 'ul.to', 'filefactory.com', 'nitroflare.com', 'turbobit.net', 'uploadrocket.net','uploadgig.com']
 KODI_VERSION = int(xbmc.getInfoLabel("System.BuildVersion").split('.', 1)[0])
@@ -100,13 +104,13 @@ def get_vstram_title(original_name,html2):
     return name1.replace("."," ").replace('Watch','').replace('watch','').replace(' mp4','').replace('watch','').replace(' MP4','').replace(' mkv','').replace(' MKV','').replace("_",".")
     
 def get_imdb(tv_movie,id):
-    tmdbKey='653bb8af90162bd98fc7ee32bcbbfb3d'
+    tmdbKey='b370b60447737762ca38457bd77579b3'
     if tv_movie=='tv':
       
-       url2='http://api.themoviedb.org/3/tv/%s?api_key=%s&append_to_response=external_ids'%(id,tmdbKey)
+       url2=f'http://api.themoviedb.org/3/tv/%s?api_key={tmdb_key}&append_to_response=external_ids'%(id)
     else:
        
-       url2='http://api.themoviedb.org/3/movie/%s?api_key=%s&append_to_response=external_ids'%(id,tmdbKey)
+       url2=f'http://api.themoviedb.org/3/movie/%s?api_key={tmdb_key}&append_to_response=external_ids'%(id)
     try:
         
         imdb_id=get_html(url2,timeout=10).json()['external_ids']['imdb_id']
@@ -168,7 +172,7 @@ class client():
             'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:59.0) Gecko/20100101 Firefox/59.0',
         }
      return get_html(url,headers=headers,cookies=cookie).content
-BASE_URL = 'http://api.trakt.tv'
+BASE_URL = 'https://api.trakt.tv'
 SETTING_TRAKT_EXPIRES_AT = "trakt_expires_at"
 SETTING_TRAKT_ACCESS_TOKEN = "trakt_access_token"
 SETTING_TRAKT_REFRESH_TOKEN = "trakt_refresh_token"
@@ -295,7 +299,7 @@ def trakt_get_device_token(device_codes):
 def post_trakt(path,data=None, with_auth=True):
     import urllib
     
-    API_ENDPOINT = "https://api-v2launch.trakt.tv"
+    API_ENDPOINT = "https://api.trakt.tv"
 
     headers = {
         'Content-Type': 'application/json',
@@ -326,7 +330,7 @@ def cached_call_t(path, params={}, data=None, is_delete=False, with_auth=True, p
     }
 
 
-    API_ENDPOINT = "https://api-v2launch.trakt.tv"
+    API_ENDPOINT = "https://api.trakt.tv"
     
     def send_query():
         if with_auth:
@@ -403,6 +407,8 @@ def cached_call_t(path, params={}, data=None, is_delete=False, with_auth=True, p
         (response, numpages) = paginated_query(page)
         return response, numpages
 def call_trakt(path, params={}, data=None, is_delete=False, with_auth=True, pagination = False, page = 1):
+    
+    
     a=cached_call_t(path, params, data, is_delete, with_auth, pagination,  page)
     return a
 def base_convert(x,b,alphabet='0123456789abcdefghijklmnopqrstuvwxyz'):
@@ -478,7 +484,7 @@ def base_convert(x,b,alphabet='0123456789abcdefghijklmnopqrstuvwxyz'):
     
 def get_imdb_data(info,name_o,image,source,type):
          
-         tmdbKey = '653bb8af90162bd98fc7ee32bcbbfb3d'
+         tmdbKey = 'b370b60447737762ca38457bd77579b3'
          name=name_o
          imdb_id=''
          icon=image
@@ -508,16 +514,16 @@ def get_imdb_data(info,name_o,image,source,type):
            info['title']=name_o.replace('.',' ')
          if 1:
           if 'year' in info:
-            tmdb_data="https://api.tmdb.org/3/search/%s?api_key=%s&query=%s&year=%s&language=he&append_to_response=external_ids"%(type,tmdbKey,urllib.quote_plus(info['title']),info['year'])
+            tmdb_data=f"https://api.tmdb.org/3/search/%s?api_key={tmdb_key}&query=%s&year=%s&language=he&append_to_response=external_ids"%(type,urllib.quote_plus(info['title']),info['year'])
             year_n=info['year']
           else:
-            tmdb_data="https://api.tmdb.org/3/search/%s?api_key=%s&query=%s&language=he&append_to_response=external_ids"%(type,tmdbKey,urllib.quote_plus(info['title']))
+            tmdb_data=f"https://api.tmdb.org/3/search/%s?api_key={tmdb_key}&query=%s&language=he&append_to_response=external_ids"%(type,urllib.quote_plus(info['title']))
 
           all_data=get_html(tmdb_data).json()
           if 'results' in all_data:
            if len(all_data['results'])>0:
                 if (all_data['results'][0]['id'])!=None:
-                    url='https://api.themoviedb.org/3/%s/%s?api_key=%s&language=he&append_to_response=external_ids'%(type,all_data['results'][0]['id'],tmdbKey)
+                    url=f'https://api.themoviedb.org/3/%s/%s?api_key={tmdb_key}&language=he&append_to_response=external_ids'%(type,all_data['results'][0]['id'])
                     try:
                         all_d2=get_html(url).json()
                         imdb_id=all_d2['external_ids']['imdb_id']

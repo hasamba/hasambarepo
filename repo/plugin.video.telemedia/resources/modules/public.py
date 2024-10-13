@@ -21,7 +21,7 @@ else:
     url_encode=urllib.parse.urlencode
     unque_n=urllib.parse.unquote
     
-def addNolink( name, url,mode,isFolder,fan='DefaultFolder.png', iconimage="DefaultFolder.png",plot=' ',year=' ',generes=' ',rating=' ',trailer=' ',original_title=' '):
+def addNolink( name, url,mode,isFolder,fan='DefaultFolder.png', iconimage="DefaultFolder.png",plot=' ',year=' ',generes=' ',rating=' ',trailer=' ',original_title=' ',short=False):
  
 
             name=name.replace("|",' ')
@@ -94,7 +94,10 @@ def addNolink( name, url,mode,isFolder,fan='DefaultFolder.png', iconimage="Defau
             art = {}
             art.update({'poster': iconimage})
             liz.setArt(art)
-            xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=u, listitem=liz,isFolder=isFolder)
+            if (short):
+                return u,liz
+            else:
+                xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=u, listitem=liz,isFolder=isFolder)
 ###############################################################################################################        
 def utf8_urlencode(params):
     import urllib as u
@@ -144,23 +147,23 @@ def addDir3(name,url,mode,iconimage,fanart,description,image_master='',last_id='
         menu_items.append(('[I]%s[/I]'%Addon.getLocalizedString(32063), 'Action(Info)'))
         if remove_from_fd_g:
             #Remove from FD groups
-            menu_items.append(('[I]%s[/I]'%Addon.getLocalizedString(32082), 'RunPlugin(%s)' % ('%s?url=%s&mode=35&name=%s')%(sys.argv[0],url,name)))
+            menu_items.append(('[I]%s[/I]'%Addon.getLocalizedString(32082), 'RunPlugin(%s)' % ('%s?url=%s&mode=35&name=%s')%(sys.argv[0],url,que(name))))
         if join_menu:
             #join Channel
             menu_items.append(('[I]%s[/I]'%Addon.getLocalizedString(32062), 'RunPlugin(%s)' % ('%s?url=%s&mode=22&name=join')%(sys.argv[0],url)))
         if menu_leave:
             #Leave Channel
-            menu_items.append(('[I]%s[/I]'%Addon.getLocalizedString(32031), 'RunPlugin(%s)' % ('%s?url=%s&mode=23&name=%s')%(sys.argv[0],url,name)))
+            menu_items.append(('[I]%s[/I]'%Addon.getLocalizedString(32031), 'RunPlugin(%s)' % ('%s?url=%s&mode=23&name=%s')%(sys.argv[0],url,que(name))))
         
         if mode==16:
             #Remove
-            menu_items.append(('[I]%s[/I]'%Addon.getLocalizedString(32056), 'RunPlugin(%s)' % ('%s?url=%s&mode=29&name=%s')%(sys.argv[0],url,name)))
+            menu_items.append(('[I]%s[/I]'%Addon.getLocalizedString(32056), 'RunPlugin(%s)' % ('%s?url=%s&mode=29&name=%s')%(sys.argv[0],url,que(name))))
         if mode==16:
             #add to my TV
-            menu_items.append(('[I]%s[/I]'%Addon.getLocalizedString(32069), 'RunPlugin(%s)' % ('%s?url=%s&mode=27&name=%s&data=%s&iconimage=%s&fanart=%s&description=%s')%(sys.argv[0],id,name,data,iconimage,fanart,description)))
+            menu_items.append(('[I]%s[/I]'%Addon.getLocalizedString(32069), 'RunPlugin(%s)' % ('%s?url=%s&mode=27&name=%s&data=%s&iconimage=%s&fanart=%s&description=%s')%(sys.argv[0],id,que(name),data,iconimage,fanart,que(description))))
         if mode==2:
             #add to my TV
-            menu_items.append(('[I]%s[/I]'%Addon.getLocalizedString(32080), 'RunPlugin(%s)' % ('%s?url=%s&mode=34&name=%s&data=%s&iconimage=%s&fanart=%s&description=%s')%(sys.argv[0],url,name,data,iconimage,fanart,description)))
+            menu_items.append(('[I]%s[/I]'%Addon.getLocalizedString(32080), 'RunPlugin(%s)' % ('%s?url=%s&mode=34&name=%s&data=%s&iconimage=%s&fanart=%s&description=%s')%(sys.argv[0],url,que(name),data,iconimage,fanart,que(description))))
         video_data={}
         video_data['title']=name
         if (episode!=' ' and episode!='%20' and episode!=None) :
@@ -279,7 +282,7 @@ def addDir3(name,url,mode,iconimage,fanart,description,image_master='',last_id='
 
 
 
-def addLink( name, url,mode,isFolder, iconimage,fanart,description,data='',rating='',generes='',no_subs='0',tmdb='0',season='0',episode='0',original_title='',da='',year=0,all_w={},in_groups=False):
+def addLink( name, url,mode,isFolder, iconimage,fanart,description,data='',rating='',generes='',no_subs='0',tmdb='0',season='0',episode='0',original_title='',da='',year=0,all_w={},in_groups=False,short=False,watched=False):
           name=name.replace("|",' ')
           description=description.replace("|",' ')
           original_title=original_title.replace("|",' ')
@@ -332,7 +335,7 @@ def addLink( name, url,mode,isFolder, iconimage,fanart,description,data='',ratin
                 
                 video_data['playcount']=0
                 video_data['overlay']=0
-                video_data['title']='[COLOR lightblue]'+original_title+'[/COLOR]'
+                video_data['title']='[COLOR lightblue]'+name+'[/COLOR]'
                 liz.setProperty('ResumeTime', all_w[ee]['resume'])
                 liz.setProperty('TotalTime', all_w[ee]['totaltime'])
                 try:
@@ -343,6 +346,10 @@ def addLink( name, url,mode,isFolder, iconimage,fanart,description,data='',ratin
                             return 0
                 except:
                     pass
+          if watched:
+                
+                video_data['title']="[COLOR blue]"+name+"[/COLOR]"
+          
           if KODI_VERSION>19:
                 info_tag = liz.getVideoInfoTag()
                 info_tag.setMediaType(meta_get(video_data,'mediatype'))
@@ -377,7 +384,9 @@ def addLink( name, url,mode,isFolder, iconimage,fanart,description,data='',ratin
           art = {}
           art.update({'poster': iconimage})
           liz.setArt(art)
-          liz.setProperty("IsPlayable","false")
+          liz.setProperty("IsPlayable","true")
           liz.setProperty( "Fanart_Image", fanart )
-          
-          xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=u, listitem=liz,isFolder=isFolder)
+          if (short):
+                return u,liz
+          else:
+            xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=u, listitem=liz,isFolder=isFolder)

@@ -309,9 +309,9 @@ msgctxt "#32073"
 msgid "Kids World"
 msgstr "עולם הילדים"
 
-msgctxt "#32074"
+msgctxt "#32174"
 msgid "Movie World"
-msgstr "עולם הסרטים"
+msgstr "צ'יקו מדובבים"
 
 msgctxt "#32075"
 msgid "Israeli Movies"

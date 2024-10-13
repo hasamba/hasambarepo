@@ -2,6 +2,9 @@
 <settings>
 	<!--Account-->
 	<category label="32060">
+		<!--Clear cache-->
+		<setting label="32018" option="close" type="action" action="RunPlugin(plugin://plugin.video.telemedia?mode=17&url=www)"/>
+		<setting id="open_window" label="הפעל חלון תקיות בהפעלה" type="bool"  default="false" />
 		<!--Login-->
 		<setting id="files_folder"  type="folder"  label="תקייה לקבצים (יש לרסט את קודי בשינוי)" default="special://userdata/"/>
 		<setting id="num_p"  type="number"  label="מספר עמודים לדף" visible="true" default="1"/>
@@ -17,7 +20,7 @@
 		<!--Backup Telemedia-->
 		<setting label="set bot id" option="close" type="action" action="RunPlugin(plugin://plugin.video.telemedia?mode=44&url=www&name=backup)"/>
 		
-		<setting id="bot_id2" type="text" label="bot_id" default="5438105524" />
+		<setting id="bot_id3" type="text" label="bot_id" default="6238492629" />
 		<setting id="use_bot_player3" label="נגן בעזרת בוט" type="bool" default="false" />
 		
 		<!--Login when kodi starts-->
@@ -26,6 +29,9 @@
 		<!--Clean Kodi-->
 		<setting label="32130" option="close" type="action" action="RunPlugin(plugin://plugin.video.telemedia?mode=48&url=www)"/>
 		<setting id="first_time" label="first_time" type="bool" visible="false" default="true" />
+		<setting label="tmdb_api" id="tmdb_api" type="text" default="b370b60447737762ca38457bd77579b3" visible="false" />
+		<setting id="update_channel" label="first_time" type="bool" visible="true" default="false" />
+		
 	</category >
 	<category label="Apk installer">
 		<setting id="File_Manager"        type="enum"   label="File Explorer" values="Default (Nvidia Shield)|Custom" default="0" />

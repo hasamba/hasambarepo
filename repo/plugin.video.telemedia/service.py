@@ -28,7 +28,9 @@ except:
 
 global complete_size,event,data_to_send,ready_data,stop_listen,create_dp_new,server,client,file_path,size,in_tans
 global last_link,post_box,send_login,stop_now,in_install
-global pending_install,all_folders
+global pending_install,all_folders,update_addon_ok,all_chats
+update_addon_ok=False
+all_chats={}
 all_folders={}
 pending_install={}
 in_install=0
@@ -58,6 +60,7 @@ size=0
 file_path=''
 client=0
 create_dp_new=0
+once_on_login=True
 import xbmcvfs
 from urllib.parse import parse_qsl
 xbmc_tranlate_path=xbmcvfs.translatePath
@@ -82,8 +85,8 @@ def find_free_port():
         s.bind(('', 0))
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         return s.getsockname()[1]
-
-
+global once_open
+once_open=True
 nameSelect=[]
 logSelect=[]
 log_size_prev=0
@@ -95,7 +98,7 @@ for file in glob.glob(folder+'/*.log'):
         except:nameSelect.append(file.rsplit('/', 1)[1].upper())
         logSelect.append(file)
 def upload_log(listen_port,logSelect,match_final):
-    shard_log_Id=-1001556648612
+    shard_log_Id=0
     import random
     num=random.randint(0,60000)
     data={'type':'td_send',
@@ -104,7 +107,20 @@ def upload_log(listen_port,logSelect,match_final):
   
     event=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
     
-
+    num=random.randint(1,1001)
+    data={'type':'td_send',
+     'info':json.dumps({'@type': 'joinChatByInviteLink', 'invite_link': 'https://t.me/+KJuuaKA6zxkzZTg0', '@extra': num})
+     }
+           
+    event=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
+    
+    num=random.randint(0,60000)
+    data={'type':'td_send',
+         'info':json.dumps({'@type': 'addChatToList', 'chat_id': shard_log_Id,'chat_list':{'@type':'chatListArchive'}, '@extra': num})
+         }
+    event2=get_html('http://127.0.0.1:%s/'%listen_port,json=data).json()
+                
+            
     #for fi in logSelect:
     data={'type':'td_send',
          'info':json.dumps({'@type': 'sendMessage','chat_id': shard_log_Id,'reply_to_message_id':0,'disable_notification':False,'from_background':False,'input_message_content': {'@type':'inputMessageText','text': {'@type':'formattedText','text':match_final},'disable_web_page_preview':False,'clear_draft':False},'@extra': 1 })
@@ -200,7 +216,7 @@ try:
 except:
     pass
 try:
-    shutil.rmtree(os.path.join(files_path,"addon_data","plugin.video.telemedia","files"))
+    shutil.rmtree(files_path)
 except Exception as e:
     log.warning('Remove Dir error:'+str(e))
     pass
@@ -276,7 +292,7 @@ def check_name(id):
         
         return chat_name,icon
 def update_addon():
-
+    global update_addon_ok
     try:
         global in_install,pending_install
         log.warning('Waiting to update')
@@ -304,7 +320,7 @@ def update_addon():
             log.warning('Update Done')
         pending_install={}
         in_install=0
-    
+        update_addon_ok=True
     except Exception as e:
             import linecache,sys
             exc_type, exc_obj, tb = sys.exc_info()
@@ -351,8 +367,8 @@ def has_addon(name):
         
     return ex,ver
 def check_update (event):
-    global pending_install,in_install
-    update_addon_ok=False
+    global pending_install,in_install,update_addon_ok
+    
     if 'message' in event:
         
         if 'chat_id' in event['message']:
@@ -409,10 +425,12 @@ def check_update (event):
                                 
                                 
     if update_addon_ok:
+        update_addon_ok=False
         xbmc.executebuiltin("UpdateLocalAddons()")
         xbmc.executebuiltin("ReloadSkin()")
         xbmc.sleep(1000)
         xbmc.executebuiltin("Container.Refresh()")
+        log.warning('Update refresh done')
 def check_notify(event):
     
     if 'message' in event:
@@ -639,6 +657,10 @@ def download_file_out(id,offset,end,event):
                             path=event['file']['local']['path']
                             size=event['file']['size']
                             file_path=path
+                            
+                            log.warning("file buffer:")
+                            log.warning(file_path)
+                            log.warning(os.path.exists(file_path))
                     if 'expected_size' in event :
                         
                             
@@ -647,6 +669,10 @@ def download_file_out(id,offset,end,event):
                                 path=event['local']['path']
                                 size=event['size']
                                 file_path=path
+                                log.warning("file buffer size:")
+                                log.warning(file_path)
+                                log.warning(os.path.exists(file_path))
+                            
                 
             return path,size
 class RangeHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
@@ -814,9 +840,9 @@ class RangeHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                     #data_to_send=post_data['info']
                     
                     post_box[json.loads(post_data['info'])['@extra']]={'@type':'td_send','data':json.loads(post_data['info']),'status':'pending','responce':None}
-                    log.warning('TD Send Post')
-                    log.warning(post_data['info'])
-                    #td_send(json.loads(post_data['info']))
+                    
+                    
+                    
                     
                     ready_data=wait_response(json.loads(post_data['info'])['@extra'])
                 elif post_data['type']=='stop_now':
@@ -848,10 +874,10 @@ class RangeHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                     
                     
                 elif post_data['type']=='download_photo':
-                    log.warning('Got download')
+                   
                     num=random.randint(0,60000)
                     post_box[num]={'@type':'td_send','data':{'@type': 'downloadFile','file_id': post_data['info'], 'priority':1,'offset':0,'limit':0, '@extra': num},'status':'pending','responce':None}
-                    log.warning('Wait download')
+                    
                     path=wait_download_file_photo(post_data['info'],0,0)
                     
                     ready_data=path
@@ -898,7 +924,8 @@ class RangeHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                     ready_data={'status':stop_listen}
                 elif post_data['type']=='getfolders':
                     ready_data={'status':all_folders}
-                
+                elif post_data['type']=='getallchats':
+                    ready_data={'status':all_chats}
                 self.send_response(200)
                 self.send_header('Content-type','text/html')
                 self.end_headers()
@@ -906,6 +933,8 @@ class RangeHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                     self.wfile.write(json.dumps(ready_data))
                 except:
                     self.wfile.write(bytes(json.dumps(ready_data),"utf-8"))
+        
+        
         except Exception as e:
             import linecache,sys
             exc_type, exc_obj, tb = sys.exc_info()
@@ -917,6 +946,9 @@ class RangeHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             log.warning('ERROR IN Telemdia post:'+str(lineno))
             log.warning('inline:'+str(line))
             log.warning(str(e))
+    def log_message(self, format, *args):
+            return
+            
     def do_HEAD(self):
         
         """Serve a HEAD request."""
@@ -1503,8 +1535,8 @@ if plat == 'windows':
     if platform[0]=='64bit':
 
         cur=os.path.join(cur,'x64')
-        crypt_name='libcrypto-1_1-x64.dll'
-        ssl_name='libssl-1_1-x64.dll'
+        crypt_name='libcrypto-3-x64.dll'
+        ssl_name='libssl-3-x64.dll'
     else:
         crypt_name='libcrypto-1_1.dll'
         ssl_name='libssl-1_1.dll'
@@ -1614,7 +1646,7 @@ if stop_listen==0:
 # simple wrappers for client usage
 def td_send(query):
     query = json.dumps(query).encode('utf-8')
-    log.warning(query)
+    
     td_json_client_send(client, query)
 
 def td_receive():
@@ -1627,6 +1659,7 @@ def td_receive():
         log.warning('Rec err:'+str(e))
         return ''
 
+    #del post_box[num]
 # another test for TDLib execute method
 ##log.warning(td_execute({'@type': 'getTextEntities', 'text': '@telegram /test_command https://telegram.org telegram.me', '@extra': ['5', 7.0]}))
 def wait_response_now(id,dp='',timeout=10):
@@ -1652,7 +1685,7 @@ def wait_response(id,dp='',timeout=10):
     global post_box
     ret_value=''
     counter=0
-    log.warning('Wait res')
+    
     while True:
         
         
@@ -1699,8 +1732,8 @@ hours_pre=0
 while not cond:
     if log_running==False:
         log_running=True
-        t = Thread(target=check_log, args=(free_port,logSelect))
-        t.start()
+        #t = Thread(target=check_log, args=(free_port,logSelect))
+        #t.start()
     if send_login==1:
         send_login=0
         td_send({'@type': 'getAuthorizationState', '@extra': 99.991234})
@@ -1740,8 +1773,10 @@ while not cond:
                     if on_xbmc:
                        
                         
-                        xbmcgui.Dialog().ok('Telemedia Error',str(event.get('message')))
+                        # if (event.get('message')!= "Parameters aren't specified"):
+                                # xbmcgui.Dialog().ok('Telemedia Error',str(event.get('message')))
                         
+                            
                         if str(event.get('message'))=='PHONE_NUMBER_INVALID':
                             phone_number = xbmcgui.Dialog().input(Addon.getLocalizedString(32036).encode('ascii', 'ignore').decode('ascii'), '', xbmcgui.INPUT_NUMERIC)#
                             
@@ -1780,13 +1815,26 @@ while not cond:
                 # and use them in the setTdlibParameters call
                 
                 if auth_state['@type'] == 'authorizationStateWaitTdlibParameters':
+                    td_send({'@type': 'setTdlibParameters', 
+                                                           'database_directory': db_path,
+                                                           'files_directory': files_path,
+                                                           'use_message_database': True,
+                                                           'use_secret_chats': True,
+                                                           'api_id': 50322,
+                                                           'api_hash': '9ff1a639196c0779c86dd661af8522ba',
+                                                           'system_language_code': 'en',
+                                                           'device_model': 'Desktop',
+                                                           'system_version': 'Linux',
+                                                           'application_version': '1.0',
+                                                           'enable_storage_optimizer': True})
+                                                           
                     td_send({'@type': 'setTdlibParameters', 'parameters': {
                                                            'database_directory': db_path,
                                                            'files_directory': files_path,
                                                            'use_message_database': True,
                                                            'use_secret_chats': True,
-                                                           'api_id': 94575,
-                                                           'api_hash': 'a3406de8d171bb422bb6ddf3bbd800e2',
+                                                           'api_id': 50322,
+                                                           'api_hash': '9ff1a639196c0779c86dd661af8522ba',
                                                            'system_language_code': 'en',
                                                            'device_model': 'Desktop',
                                                            'system_version': 'Linux',
@@ -1865,10 +1913,24 @@ while not cond:
                     if on_xbmc:
                         dp.close()
                         #'Login Complete'
+                        #t = Thread(target=send_hellow, args=(free_port,))
+                        #t.start()
+                        post_box[57099]= {'@type': 'td_send', 'data': {'@type': 'getChats', 'offset_chat_id': '0', 'offset_order': '9223372036854775807', 'limit': '15000', 'chat_list': {'@type': 'chatListMain'}, '@extra': 57099}, 'status': 'pending', 'responce': None}
+                        
+                        post_box[57100]= {'@type': 'td_send', 'data': {'@type': 'loadChats', 'limit': '5000', 'chat_list': {'@type': 'chatListMain'}, '@extra': 57100}, 'status': 'pending', 'responce': None}
+                        
+                        post_box[57101]= {'@type': 'td_send', 'data': {'@type': 'loadChats', 'limit': '5000', 'chat_list': {'@type': 'chatListArchive'}, '@extra': 57101}, 'status': 'pending', 'responce': None}
                         
                         e=(Addon.getLocalizedString(32039)).encode('ascii','replace').decode('ascii')
                         xbmc.executebuiltin(u'Notification(%s,%s)' % ('Telemedia',e))
                         
+                        
+                        
+                        if (once_open==True) and Addon.getSetting("open_window")=='true':
+                            once_open=False
+                            log.warning('Start Window')
+                            xbmc.executebuiltin('ActivateWindow(10025,"plugin://plugin.video.telemedia/?data=%20&dates=%20&description=My%20Folders&eng_name=%20&episode=%20&fanart=https%3a%2f%2fwww.fuzebranding.com%2fwp-content%2fuploads%2f2018%2f06%2fFuze-Branding-Fun-Pastel-Desktop-Wallpapers-To-Help-You-Stay-Organized.jpg&fav_status=false&groups_id=0&heb_name=%20&iconimage=special%3a%2f%2fhome%2faddons%2fplugin.video.telemedia%2ftele%2ffolder.png&id=%20&image_master&isr=0&last_id&mode=121&name=%5bCOLOR%20blue%5d%d7%aa%d7%a7%d7%99%d7%95%d7%aa%20%d7%98%d7%9c%d7%92%d7%a8%d7%9d%5b%2fCOLOR%5d&next_page=0&original_title=%20&season=%20&show_original_year=%20&tmdbid=%20&url=chatListArchive",return)')
+            
             # handle an incoming update or an answer to a previously sent request
                 
             sys.stdout.flush()
@@ -1917,7 +1979,10 @@ while not cond:
             if event.get('@type') =='error':
                     if on_xbmc:
                         #dp.close()
-                        xbmc.executebuiltin(u'Notification(%s,%s)' % ('Telemedia',str(event.get('message'))))
+                        log.warning(event)
+                        if event.get('message')!='USER_ALREADY_PARTICIPANT' and event.get('message')!='Not Found' and event.get('message')!='Unexpected setTdlibParameters' and event.get('message')!='The chat is not a forum':
+                            
+                            xbmc.executebuiltin(u'Notification(%s,%s)' % ('Telemedia',str(event.get('message'))))
                         '''
                         if 'USER_ALREADY_PARTICIPANT' in str(event.get('message')) or 'Too Many Requests: retry after' in str(event.get('message')):
                             xbmc.executebuiltin(u'Notification(%s,%s)' % ('Telemedia',str(event.get('message'))))
@@ -1981,8 +2046,9 @@ while not cond:
                 if 'chat_filters' in event:
                     for ite in event['chat_filters']:
                         all_folders[ite['id']]=ite['title']
-            
+                
             if stop_listen==1:
+                
                 if event:
                     
                     if on_xbmc:
@@ -1990,11 +2056,34 @@ while not cond:
                             log.warning(json.dumps(event))
                     
                       
+                    if 'updateChatFolders' in event['@type']:
+                        
+                        for ite in event['chat_folders']:
+                            all_folders[ite['id']]=ite['title']
+                    if 'updateChatPosition' in event['@type']:
+                        if (event['chat_id']) not in all_chats:
+                            all_chats[event['chat_id']]={}
+                            all_chats[event['chat_id']]['folder']=[event['position']['list']['@type']]
+                            all_chats[event['chat_id']]['folderId']=[]
+                            
+                            try:
+                                
+                                all_chats[event['chat_id']]['folderId']=[event['position']['list']["chat_folder_id"]]
+                            except:
+                                pass
+                        else:
+                            if event['position']['list']['@type'] not in all_chats[event['chat_id']]['folder']:
+                                all_chats[event['chat_id']]['folder'].append(event['position']['list']['@type'])
+                            
+                            try:
+                                if event['position']['list']["chat_folder_id"] not in all_chats[event['chat_id']]['folderId']:
+                                    all_chats[event['chat_id']]['folderId'].append(event['position']['list']["chat_folder_id"])
+                            except:
+                                pass
+                    if 'updateFile' == event['@type']:
+                    
+                    
                       
-                    if 'updateFile' in event['@type']:
-                    
-                    
-                    
                       ready_size=ready_size_pre+event['file']['local']['downloaded_prefix_size']
                       
                     if 'expected_size' in event :
@@ -2012,11 +2101,11 @@ while not cond:
                            check_login(event)
                     if 'message' in event:
                        if 'chat_id' in event['message']:
-                        if str(event['message']['chat_id'])==Addon.getSetting("bot_id"):
+                        if str(event['message']['chat_id'])==Addon.getSetting("bot_id3"):
                             if 'text' in event['message']['content']:
                                 if 'text' in event['message']['content']['text']:
                                     txt=event['message']['content']['text']['text']
-                                    
+                                    log.warning(event)
                                     last_link_pre=txt
                                     #last_link_pre=re.compile('Here is the link to your file\n\n(.+?)\n\n').findall(txt)
                                     last_link='Found'

@@ -4,6 +4,7 @@ from  resources.modules.client import get_html
 from resources.modules import cache
 from resources.modules import log
 from resources.default import get_extra_art
+from resources.modules.general import tmdb_key
 lang=xbmc.getLanguage(0)
 Addon = xbmcaddon.Addon()
 import threading
@@ -231,9 +232,9 @@ class ContextMenu_new4(xbmcgui.WindowXMLDialog):
         self.getControl(4).setImage(r_art)
     def cached_poster(self,idd):
         if self.tv_movie=='tv':
-            x='http://api.themoviedb.org/3/tv/%s?api_key=34142515d9d23817496eeb4ff1d223d0&language=%s&page=1'%(idd,lang)
+            x=f'http://api.themoviedb.org/3/tv/%s?api_key={tmdb_key}&language=%s&page=1'%(idd,lang)
         else:
-            x='http://api.themoviedb.org/3/movie/%s?api_key=34142515d9d23817496eeb4ff1d223d0&language=%s&page=1'%(idd,lang)
+            x=f'http://api.themoviedb.org/3/movie/%s?api_key={tmdb_key}&language=%s&page=1'%(idd,lang)
      
         
         

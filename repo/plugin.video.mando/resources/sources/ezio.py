@@ -31,14 +31,14 @@ def get_links(tv_movie,original_title,season_n,episode_n,season,episode,show_ori
         #log.warning('https://eztv.re/api/get-torrents?imdb_id=%s&limit=100&page=%s'%(imdb_id.replace('tt',''),str(pages)))
         max_size=int(Addon.getSetting("size_limit"))
         dev_num=1024*1024*1024
-        log.warning(x)
+   
         for items in x['torrents']:
                     title=items['filename']
                    
                     if 's%se%s.'%(season_n,episode_n) not in title.lower():
                         continue
                     lk=items['magnet_url']
-                    log.warning(lk)
+                   
                     size=(float(items['size_bytes'])/dev_num)
                     
                

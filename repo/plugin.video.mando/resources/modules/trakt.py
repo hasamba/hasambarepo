@@ -17,6 +17,7 @@ global trd_response
 trd_response={}
 from  resources.modules.client import get_html
 addon_id=Addon.getAddonInfo("id")
+from resources.modules.general import tmdb_key
 KODI_VERSION = int(xbmc.getInfoLabel("System.BuildVersion").split('.', 1)[0])
 if KODI_VERSION>18:
     def trd_alive(thread):
@@ -206,7 +207,7 @@ def progress_trakt(url,sync=False,sys_arg_1=""):
         start_time = time.time()
         xxx=0
         ddatetime = (datetime.datetime.utcnow() - datetime.timedelta(hours = 5))
-        url_g=domain_s+'api.themoviedb.org/3/genre/tv/list?api_key=34142515d9d23817496eeb4ff1d223d0&language='+lang
+        url_g=f'https://api.themoviedb.org/3/genre/tv/list?api_key={tmdb_key}&language='+lang
      
   
         html_g=get_html(url_g).json()
@@ -352,7 +353,7 @@ def progress_trakt(url,sync=False,sys_arg_1=""):
               season=items['snum']
               episode=items['enum']
               last_played=items['_last_watched'].replace('T',' ').replace('Z','').replace('.000','')
-              #url='http://api.themoviedb.org/3/tv/%s?api_key=%s&language=%s&append_to_response=external_ids'%(s_id,'653bb8af90162bd98fc7ee32bcbbfb3d',lang)
+              #url='https://api.themoviedb.org/3/tv/%s?api_key=%s&language=%s&append_to_response=external_ids'%(s_id,'{tmdb_key}',lang)
               
               #html=cache.get(get_movie_data_simple,time_to_save,url, table='pages')
               plot=' '
@@ -638,7 +639,7 @@ def resume_episode_list(url,sync=False,sys_arg_1=""):
         start_time = time.time()
         xxx=0
         ddatetime = (datetime.datetime.utcnow() - datetime.timedelta(hours = 5))
-        url_g=domain_s+'api.themoviedb.org/3/genre/tv/list?api_key=34142515d9d23817496eeb4ff1d223d0&language='+lang
+        url_g=f'https://api.themoviedb.org/3/genre/tv/list?api_key={tmdb_key}&language='+lang
      
   
         html_g=get_html(url_g).json()
@@ -740,7 +741,7 @@ def resume_episode_list(url,sync=False,sys_arg_1=""):
           season=items['snum']
           episode=items['enum']
           last_played=items['_last_watched'].replace('T',' ').replace('Z','').replace('.000','')
-          url='http://api.themoviedb.org/3/tv/%s?api_key=%s&language=%s&append_to_response=external_ids'%(items['tmdb'],'653bb8af90162bd98fc7ee32bcbbfb3d',lang)
+          url=f'https://api.themoviedb.org/3/tv/%s?api_key={tmdb_key}&language=%s&append_to_response=external_ids'%(items['tmdb'],lang)
           
           #html=cache.get(get_movie_data_simple,time_to_save,url, table='pages')
           plot=' '
@@ -972,7 +973,7 @@ def get_tmdb_data(ur_f,with_auth,html_g_tv,html_g_m,items_pre=None):
                 
               if 'person' in items:
                 nm=items['person']['name']
-                link='https://api.themoviedb.org/3/person/%s?api_key=1180357040a128da71b71716058f6c5c&append_to_response=credits,images&language=%s&sort_by=popularity.desc'%(str(items['person']['ids']['tmdb']),lang)
+                link=f'https://api.themoviedb.org/3/person/%s?api_key=1180357040a128da71b71716058f6c5c&append_to_response=credits,images&language=%s&sort_by=popularity.desc'%(str(items['person']['ids']['tmdb']),lang)
                 x=get_html(link).json()
                 icon=' '
                 fan=' '
@@ -1018,7 +1019,7 @@ def get_tmdb_data(ur_f,with_auth,html_g_tv,html_g_m,items_pre=None):
                     if s_id==None:
                         tvdb_id=items['movie']['ids']['tvdb']
                         type_tvdb='movie'
-                url='http://api.themoviedb.org/3/movie/%s?api_key=%s&language=%s&append_to_response=external_ids'%(s_id,'653bb8af90162bd98fc7ee32bcbbfb3d',lang)
+                url=f'https://api.themoviedb.org/3/movie/%s?api_key={tmdb_key}&language=%s&append_to_response=external_ids'%(s_id,lang)
                 
               else:
                 if 'show' in items:
@@ -1040,7 +1041,7 @@ def get_tmdb_data(ur_f,with_auth,html_g_tv,html_g_m,items_pre=None):
                     if s_id==None:
                         tvdb_id=items['movie']['ids']['tvdb']
                         type_tvdb='movie'
-                url='http://api.themoviedb.org/3/tv/%s?api_key=%s&language=%s&append_to_response=external_ids'%(s_id,'653bb8af90162bd98fc7ee32bcbbfb3d',lang)
+                url=f'https://api.themoviedb.org/3/tv/%s?api_key={tmdb_key}&language=%s&append_to_response=external_ids'%(s_id,lang)
                 
               date_mark=''
 
@@ -1081,7 +1082,7 @@ def get_tmdb_data(ur_f,with_auth,html_g_tv,html_g_m,items_pre=None):
                 slug='tv'
                 responce=[]
                 last_played=items['_last_watched'].replace('T',' ').replace('Z','').replace('.000','')
-                url='http://api.themoviedb.org/3/tv/%s?api_key=%s&language=%s&append_to_response=external_ids'%(items['tmdb'],'653bb8af90162bd98fc7ee32bcbbfb3d',lang)
+                url=f'https://api.themoviedb.org/3/tv/%s?api_key={tmdb_key}&language=%s&append_to_response=external_ids'%(items['tmdb'],lang)
                 #log.warning('NAME:'+slug)
                 #get_movie_data(url,s_id,slug,progress,revenue,saved_date,date_mark,season,episode,len(responce),items,tvdb_id)
                 thread.append(Thread(get_movie_data,url,s_id,slug,progress,revenue,saved_date,date_mark,season,episode,len(responce),items,tvdb_id))
@@ -1134,10 +1135,10 @@ def get_trk_data(url,sys_arg_1=""):
                     dp = xbmcgui.DialogProgress()
                     dp.create("Loading ", Addon.getLocalizedString(32072)+'\n'+ '')
                     dp.update(0)
-        url_g_m=domain_s+'api.themoviedb.org/3/genre/movie/list?api_key=34142515d9d23817496eeb4ff1d223d0&language='+lang
+        url_g_m=f'https://api.themoviedb.org/3/genre/movie/list?api_key={tmdb_key}&language='+lang
                      
         
-        url_g_tv=domain_s+'api.themoviedb.org/3/genre/tv/list?api_key=34142515d9d23817496eeb4ff1d223d0&language='+lang
+        url_g_tv=f'https://api.themoviedb.org/3/genre/tv/list?api_key={tmdb_key}&language='+lang
         #html_g_tv=get_html(url_g_tv).json()
         #html_g_m=get_html(url_g_m).json()
         #html_g_tv=html_g_tv
@@ -1508,10 +1509,10 @@ def get_simple_trk_data(url,sys_arg_1=""):
                     dp = xbmcgui.DialogProgress()
                     dp.create("Loading ", Addon.getLocalizedString(32072)+'\n'+ '')
                     dp.update(0)
-        url_g_m=domain_s+'api.themoviedb.org/3/genre/movie/list?api_key=34142515d9d23817496eeb4ff1d223d0&language='+lang
+        url_g_m=f'https://api.themoviedb.org/3/genre/movie/list?api_key={tmdb_key}&language='+lang
                      
         
-        url_g_tv=domain_s+'api.themoviedb.org/3/genre/tv/list?api_key=34142515d9d23817496eeb4ff1d223d0&language='+lang
+        url_g_tv=f'https://api.themoviedb.org/3/genre/tv/list?api_key={tmdb_key}&language='+lang
         #html_g_tv=get_html(url_g_tv).json()
         #html_g_m=get_html(url_g_m).json()
         #html_g_tv=html_g_tv
@@ -1720,7 +1721,7 @@ def get_one_trk(color,name,url_o,url,icon,fanart,data_ep,plot,year,original_titl
           data_ep=''
           dates=' '
           fanart=image
-          url=domain_s+'api.themoviedb.org/3/tv/%s/season/%s?api_key=34142515d9d23817496eeb4ff1d223d0&language=%s'%(id,season,lang)
+          url=f'https://api.themoviedb.org/3/tv/%s/season/%s?api_key={tmdb_key}&language=%s'%(id,season,lang)
          
           html=get_html(url).json()
           next=''
@@ -1785,7 +1786,7 @@ def get_one_trk(color,name,url_o,url,icon,fanart,data_ep,plot,year,original_titl
                color='yellow'
               else:
                color='white'
-               h2=get_html('https://api.themoviedb.org/3/tv/%s?api_key=34142515d9d23817496eeb4ff1d223d0&language=en-US'%id).json()
+               h2=get_html(f'https://api.themoviedb.org/3/tv/%s?api_key={tmdb_key}&language=en-US'%id).json()
                last_s_to_air=int(h2['last_episode_to_air']['season_number'])
                last_e_to_air=int(h2['last_episode_to_air']['episode_number'])
               
@@ -1856,7 +1857,7 @@ def get_Series_trk_data(url_o,match):
           data_ep=''
           dates=' '
           fanart=image
-          url=domain_s+'api.themoviedb.org/3/tv/%s/season/%s?api_key=34142515d9d23817496eeb4ff1d223d0&language=%s'%(id,season,lang)
+          url=f'https://api.themoviedb.org/3/tv/%s/season/%s?api_key={tmdb_key}&language=%s'%(id,season,lang)
          
           html=get_html(url).json()
           if 'status_message' in html:
@@ -1939,7 +1940,7 @@ def get_Series_trk_data(url_o,match):
                color='yellow'
               else:
                color='white'
-               h2=get_html('https://api.themoviedb.org/3/tv/%s?api_key=34142515d9d23817496eeb4ff1d223d0&language=en-US'%id).json()
+               h2=get_html(f'https://api.themoviedb.org/3/tv/%s?api_key={tmdb_key}&language=en-US'%id).json()
                last_s_to_air=int(h2['last_episode_to_air']['season_number'])
                last_e_to_air=int(h2['last_episode_to_air']['episode_number'])
               

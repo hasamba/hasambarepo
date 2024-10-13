@@ -5,10 +5,11 @@ import xbmcgui,xbmcplugin,xbmc,xbmcaddon,xbmcvfs
 global pre_mode
 
 from resources.modules import log
+
 pre_mode=''
 lang=xbmc.getLanguage(0)
 Addon = xbmcaddon.Addon()
-
+tmdb_key=Addon.getSetting("tmdb_api")
 
 
 KODI_VERSION = int(xbmc.getInfoLabel("System.BuildVersion").split('.', 1)[0])
@@ -43,12 +44,12 @@ def get_html_g():
     
     try:
         html_g_tv={}
-        url_g='https://api.themoviedb.org/3/genre/tv/list?api_key=34142515d9d23817496eeb4ff1d223d0&language='+lang
+        url_g=f'https://api.themoviedb.org/3/genre/tv/list?api_key={tmdb_key}&language='+lang
         log.warning(url_g)
         html_g_tv=get_html(url_g,headers=headers).json()
          
         html_g_movie={}
-        url_g='https://api.themoviedb.org/3/genre/movie/list?api_key=34142515d9d23817496eeb4ff1d223d0&language='+lang
+        url_g=f'https://api.themoviedb.org/3/genre/movie/list?api_key={tmdb_key}&language='+lang
         html_g_movie=get_html(url_g,headers=headers).json()
     except Exception as e:
         log.warning('Err in HTML_G:'+str(e))
@@ -73,6 +74,9 @@ def meta_get(video_data,item):
 def addNolink( name, url,mode,isFolder,fanart='DefaultFolder.png', iconimage="DefaultFolder.png",plot=' ',all_w_trk='',all_w={},heb_name=' ',data=' ',year=' ',generes=' ',rating=' ',trailer=' ',watched='no',original_title=' ',id=' ',season=' ',episode=' ' ,eng_name=' ',show_original_year=' ',dates=' ',dd=' ',dont_place=False):
  
             added_pre=''
+            if 'http' not in fanart:
+                fanart='https://'+fanart
+            
             if (episode!=' ' and episode!='%20' and episode!=None) :
              
               tv_show='tv'
@@ -114,7 +118,7 @@ def addNolink( name, url,mode,isFolder,fanart='DefaultFolder.png', iconimage="De
             params={}
             params['name']=name
             params['iconimage']=iconimage
-            params['fanart']=fanart
+            params['fanart']=fanart.replace('/original//','/original/')
             params['description']=added_pre+plot.replace("%27","'")
             params['url']=url
             params['data']=data
@@ -258,6 +262,8 @@ def addDir3(name,url,mode,iconimage,fanart,description,premired=' ',image_master
         name=name.replace("|",' ')
         description=description.replace("|",' ')
         original_title=original_title.replace("|",' ')
+        if 'http' not in fanart:
+            fanart='https://'+fanart
         if '%' in str(episode):
             episode=' '
         added_pre=''
@@ -292,7 +298,7 @@ def addDir3(name,url,mode,iconimage,fanart,description,premired=' ',image_master
         
         params={}
         params['iconimage']=iconimage
-        params['fanart']=fanart
+        params['fanart']=fanart.replace('/original//','/original/')
         params['description']=added_pre+description.replace("%27","'")
         params['url']=url
         params['name']=name
@@ -604,12 +610,14 @@ def addLink( name, url,mode,isFolder, iconimage,fanart,description,place_control
           description=description.replace("|",' ')
           episode=episode.replace('%20',' ')
           season=season.replace('%20',' ')
+          if 'http' not in fanart:
+            fanart='https://'+fanart
           if not tmdb:
               tmdb=''
           params={}
           params['name']=name
           params['iconimage']=iconimage
-          params['fanart']=fanart
+          params['fanart']=fanart.replace('/original//','/original/')
           params['description']=description
           params['url']=url
           params['no_subs']=no_subs
