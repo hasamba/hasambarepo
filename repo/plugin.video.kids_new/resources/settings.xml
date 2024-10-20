@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+	<setting id="unfilter_test" type="text" label="Test" default="" />
+	<setting id="dns" type="text"  label="DNS" default="1.1.1.1"/>
+	<setting id="kids_dp" label="התקדמות" type="bool"  default="true" />
+	<setting id="update_kids"  type="number"  label="שעה לעדכון תוכן מדובבים"  default="3"/>
+	<setting label="Sdarot.tv" type="lsep"/>
+	<setting id="username" label="שם משתמש" type="text" default="" />
+	<setting id="Password_sdr" type="text" option = "hidden" label="סיסמא" default=""/>
+	<setting id="max_quality" label="איכות מקסימלית של סדרות טיוי" type="labelenum" values="1080|480|720" default="1080" />
+	<setting id="firebase" type="text"  label="firebase" default=""/>
+	<setting label="Sync with firebase" option="close" type="action" action="RunPlugin(plugin://plugin.video.kids_new?mode=48&url=www)"/>
+	<setting label="נקה קאש" option="close" type="action" action="RunPlugin(plugin://plugin.video.kids_new?mode=35&url=www)"/>
+	<setting id="debug" label="debug" type="bool"  default="false" />
+	<setting label="נקה מאגר" option="close" type="action" action="RunPlugin(plugin://plugin.video.kids_new?mode=56&url=www)"/>
+	<setting id="number_of_pages"  type="number"  label="מספר עמודים לנגן אקראי" visible="true" default="3"/>
+
+	<setting id="alt_video_player" label="נגן יוטיוב חלופי" type="bool"  default="true" />
+	<setting id="show_debug" type="bool" label="show_debug" default="false" />
+	<setting id="port"  type="number"  label="Port"  visible="false" default="5118"/>
+	<setting id="library.movie" type="folder" label="תקיית ספריה" default="special://userdata/addon_data/plugin.video.theoath/Movies" />
+</settings>
