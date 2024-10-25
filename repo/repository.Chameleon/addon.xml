@@ -3,7 +3,7 @@
 	<extension point="xbmc.addon.repository" name="Chameleon repo">
 		<dir>
 			<info compressed="false">https://cha1m20.github.io/oper/addons.xml</info>
-			<checksum>https://raw.githubusercontent.com/cha1m20/oper/main/addons.xml.md5</checksum>
+			<checksum>https://cha1m20.github.io/oper/addons.xml.md5</checksum>
 			<datadir zip="true">https://cha1m20.github.io/oper/zips</datadir>
 		</dir>
 	</extension>
