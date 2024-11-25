@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 from windows.base_window import BaseDialog
 from apis import tmdb_api
 from caches.discover_cache import discover_cache
@@ -6,8 +7,8 @@ from modules import kodi_utils, meta_lists
 from modules.utils import safe_string, remove_accents
 # from modules.kodi_utils import logger
 
-json, dialog, select_dialog, ok_dialog, get_icon = kodi_utils.json, kodi_utils.dialog, kodi_utils.select_dialog, kodi_utils.ok_dialog, kodi_utils.get_icon
-sleep, container_refresh = kodi_utils.sleep, kodi_utils.container_refresh
+kodi_dialog, select_dialog, ok_dialog, get_icon = kodi_utils.kodi_dialog, kodi_utils.select_dialog, kodi_utils.ok_dialog, kodi_utils.get_icon
+sleep, container_refresh, confirm_dialog = kodi_utils.sleep, kodi_utils.container_refresh, kodi_utils.confirm_dialog
 years_movies, years_tvshows, movie_genres, tvshow_genres = meta_lists.years_movies, meta_lists.years_tvshows, meta_lists.movie_genres, meta_lists.tvshow_genres
 movie_certifications, networks, movie_certifications = meta_lists.movie_certifications, meta_lists.networks, meta_lists.movie_certifications
 watch_providers_movies, watch_providers_tvshows = meta_lists.watch_providers_movies, meta_lists.watch_providers_tvshows
@@ -18,7 +19,6 @@ filter_list_id = 2100
 button_ids = (10, 11)
 button_actions = {10: 'Save and Exit', 11: 'Exit'}
 default_key_values = ('key', 'display_key')
-empty_list_label = '[B]***Set Properties to make List***[/B]'
 
 class Discover(BaseDialog):
 	def __init__(self, *args, **kwargs):
@@ -35,18 +35,25 @@ class Discover(BaseDialog):
 
 	def onClick(self, controlID):
 		if controlID == filter_list_id:
-			self.position = self.get_position(filter_list_id)
 			try:
-				self.chosen_item = discover_items[self.get_listitem(controlID).getProperty('key')]
-				if self.selection_action(): exec('self.%s()' % self.chosen_item['action'])
-				if self.remake: self.make_menu()
+				self.list_item = self.get_listitem(filter_list_id)
+				self.chosen_item = discover_items[self.list_item.getProperty('key')]
+				if self.selection_action():
+					exec('self.%s()' % self.chosen_item['action'])
+					active_attributes = self.get_active_attributes()
+					if active_attributes:
+						self.make_url(active_attributes)
+						self.make_label(active_attributes)
+						self.set_attributes_status('true')
+					else: self.set_attributes_status('false')
+				self.chosen_item = None
 			except:
 				self.chosen_item = None
 				return
 		elif controlID in button_ids:
 			refresh_listings = False
 			if controlID == 10:
-				label = dialog.input('List Name', defaultt=self.label)
+				label = kodi_dialog().input('List Name', defaultt=self.label)
 				if not label: return
 				refresh_listings = True
 				discover_cache.insert_one(label, self.media_type, self.url)
@@ -73,28 +80,8 @@ class Discover(BaseDialog):
 				except: listitem.setProperty('icon', get_icon('discover'))
 				listitem.setProperty('key', key)
 				yield listitem
-		if self.remake:
-			self.remake = False
-			self.reset_window(filter_list_id)
-			self.add_items(filter_list_id, list(builder()))
-			self.select_item(filter_list_id, self.position)
-			active_attributes = self.get_active_attributes()
-			if active_attributes:
-				self.make_url(active_attributes)
-				self.make_label(active_attributes)
-			self.set_attributes_status('true' if active_attributes else 'false')
-		else:
-			self.add_items(filter_list_id, list(builder()))
-			self.setFocusId(filter_list_id)
-
-	def selection_action(self):
-		current_value = self.get_attribute(self, self.chosen_item['display_key'])
-		if not current_value or self.chosen_item['key'] in ('with_released', 'with_adult'): return True
-		clear_value = kodi_utils.confirm_dialog(heading='Discover', text='Value of [B]%s[/B] already exists.[CR]Change current value or Clear current value?' % current_value,
-												ok_label='Clear', cancel_label='Change', default_control=11)
-		if not clear_value: return True
-		self.set_key_values('', '')
-		return False
+		self.add_items(filter_list_id, list(builder()))
+		self.setFocusId(filter_list_id)
 
 	def years(self):
 		years = years_movies if self.media_type == 'movie' else years_tvshows
@@ -111,7 +98,7 @@ class Discover(BaseDialog):
 		if choice != None: self.set_key_values(self.chosen_item['url_insert'] % ','.join([i['id'] for i in choice]), ', '.join([i['name'] for i in choice]))
 
 	def keywords(self):
-		keyword = dialog.input(self.chosen_item['label'])
+		keyword = kodi_dialog().input(self.chosen_item['label'])
 		if not keyword: return
 		try: result = tmdb_api.tmdb_keywords_by_query(keyword, 1)['results']
 		except: result = None
@@ -151,7 +138,7 @@ class Discover(BaseDialog):
 
 	def casts(self):
 		result, actor_id, search_name = None, None, None
-		search_name = dialog.input(self.chosen_item['label'])
+		search_name = kodi_dialog().input(self.chosen_item['label'])
 		if not search_name: return
 		try: result = tmdb_api.tmdb_people_info(search_name)['results']
 		except: result = None
@@ -184,6 +171,16 @@ class Discover(BaseDialog):
 	def adult(self):
 		if not self.get_attribute(self, self.chosen_item['display_key']): self.set_key_values(self.chosen_item['url_insert'] % 'true', 'True')
 		else: self.set_key_values('', '')
+
+	def selection_action(self):
+		current_value = self.get_attribute(self, self.chosen_item['display_key'])
+		if not current_value or self.chosen_item['key'] in ('with_released', 'with_adult'): return True
+		clear_value = confirm_dialog(heading='Discover', text='Value of [B]%s[/B] already exists.[CR]Change current value or Clear current value?' % current_value,
+												ok_label='Clear', cancel_label='Change', default_control=11)
+		if clear_value is None: return False
+		self.set_key_values('', '')
+		if not clear_value: return True
+		return False
 
 	def get_active_attributes(self):
 		return {key: discover_items[key] for key in [i for i in discover_items if self.get_attribute(self, i)]}
@@ -219,7 +216,7 @@ class Discover(BaseDialog):
 	def set_key_values(self, key_content, display_key_content):
 		self.set_attribute(self, self.chosen_item['key'], key_content)
 		self.set_attribute(self, self.chosen_item['display_key'], display_key_content)
-		self.remake, self.chosen_item = True, None
+		self.list_item.setProperty('label2', display_key_content)
 
 	def selection_dialog(self, heading, dialog_list, function_list=None):
 		list_items = [{'line1': item['name']} for item in dialog_list]
@@ -234,9 +231,12 @@ class Discover(BaseDialog):
 
 	def set_attributes_status(self, status='false'):
 		self.setProperty('active_attributes', status)
-		self.setProperty('list_label', self.label if status == 'true' else empty_list_label)
+		if status == 'true':
+			self.setProperty('list_label', self.label)
+			try: self.setProperty('url_label', self.url.split('=en&')[1])
+			except: pass
 
 	def set_starting_constants(self, kwargs):
-		self.position, self.remake, self.chosen_item, self.media_type, self.active_attributes,  self.label, self.url = 0, False, None, kwargs['media_type'], [], '', ''
+		self.chosen_item, self.list_item, self.media_type, self.active_attributes, self.label, self.url = None, None, kwargs['media_type'], [], '', ''
 		for key, values in discover_items.items():
 			for key_value in default_key_values: self.set_attribute(self, values[key_value], '')

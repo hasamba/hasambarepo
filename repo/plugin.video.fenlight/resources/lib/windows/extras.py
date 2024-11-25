@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from threading import Thread
 from datetime import datetime, timedelta
 from windows.base_window import BaseDialog, window_manager, window_player, ok_dialog
 from apis import tmdb_api, imdb_api, omdb_api, trakt_api
@@ -12,8 +13,8 @@ from modules.metadata import movieset_meta, episodes_meta, movie_meta, tvshow_me
 from modules.episode_tools import EpisodeTools
 # logger = kodi_utils.logger
 
-Thread, get_icon, close_all_dialog = kodi_utils.Thread, kodi_utils.get_icon, kodi_utils.close_all_dialog
-addon_fanart, empty_poster = kodi_utils.default_addon_fanart, kodi_utils.empty_poster
+get_icon, close_all_dialog = kodi_utils.get_icon, kodi_utils.close_all_dialog
+addon_fanart, empty_poster = kodi_utils.addon_fanart(), kodi_utils.empty_poster
 extras_button_label_values, show_busy_dialog, hide_busy_dialog = kodi_utils.extras_button_label_values, kodi_utils.show_busy_dialog, kodi_utils.hide_busy_dialog
 container_update, activate_window, clear_property = kodi_utils.container_update, kodi_utils.activate_window, kodi_utils.clear_property
 default_all_episodes, extras_enabled_menus, tmdb_api_key = settings.default_all_episodes, settings.extras_enabled_menus, settings.tmdb_api_key
@@ -68,19 +69,6 @@ class Extras(BaseDialog):
 			try: self.set_returning_focus(*self.starting_position)
 			except: self.set_default_focus()
 
-	def set_default_focus(self):
-		try: self.setFocusId(10)
-		except:
-			self.close_all()
-			self.close()
-
-	def set_returning_focus(self, window_id, focus, sleep_time=750):
-		try:
-			self.sleep(sleep_time)
-			self.setFocusId(window_id)
-			self.select_item(window_id, focus)
-		except: self.set_default_focus()
-
 	def run(self):
 		self.doModal()
 		self.clearProperties()
@@ -102,7 +90,7 @@ class Extras(BaseDialog):
 			function = movie_meta if self.media_type == 'movie' else tvshow_meta
 			meta = function('tmdb_id', chosen_listitem.getProperty('tmdb_id'), self.tmdb_api_key, self.mpaa_region, self.current_date)
 			hide_busy_dialog()
-			self.show_extrainfo(self.media_type, meta, meta.get('poster', empty_poster))
+			self.show_extrainfo(meta)
 		elif action in self.context_actions:
 			focus_id = self.getFocusId()
 			if focus_id == cast_id:
@@ -339,7 +327,7 @@ class Extras(BaseDialog):
 					listitem = self.make_listitem()
 					name = item['title']
 					ranking = item['ranking'].upper()
-					if ranking == 'NONE': ranking - 'NO RANK'
+					if ranking == 'NONE': ranking = 'NO RANK'
 					if item['content']: ranking += ' (x%02d)' % item['total_count']
 					icon = parentsguide_icons[name]
 					listitem.setProperty('name', name)
@@ -360,8 +348,8 @@ class Extras(BaseDialog):
 		if not videos_id in self.enabled_lists: return
 		if not self.youtube_installed_check(): return
 		def _sort_trailers(trailers):
-			official_trailers = [i for i in trailers if i['type'] == 'Trailer' and i['name'].lower() == 'official trailer']
-			other_official_trailers = [i for i in trailers if i['type'] == 'Trailer' and 'official' in i['name'].lower() and not i in official_trailers]
+			official_trailers = [i for i in trailers if i['official'] and i['type'] == 'Trailer' and 'official trailer' in i['name'].lower()]
+			other_official_trailers = [i for i in trailers if i['official'] and i['type'] == 'Trailer' and not i in official_trailers]
 			other_trailers = [i for i in trailers if i['type'] == 'Trailer' and not i in official_trailers  and not i in other_official_trailers]
 			teaser_trailers = [i for i in trailers if i['type'] == 'Teaser']
 			full_trailers = official_trailers + other_official_trailers + other_trailers + teaser_trailers
@@ -412,8 +400,8 @@ class Extras(BaseDialog):
 		if not networks_id in self.enabled_lists: return
 		try:
 			network = self.meta_get('studio')[0]
-			network_id = [i['id'] for i in tmdb_company_id(network)['results'] if i['name'] == network][0] \
-						if self.media_type == 'movie' else [item['id'] for item in networks if item['name'] == network][0]
+			network_list = tmdb_company_id(network)['results'] if self.media_type == 'movie' else networks
+			network_id = next(i['id'] for i in network_list if i['name'] == network)
 			function = tmdb_movies_companies if self.media_type == 'movie' else tmdb_tv_networks
 			data = self.remove_current_tmdb_mediaitem(function(network_id, 1)['results'])
 			item_list = list(self.make_tmdb_listitems(data))
@@ -578,8 +566,12 @@ class Extras(BaseDialog):
 	def show_images(self):
 		return _images({'mode': 'tmdb_media_image_results', 'media_type': self.media_type, 'tmdb_id': self.tmdb_id, 'rootname': self.rootname})
 
-	def show_extrainfo(self, media_type=None, meta=None, poster=None):
-		text = media_extra_info({'media_type': media_type or self.media_type, 'meta': meta or self.meta})
+	def show_extrainfo(self, meta=None):
+		if meta:
+			text = separator.join([i for i in (meta.get('year'), str(round(meta.get('rating'), 1)) if meta.get('rating') not in (0, 0.0, None) else None,
+									meta.get('mpaa'), meta.get('spoken_language')) if i]) + '[CR][CR]%s' % meta.get('plot')
+			poster = meta.get('poster', empty_poster)
+		else: text, poster = media_extra_info({'media_type': self.media_type, 'meta': self.meta}), self.poster
 		return self.show_text_media(text=text, poster=poster)
 
 	def show_genres(self):
@@ -592,7 +584,7 @@ class Extras(BaseDialog):
 		self.close()
 
 	def show_keywords(self):
-		keyword_id = keywords_choice({'media_type': self.media_type, 'tmdb_id': self.tmdb_id, 'poster': self.poster})
+		keyword_id = keywords_choice({'media_type': self.media_type, 'meta': self.meta})
 		if not keyword_id: return
 		self.close_all()
 		mode, action = ('build_movie_list', 'tmdb_movie_keyword_results') if self.media_type == 'movie' else ('build_tvshow_list', 'tmdb_tv_keyword_results')
@@ -621,7 +613,8 @@ class Extras(BaseDialog):
 		window_manager(self)
 
 	def show_options(self):
-		params = {'content': self.options_media_type, 'tmdb_id': str(self.tmdb_id), 'poster': self.poster, 'is_external': self.is_external, 'from_extras': 'true'}
+		params = {'content': self.options_media_type, 'tmdb_id': str(self.tmdb_id), 'poster': self.poster,
+				'is_external': self.is_external, 'is_anime': self.is_anime, 'from_extras': 'true'}
 		return options_menu_choice(params, self.meta)
 
 	def show_recommended(self):
@@ -648,15 +641,11 @@ class Extras(BaseDialog):
 									'media_type': self.media_type, 'icon': self.poster})
 
 	def show_favorites_manager(self):
-		return favorites_choice({'media_type': self.media_type, 'tmdb_id': str(self.tmdb_id), 'title': self.title, 'refresh': 'false'})
+		return favorites_choice({'media_type': self.media_type, 'tmdb_id': str(self.tmdb_id), 'title': self.title, 'is_anime': self.is_anime, 'refresh': 'false'})
 
 	def playback_choice(self):
-		params = {'media_type': self.media_type, 'poster': self.poster, 'meta': self.meta, 'season': None, 'episode': None}
+		params = {'media_type': self.media_type, 'meta': self.meta, 'season': None, 'episode': None}
 		playback_choice(params)
-
-	def close_all(self):
-		clear_property('fenlight.window_stack')
-		close_all_dialog()
 
 	def assign_buttons(self):
 		setting_id_base = setting_base % self.media_type
@@ -673,16 +662,30 @@ class Extras(BaseDialog):
 			self.button_action_dict[item] = button_action
 		self.button_action_dict[50] = 'show_plot'
 
+	def set_default_focus(self):
+		try: self.setFocusId(10)
+		except:
+			self.close_all()
+			self.close()
+
+	def set_returning_focus(self, window_id, focus, sleep_time=700):
+		try:
+			self.sleep(sleep_time)
+			self.setFocusId(window_id)
+			self.select_item(window_id, focus)
+		except: self.set_default_focus()
+
 	def set_current_params(self, set_starting_position=True):
 		self.current_params = {'mode': 'extras_menu_choice', 'tmdb_id': self.tmdb_id, 'media_type': self.media_type, 'is_external': self.is_external}
 		if set_starting_position: self.current_params['starting_position'] = [self.control_id, self.get_position(self.control_id)]
 
 	def set_starting_constants(self, kwargs):
-		self.meta = kwargs['meta']
+		self.meta = kwargs.get('meta')
 		self.meta_get = self.meta.get
-		self.media_type, self.options_media_type = self.meta_get('mediatype'), kwargs['options_media_type']
+		self.media_type, self.options_media_type = self.meta_get('mediatype'), kwargs.get('options_media_type')
 		self.starting_position = kwargs.get('starting_position', None)
-		self.is_external = kwargs['is_external'].lower()
+		self.is_anime = kwargs.get('is_anime')
+		self.is_external = kwargs.get('is_external').lower()
 		self.item_action_dict, self.button_action_dict = {}, {}
 		self.selected = None
 		self.current_date = get_datetime()
@@ -710,6 +713,7 @@ class Extras(BaseDialog):
 		self.assign_buttons()
 		self.setProperty('media_type', self.media_type), self.setProperty('title', self.title), self.setProperty('year', self.year), self.setProperty('plot', self.plot)
 		self.setProperty('genre', ', '.join(self.genre)), self.setProperty('network', ', '.join(self.network)), self.setProperty('enable_scrollbars', self.enable_scrollbars)
+		self.setProperty('display_extra_ratings', 'true' if self.display_extra_ratings else 'false')
 
 	def make_status_infoline(self):
 		status_str = self.status
@@ -738,6 +742,10 @@ class Extras(BaseDialog):
 		if not self.addon_installed(youtube_check): return False
 		if not self.addon_enabled(youtube_check): return False
 		return True
+
+	def close_all(self):
+		clear_property('fenlight.window_stack')
+		close_all_dialog()
 
 class ShowTextMedia(BaseDialog):
 	def __init__(self, *args, **kwargs):

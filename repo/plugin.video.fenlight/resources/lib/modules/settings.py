@@ -63,6 +63,9 @@ def tv_show_directory():
 def download_directory(media_type):
 	return translate_path(get_setting(download_directories_dict[media_type]))
 
+def show_unaired_watchlist():
+	return get_setting('fenlight.show_unaired_watchlist', 'true') == 'true'
+
 def auto_start_fenlight():
 	return get_setting('fenlight.auto_start_fenlight', 'false') == 'true'
 
@@ -87,6 +90,11 @@ def audio_filters():
 	if setting in ('empty_setting', ''): return []
 	return setting.split(', ')
 
+def preferred_autoplay():
+	setting = get_setting('fenlight.preferred_autoplay')
+	if setting in ('empty_setting', ''): return []
+	return setting.split(', ')
+
 def include_prerelease_results():
 	return get_setting('fenlight.include_prerelease_results', 'true') == 'true'
 
@@ -104,6 +112,9 @@ def autoscrape_next_episode():
 def auto_rescrape_with_all():
 	return int(get_setting('fenlight.results.auto_rescrape_with_all', '0'))
 
+def auto_episode_group():
+	return int(get_setting('fenlight.results.auto_episode_group', '0'))
+
 def auto_nextep_settings(play_type):
 	play_type = 'autoplay' if play_type == 'autoplay_nextep' else 'autoscrape'
 	window_percentage = 100 - int(get_setting('fenlight.%s_next_window_percentage' % play_type, '95'))
@@ -116,7 +127,7 @@ def auto_nextep_settings(play_type):
 	return {'scraper_time': scraper_time, 'window_percentage': window_percentage, 'alert_method': alert_method, 'default_action': default_action, 'use_chapters': use_chapters}
 
 def filter_status(filter_type):
-	return int(get_setting('fenlight.filter_%s' % filter_type, '0'))
+	return int(get_setting('fenlight.filter.%s' % filter_type, '0'))
 
 def ignore_results_filter():
 	return int(get_setting('fenlight.results.ignore_filter', '0'))
@@ -131,6 +142,9 @@ def lists_sort_order(setting):
 
 def show_specials():
 	return get_setting('fenlight.show_specials', 'false') == 'true'
+
+def single_ep_unwatched_episodes():
+	return get_setting('fenlight.single_ep_unwatched_episodes', 'false') == 'true'
 
 def single_ep_display_format(is_external):
 	if is_external: setting, default = 'fenlight.single_ep_display_widget', '1'
@@ -160,6 +174,15 @@ def extras_enabled_menus():
 	if setting in ('', None, 'noop', []): return []
 	return [int(i) for i in setting.split(',')]
 
+def recommend_service():
+	return int(get_setting('fenlight.recommend_service', '0'))
+
+def recommend_seed():
+	return int(get_setting('fenlight.recommend_seed', '5'))
+
+def tv_progress_location():
+	return int(get_setting('fenlight.tv_progress_location', '0'))
+
 def check_prescrape_sources(scraper, media_type):
 	if scraper in prescrape_scrapers_tuple: return get_setting('fenlight.check.%s' % scraper) == 'true'
 	if get_setting('fenlight.check.%s' % scraper) == 'true' and auto_play(media_type): return True
@@ -181,14 +204,6 @@ def easynews_language_filter():
 	return enabled, filters
 
 def results_sort_order():
-	# return (
-	# 		lambda k: (k['quality_rank'], k['provider_rank'], -k['size']), #Quality, Provider, Size
-	# 		lambda k: (k['quality_rank'], -k['size'], k['provider_rank']), #Quality, Size, Provider
-	# 		lambda k: (k['provider_rank'], k['quality_rank'], -k['size']), #Provider, Quality, Size
-	# 		lambda k: (k['provider_rank'], -k['size'], k['quality_rank']), #Provider, Size, Quality
-	# 		lambda k: (-k['size'], k['quality_rank'], k['provider_rank']), #Size, Quality, Provider
-	# 		lambda k: (-k['size'], k['provider_rank'], k['quality_rank'])  #Size, Provider, Quality
-	# 		)[int(get_setting('fenlight.results.sort_order', '1'))]
 	sort_direction = -1 if get_setting('fenlight.results.size_sort_direction') == '0' else 1
 	return (
 			lambda k: (k['quality_rank'], k['provider_rank'], sort_direction*k['size']), #Quality, Provider, Size
@@ -253,6 +268,10 @@ def omdb_api_key():
 def default_all_episodes():
 	return int(get_setting('fenlight.default_all_episodes', '0'))
 
+def max_threads():
+	if not get_setting('fenlight.limit_concurrent_threads', 'false') == 'true': return 60
+	return int(get_setting('fenlight.max_threads', '60'))
+
 def get_meta_filter():
 	return get_setting('fenlight.meta_filter', 'true')
 
@@ -277,6 +296,9 @@ def media_open_action(media_type):
 def watched_indicators():
 	if not trakt_user_active(): return 0
 	return int(get_setting('fenlight.watched_indicators', '0'))
+
+def flatten_episodes():
+	return get_setting('fenlight.trakt.flatten_episodes', 'false') == 'true'
 
 def nextep_method():
 	return int(get_setting('fenlight.nextep.method', '0'))

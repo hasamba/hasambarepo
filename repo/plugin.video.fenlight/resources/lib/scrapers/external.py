@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 import time
+import json
+import random
+from threading import Thread
 from caches.external_cache import external_cache
 from caches.settings_cache import get_setting
 from modules import kodi_utils, source_utils
@@ -7,22 +10,25 @@ from modules.debrid import RD_check, PM_check, AD_check, query_local_cache
 from modules.utils import clean_file_name
 # logger = kodi_utils.logger
 
-normalize, get_file_info, pack_enable_check, int_window_prop = source_utils.normalize, source_utils.get_file_info, source_utils.pack_enable_check, kodi_utils.int_window_prop
-sleep, monitor, get_property, set_property, random = kodi_utils.sleep, kodi_utils.monitor, kodi_utils.get_property, kodi_utils.set_property, kodi_utils.random
-json, Thread, notification, hide_busy_dialog = kodi_utils.json, kodi_utils.Thread, kodi_utils.notification, kodi_utils.hide_busy_dialog
+normalize, get_file_info, pack_enable_check = source_utils.normalize, source_utils.get_file_info, source_utils.pack_enable_check
+sleep, xbmc_monitor, get_property, set_property = kodi_utils.sleep, kodi_utils.xbmc_monitor, kodi_utils.get_property, kodi_utils.set_property
+notification, hide_busy_dialog = kodi_utils.notification, kodi_utils.hide_busy_dialog
+int_window_prop = 'fenlight.internal_results.%s'
 pack_display = '%s (%s)'
 pack_check = ('Season', 'Show')
 debrid_runners = {'Real-Debrid': ('Real-Debrid', RD_check), 'Premiumize.me': ('Premiumize.me', PM_check), 'AllDebrid': ('AllDebrid', AD_check)}
 sd_check = ('SD', 'CAM', 'TELE', 'SYNC')
-correct_pack_sizes = ('torrentio', 'elfhosted', 'selfhosted')
+correct_pack_sizes = ('torrentio', 'knightcrawler', 'comet')
 
 class source:
-	def __init__(self, meta, source_dict, active_debrid, internal_scrapers, prescrape_sources, progress_dialog, disabled_ext_ignored=False):
+	def __init__(self, meta, source_dict, active_debrid, debrid_service, debrid_token, internal_scrapers, prescrape_sources, progress_dialog, disabled_ext_ignored=False):
+		self.monitor = xbmc_monitor()
 		self.scrape_provider = 'external'
 		self.progress_dialog = progress_dialog
 		self.meta = meta
 		self.background = self.meta.get('background', False)
 		self.active_debrid = active_debrid
+		self.debrid_service, self.debrid_token = debrid_service, debrid_token
 		self.source_dict, self.host_dict = source_dict, []
 		self.sources, self.all_internal_sources, self.processed_internal_scrapers = [], [], []
 		self.processed_internal_scrapers_append = self.processed_internal_scrapers.append
@@ -48,13 +54,14 @@ class source:
 			self.single_expiry, self.season_expiry, self.show_expiry = info['expiry_times']
 			if self.media_type == 'movie':
 				self.season_divider, self.show_divider = 0, 0
-				self.data = {'imdb': info['imdb_id'], 'title': self.title, 'aliases': aliases, 'year': self.year}
+				self.data = {'imdb': info['imdb_id'], 'title': self.title, 'aliases': aliases, 'year': self.year,
+				'debrid_service': self.debrid_service, 'debrid_token': self.debrid_token}
 			else:
 				try: self.season_divider = [int(x['episode_count']) for x in self.meta['season_data'] if int(x['season_number']) == int(self.meta['season'])][0]
 				except: self.season_divider = 1
 				self.show_divider = int(self.meta['total_aired_eps'])
 				self.data = {'imdb': info['imdb_id'], 'tvdb': info['tvdb_id'], 'tvshowtitle': self.title, 'aliases': aliases,'year': self.year,
-							'title': ep_name, 'season': str(self.season), 'episode': str(self.episode)}
+							'title': ep_name, 'season': str(self.season), 'episode': str(self.episode), 'debrid_service': self.debrid_service, 'debrid_token': self.debrid_token}
 		except: return []
 		return self.get_sources()
 
@@ -63,7 +70,7 @@ class source:
 			hide_busy_dialog()
 			sleep(200)
 			start_time = time.time()
-			while not self.progress_dialog.iscanceled() and not monitor.abortRequested():
+			while not self.progress_dialog.iscanceled() and not self.monitor.abortRequested():
 				try:
 					alive_threads = [x.getName() for x in self.threads if x.is_alive()]
 					if self.internal_activated or self.internal_prescraped: alive_threads.extend(self.process_internal_results())
@@ -188,7 +195,7 @@ class source:
 		def _debrid_check_dialog():
 			self.progress_dialog.reset_is_cancelled()
 			start_time, timeout = time.time(), 20
-			while not self.progress_dialog.iscanceled() and not monitor.abortRequested():
+			while not self.progress_dialog.iscanceled() and not self.monitor.abortRequested():
 				try:
 					remaining_debrids = [x.getName() for x in debrid_check_threads if x.is_alive() is True]
 					current_progress = max((time.time() - start_time), 0)

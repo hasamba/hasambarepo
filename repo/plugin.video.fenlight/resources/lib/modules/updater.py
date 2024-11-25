@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import json
+import requests
 import shutil
 import time
 import sqlite3 as database
@@ -10,9 +12,9 @@ from modules import kodi_utils
 
 translate_path, osPath, delete_file, execute_builtin, get_icon = kodi_utils.translate_path, kodi_utils.osPath, kodi_utils.delete_file, kodi_utils.execute_builtin, kodi_utils.get_icon
 update_kodi_addons_db, notification, show_text, confirm_dialog = kodi_utils.update_kodi_addons_db, kodi_utils.notification, kodi_utils.show_text, kodi_utils.confirm_dialog
-requests, addon_info, confirm_dialog, ok_dialog = kodi_utils.requests, kodi_utils.addon_info, kodi_utils.confirm_dialog, kodi_utils.ok_dialog
+addon_version, confirm_dialog, ok_dialog = kodi_utils.addon_version, kodi_utils.confirm_dialog, kodi_utils.ok_dialog
 update_local_addons, disable_enable_addon, close_all_dialog = kodi_utils.update_local_addons, kodi_utils.disable_enable_addon, kodi_utils.close_all_dialog
-json, select_dialog, show_busy_dialog, hide_busy_dialog = kodi_utils.json, kodi_utils.select_dialog, kodi_utils.show_busy_dialog, kodi_utils.hide_busy_dialog
+select_dialog, show_busy_dialog, hide_busy_dialog = kodi_utils.select_dialog, kodi_utils.show_busy_dialog, kodi_utils.hide_busy_dialog
 
 packages_dir = translate_path('special://home/addons/packages/')
 home_addons_dir = translate_path('special://home/addons/')
@@ -35,6 +37,7 @@ notification_rollback_str = 'Fen Light Performing Rollback'
 result_str = 'Installed Version: [B]%s[/B][CR]Online Version: [B]%s[/B][CR][CR] %s'
 no_update_str = '[B]No Update Available[/B]'
 update_available_str = '[B]An Update is Available[/B][CR]Perform Update?'
+continue_confirm_str = 'Continue with Update After Viewing Changes?'
 success_str = '[CR]Success.[CR]Fen Light updated to version [B]%s[/B]'
 rollback_heading_str = 'Choose Rollback Version'
 success_rollback_str = '[CR]Success.[CR]Fen Light rolled back to version [B]%s[/B]'
@@ -44,7 +47,7 @@ no_rollback_str = 'No previous versions found.[CR]Please install rollback manual
 error_update_str = 'Error Updating.[CR]Please install new update manually'
 error_rollback_str = 'Error rolling back.[CR]Please install rollback manually'
 changes_heading_str = 'New Online Release (v.%s) Changelog'
-view_changes_str = 'New release available [B](v.%s)[/B].[CR]Do you want to view the changelog for the new release before installing?'
+view_changes_str = 'Do you want to view the changelog for the new release before installing?'
 no_changes_str = 'You are running the current version of Fen Light.[CR][CR]There is no new version changelog to view.'
 
 def get_versions():
@@ -52,7 +55,7 @@ def get_versions():
 		result = requests.get(versions_url % repo_location)
 		if result.status_code != 200: return None, None
 		online_version = result.text.replace('\n', '')
-		current_version = addon_info('version')
+		current_version = addon_version()
 		return current_version, online_version
 	except: return None, None
 
@@ -82,8 +85,10 @@ def update_check(action=4):
 		if action == 4: return ok_dialog(heading=heading_str, text=result_str % (current_version, online_version, no_update_str))
 		return
 	if action in (0, 4):
-		if confirm_dialog(heading=heading_str, text=view_changes_str % online_version, ok_label='Yes', cancel_label='No'): get_changes(online_version)
 		if not confirm_dialog(heading=heading_str, text=result_str % (current_version, online_version, update_available_str), ok_label='Yes', cancel_label='No'): return
+		if confirm_dialog(heading=heading_str, text=view_changes_str, ok_label='Yes', cancel_label='No'):
+			get_changes(online_version)
+			if not confirm_dialog(heading=heading_str, text=continue_confirm_str, ok_label='Yes', cancel_label='No'): return
 	if action == 1: notification(notification_occuring_str, icon=downloads_icon)
 	elif action == 2: return notification(notification_available_str, icon=downloads_icon)
 	return update_addon(online_version, action)

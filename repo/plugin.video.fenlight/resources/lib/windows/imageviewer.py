@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-from windows.base_window import BaseDialog, window_manager, json, select_dialog
+import json
+from windows.base_window import BaseDialog, window_manager, select_dialog
 from indexers.people import person_data_dialog
 from indexers.dialogs import favorites_choice
 from modules.settings import download_directory
-from modules.kodi_utils import default_addon_fanart, get_icon, nextpage
+from modules.kodi_utils import addon_fanart, get_icon, nextpage
 # from modules.kodi_utils import logger
 
 backup_thumbnail = get_icon('genre_family')
@@ -45,6 +46,7 @@ class ThumbImageViewer(BaseDialog):
 				elif mode == 'person_data_dialog':
 					person_data_dialog(thumb_params)
 		elif action in self.context_actions:
+			if chosen_listitem.getProperty('next_page_item') == 'true': return
 			in_favorites = chosen_listitem.getProperty('in_favorites') == 'true'
 			enable_favorite = chosen_listitem.getProperty('fav_enabled') == 'true' or in_favorites
 			choice = self.make_context_menu(enable_delete=chosen_listitem.getProperty('delete') == 'true', enable_favorite=enable_favorite)
@@ -125,7 +127,7 @@ class ThumbImageViewer(BaseDialog):
 
 	def set_properties(self):
 		self.setProperty('page_no', str(self.current_page))
-		self.setProperty('fanart', default_addon_fanart)
+		self.setProperty('fanart', addon_fanart())
 		self.setProperty('backup_thumbnail', backup_thumbnail)
 
 class ImageViewer(BaseDialog):
@@ -163,5 +165,5 @@ class ImageViewer(BaseDialog):
 		self.item_list = list(builder())
 
 	def set_properties(self):
-		self.setProperty('fanart', default_addon_fanart)
+		self.setProperty('fanart', addon_fanart())
 		self.setProperty('backup_thumbnail', backup_thumbnail)

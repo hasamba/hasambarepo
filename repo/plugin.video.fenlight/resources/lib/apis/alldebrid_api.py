@@ -1,17 +1,19 @@
 # -*- coding: utf-8 -*-
 import re
 import time
+import requests
+from threading import Thread
 from caches.main_cache import cache_object
 from caches.settings_cache import get_setting, set_setting
 from modules.utils import copy2clip
 from modules.source_utils import supported_video_extensions, seas_ep_filter, EXTRAS
 from modules import kodi_utils
-# logger = kodi_utils.logger
+logger = kodi_utils.logger
 
-path_exists, requests, Thread, get_icon = kodi_utils.path_exists, kodi_utils.requests, kodi_utils.Thread, kodi_utils.get_icon
-show_busy_dialog, confirm_dialog, clear_property = kodi_utils.show_busy_dialog, kodi_utils.confirm_dialog, kodi_utils.clear_property
+path_exists, get_icon = kodi_utils.path_exists, kodi_utils.get_icon
+show_busy_dialog, confirm_dialog = kodi_utils.show_busy_dialog, kodi_utils.confirm_dialog
 sleep, ok_dialog = kodi_utils.sleep, kodi_utils.ok_dialog
-progress_dialog, notification, hide_busy_dialog, monitor = kodi_utils.progress_dialog, kodi_utils.notification, kodi_utils.hide_busy_dialog, kodi_utils.monitor
+progress_dialog, notification, hide_busy_dialog, xbmc_monitor = kodi_utils.progress_dialog, kodi_utils.notification, kodi_utils.hide_busy_dialog, kodi_utils.xbmc_monitor
 base_url = 'https://api.alldebrid.com/v4/'
 user_agent = 'Fen Light for Kodi'
 timeout = 20.0
@@ -113,7 +115,7 @@ class AllDebridAPI:
 		url = 'magnet/delete'
 		url_append = '&id=%s' % transfer_id
 		result = self._get(url, url_append)
-		return result.get('success', False) == True
+		return result.get('message', '') == 'Magnet was successfully deleted'
 
 	def resolve_magnet(self, magnet_url, info_hash, store_to_cloud, title, season, episode):
 		try:
@@ -176,6 +178,7 @@ class AllDebridAPI:
 			else: ok_dialog(heading='Fen Cloud Transfer', text=message)
 			return False
 		show_busy_dialog()
+		monitor = xbmc_monitor()
 		transfer_id = self.create_transfer(magnet_url)
 		if not transfer_id: return _return_failed()
 		transfer_info = self.list_transfer(transfer_id)
@@ -270,7 +273,6 @@ class AllDebridAPI:
 			# USER CLOUD
 			try:
 				dbcon.execute("""DELETE FROM maincache WHERE id=?""", ('ad_user_cloud',))
-				clear_property('ad_user_cloud')
 				user_cloud_success = True
 			except: user_cloud_success = False
 			# HASH CACHED STATUS

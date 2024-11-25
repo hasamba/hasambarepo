@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from modules.kodi_utils import external, parse_qsl
+from modules.kodi_utils import external
+from urllib.parse import parse_qsl
 # from modules.kodi_utils import logger
 
 def sys_exit_check(): return external()
@@ -68,7 +69,7 @@ def routing(sys):
 			from indexers.people import tmdb_people
 			return tmdb_people(params)
 		if 'random.' in mode:
-			from modules.random_lists import RandomLists
+			from indexers.random_lists import RandomLists
 			return RandomLists(params).run_random()
 	if 'watched_status.' in mode:
 		if mode == 'watched_status.mark_episode':
@@ -165,7 +166,7 @@ def routing(sys):
 		if mode == 'alldebrid.revoke_authentication':
 			from apis.alldebrid_api import AllDebridAPI
 			return AllDebridAPI().revoke()
-		if mode == 'real_debrid.delete':
+		if mode == 'alldebrid.delete':
 			from indexers.alldebrid import ad_delete
 			return ad_delete(params.get('id'))
 	if '_cache' in mode:

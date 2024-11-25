@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 import re
+import json
 import time
+import requests
+from threading import Thread
+from urllib.parse import urlencode
 from caches.main_cache import cache_object
 from caches.settings_cache import get_setting, set_setting
 from modules.utils import copy2clip
@@ -8,9 +12,9 @@ from modules.source_utils import supported_video_extensions, seas_ep_filter, EXT
 from modules import kodi_utils
 # logger = kodi_utils.logger
 
-notification, requests = kodi_utils.notification, kodi_utils.requests
-monitor, progress_dialog, dialog, urlencode, get_icon = kodi_utils.monitor, kodi_utils.progress_dialog, kodi_utils.dialog, kodi_utils.urlencode, kodi_utils.get_icon
-json, sleep, confirm_dialog, ok_dialog, Thread = kodi_utils.json, kodi_utils.sleep, kodi_utils.confirm_dialog, kodi_utils.ok_dialog, kodi_utils.Thread
+notification = kodi_utils.notification
+xbmc_monitor, progress_dialog, get_icon = kodi_utils.xbmc_monitor, kodi_utils.progress_dialog, kodi_utils.get_icon
+sleep, confirm_dialog, ok_dialog = kodi_utils.sleep, kodi_utils.confirm_dialog, kodi_utils.ok_dialog
 base_url = 'https://www.premiumize.me/api/'
 client_id = '888228107'
 user_agent = 'Fen Light for Kodi'
@@ -159,6 +163,7 @@ class PremiumizeAPI:
 			else: ok_dialog(heading='Fen Light Cloud Transfer', text=message)
 			return False
 		show_busy_dialog()
+		monitor = xbmc_monitor()
 		extensions = supported_video_extensions()
 		transfer_id = self.create_transfer(magnet_url)
 		if not transfer_id['status'] == 'success':
@@ -290,14 +295,12 @@ class PremiumizeAPI:
 
 	def clear_cache(self, clear_hashes=True):
 		try:
-			from modules.kodi_utils import clear_property
 			from caches.debrid_cache import debrid_cache
 			from caches.base_cache import connect_database
 			dbcon = connect_database('maincache_db')
 			user_cloud_success = False
 			# USER CLOUD
 			try:
-				
 				try:
 					user_cloud_cache = dbcon.execute("""SELECT id FROM maincache WHERE id LIKE ?""", ('pm_user_cloud%',)).fetchall()
 					user_cloud_cache = [i[0] for i in user_cloud_cache]
@@ -306,13 +309,11 @@ class PremiumizeAPI:
 				if not user_cloud_success:
 					for i in user_cloud_cache:
 						dbcon.execute("""DELETE FROM maincache WHERE id=?""", (i,))
-						clear_property(str(i))
 					user_cloud_success = True
 			except: user_cloud_success = False
 			# DOWNLOAD LINKS
 			try:
 				dbcon.execute("""DELETE FROM maincache WHERE id=?""", ('pm_transfers_list',))
-				clear_property("fenlight.pm_transfers_list")
 				download_links_success = True
 			except: download_links_success = False
 			# HASH CACHED STATUS

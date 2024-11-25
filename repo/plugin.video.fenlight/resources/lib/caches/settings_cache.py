@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
+import json
 from modules import kodi_utils
 from caches.base_cache import connect_database
 # logger = kodi_utils.logger
 
-json, numeric_input = kodi_utils.json, kodi_utils.numeric_input
-dialog, ok_dialog, select_dialog, confirm_dialog = kodi_utils.dialog, kodi_utils.ok_dialog, kodi_utils.select_dialog, kodi_utils.confirm_dialog
-default_addon_fanart, get_property, set_property, notification = kodi_utils.default_addon_fanart, kodi_utils.get_property, kodi_utils.set_property, kodi_utils.notification
+numeric_input = kodi_utils.numeric_input
+kodi_dialog, ok_dialog, select_dialog, confirm_dialog = kodi_utils.kodi_dialog, kodi_utils.ok_dialog, kodi_utils.select_dialog, kodi_utils.confirm_dialog
+default_addon_fanart, get_property, set_property, notification = kodi_utils.addon_fanart(), kodi_utils.get_property, kodi_utils.set_property, kodi_utils.notification
 tmdb_default_api, trakt_default_id, trakt_default_secret = kodi_utils.tmdb_default_api, kodi_utils.trakt_default_id, kodi_utils.trakt_default_secret
 boolean_dict = {'true': 'false', 'false': 'true'}
 
@@ -69,7 +70,7 @@ class SettingsCache:
 		clear_property('fenlight.%s' % setting_id)
 
 	def setting_info(self, setting_id):
-		return [i for i in default_settings() if i['setting_id'] == setting_id][0]
+		return [i for i in default_settings if i['setting_id'] == setting_id][0]
 
 	def clean_database(self):
 		try:
@@ -94,9 +95,8 @@ def sync_settings(params={}):
 	insert_list = []
 	insert_list_append = insert_list.append
 	currentsettings = settings_cache.get_all()
-	defaultsettings = default_settings()
-	defaultsettings_ids = [i['setting_id'] for i in defaultsettings]
-	defaultsettings_names = [i['setting_id'] for i in defaultsettings if 'settings_options' in i]
+	defaultsettings_ids = [i['setting_id'] for i in default_settings]
+	defaultsettings_names = [i['setting_id'] for i in default_settings if 'settings_options' in i]
 	defaultsettings_ids.extend(['%s_name' % i for i in defaultsettings_names])
 	try:
 		obsoletesettings_ids = [k for k, v in currentsettings.items() if not k in defaultsettings_ids]
@@ -105,7 +105,7 @@ def sync_settings(params={}):
 	except: pass
 	if currentsettings:
 		for k, v  in currentsettings.items(): settings_cache.set_memory_cache(k, v)
-	for item in defaultsettings:
+	for item in default_settings:
 		setting_id = item['setting_id']
 		if setting_id in currentsettings: continue
 		setting_type = item['setting_type']
@@ -132,7 +132,7 @@ def set_boolean(params):
 def set_string(params):
 	current_value = get_setting('fenlight.%s' % params['setting_id'])
 	current_value = current_value.replace('empty_setting', '')
-	new_value = dialog.input('', defaultt=current_value)
+	new_value = kodi_dialog().input('', defaultt=current_value)
 	if not new_value and not confirm_dialog(text='Enter Blank Value?', ok_label='Yes', cancel_label='Re-Enter Value', default_control=11): return set_string(params)
 	set_setting(params['setting_id'], new_value)
 
@@ -148,7 +148,7 @@ def set_numeric(params):
 		kwargs = {'items': json.dumps(list_items), 'narrow_window': 'true', 'heading': 'Will this be a positive or negative number?'}
 		multiplier = select_dialog(multiplier_values, **kwargs)
 	else: multiplier = None
-	new_value = dialog.input('Range [B]%s - %s[/B].' % (min_value, max_value), type=numeric_input)
+	new_value = kodi_dialog().input('Range [B]%s - %s[/B].' % (min_value, max_value), type=numeric_input)
 	if not new_value: return
 	if multiplier: new_value = str(int(float(new_value) * multiplier[1]))
 	if int(new_value) < min_value or int(new_value) > max_value:
@@ -159,7 +159,7 @@ def set_numeric(params):
 def set_path(params):
 	setting_id = params['setting_id']
 	browse_mode = int(default_setting_values(setting_id)['browse_mode'])
-	new_value = dialog.browse(browse_mode, '', '', defaultt=get_setting('fenlight.%s' % setting_id))
+	new_value = kodi_dialog().browse(browse_mode, '', '', defaultt=get_setting('fenlight.%s' % setting_id))
 	set_setting(setting_id, new_value)
 
 def set_from_list(params):
@@ -188,18 +188,19 @@ def restore_setting_default(params):
 		if not silent: ok_dialog(text='Error restoring default setting')
 
 def default_setting_values(setting_id):
-	return next((i for i in default_settings() if i['setting_id'] == setting_id), None)
+	return next((i for i in default_settings if i['setting_id'] == setting_id), None)
 
-def default_settings():
-	return [
+default_settings = [
 #===============================================================================#
 #====================================GENERAL====================================#
 #===============================================================================#
 #==================== General
 {'setting_id': 'auto_start_fenlight', 'setting_type': 'boolean', 'setting_default': 'false'},
 {'setting_id': 'default_addon_fanart', 'setting_type': 'path', 'setting_default': default_addon_fanart, 'browse_mode': '2'},
-{'setting_id': 'update.action', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Prompt', '1': 'Automatic', '2': 'Notification', '3': 'Off'}},
+{'setting_id': 'limit_concurrent_threads', 'setting_type': 'boolean', 'setting_default': 'false'},
+{'setting_id': 'max_threads', 'setting_type': 'action', 'setting_default': '60', 'min_value': '10', 'max_value': '250'},
 #==================== Manage Updates
+{'setting_id': 'update.action', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Prompt', '1': 'Automatic', '2': 'Notification', '3': 'Off'}},
 {'setting_id': 'update.delay', 'setting_type': 'action', 'setting_default': '10', 'min_value': '10', 'max_value': '300'},
 #==================== Watched Indicators
 {'setting_id': 'watched_indicators', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Fen Light', '1': 'Trakt'}},
@@ -209,10 +210,10 @@ def default_settings():
 #==================== UTC Time Offset
 {'setting_id': 'datetime.offset', 'setting_type': 'action', 'setting_default': '0', 'min_value': '-15', 'max_value': '15'},
 #==================== Downloads
-{'setting_id': 'movie_download_directory', 'setting_type': 'path', 'setting_default': 'special://profile/addon_data/plugin.video.fen/Movies Downloads/', 'browse_mode': '0'},
-{'setting_id': 'tvshow_download_directory', 'setting_type': 'path', 'setting_default': 'special://profile/addon_data/plugin.video.fen/TV Show Downloads/', 'browse_mode': '0'},
-{'setting_id': 'premium_download_directory', 'setting_type': 'path', 'setting_default': 'special://profile/addon_data/plugin.video.fen/Premium Downloads/', 'browse_mode': '0'},
-{'setting_id': 'image_download_directory', 'setting_type': 'path', 'setting_default': 'special://profile/addon_data/plugin.video.fen/Image Downloads/', 'browse_mode': '0'},
+{'setting_id': 'movie_download_directory', 'setting_type': 'path', 'setting_default': 'special://profile/addon_data/plugin.video.fenlight/Movies Downloads/', 'browse_mode': '0'},
+{'setting_id': 'tvshow_download_directory', 'setting_type': 'path', 'setting_default': 'special://profile/addon_data/plugin.video.fenlight/TV Show Downloads/', 'browse_mode': '0'},
+{'setting_id': 'premium_download_directory', 'setting_type': 'path', 'setting_default': 'special://profile/addon_data/plugin.video.fenlight/Premium Downloads/', 'browse_mode': '0'},
+{'setting_id': 'image_download_directory', 'setting_type': 'path', 'setting_default': 'special://profile/addon_data/plugin.video.fenlight/Image Downloads/', 'browse_mode': '0'},
 
 
 #================================================================================#
@@ -243,19 +244,31 @@ def default_settings():
 {'setting_id': 'paginate.lists', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Off', '1': 'Within Addon Only', '2': 'Widgets Only', '3': 'Both'}},
 {'setting_id': 'paginate.limit_addon', 'setting_type': 'action', 'setting_default': '20'},
 {'setting_id': 'paginate.limit_widgets', 'setting_type': 'action', 'setting_default': '20'},
+{'setting_id': 'recommend_service', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Recommended (TMDb)', '1': 'More Like This (IMDb)'}},
+{'setting_id': 'recommend_seed', 'setting_type': 'action', 'setting_default': '5', 'settings_options': {'1': 'Last Watched Only', '2': 'Last 2 Watched',
+'3': 'Last 3 Watched', '4': 'Last 4 Watched', '5': 'Last 5 Watched'}},
 {'setting_id': 'mpaa_region', 'setting_type': 'string', 'setting_default': 'US'},
+{'setting_id': 'tv_progress_location', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Watched', '1': 'In Progress', '2': 'Both'}},
 {'setting_id': 'show_specials', 'setting_type': 'boolean', 'setting_default': 'false'},
 {'setting_id': 'default_all_episodes', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Never', '1': 'If Only One Season', '2': 'Always'}},
+{'setting_id': 'show_unaired_watchlist', 'setting_type': 'boolean', 'setting_default': 'true'},
 {'setting_id': 'meta_filter', 'setting_type': 'boolean', 'setting_default': 'false'},
 {'setting_id': 'use_viewtypes', 'setting_type': 'boolean', 'setting_default': 'true'},
-
-
+{'setting_id': 'manual_viewtypes', 'setting_type': 'boolean', 'setting_default': 'false'},
+{'setting_id': 'view.main', 'setting_type': 'string', 'setting_default': '55'},
+{'setting_id': 'view.movies', 'setting_type': 'string', 'setting_default': '500'},
+{'setting_id': 'view.tvshows', 'setting_type': 'string', 'setting_default': '500'},
+{'setting_id': 'view.seasons', 'setting_type': 'string', 'setting_default': '55'},
+{'setting_id': 'view.episodes', 'setting_type': 'string', 'setting_default': '55'},
+{'setting_id': 'view.episodes_single', 'setting_type': 'string', 'setting_default': '55'},
+{'setting_id': 'view.premium', 'setting_type': 'string', 'setting_default': '55'},
 #==================================================================================#
-#====================================CONTENT====================================#
+#====================================SINGLE EPISODE LISTS====================================#
 #==================================================================================#
 #==================== General
 {'setting_id': 'single_ep_display', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'TITLE: SxE - EPISODE', '1': 'SxE - EPISODE', '2': 'EPISODE'}},
 {'setting_id': 'single_ep_display_widget', 'setting_type': 'action', 'setting_default': '1', 'settings_options': {'0': 'TITLE: SxE - EPISODE', '1': 'SxE - EPISODE', '2': 'EPISODE'}},
+{'setting_id': 'single_ep_unwatched_episodes', 'setting_type': 'boolean', 'setting_default': 'false'},
 #==================== Next Episodes
 {'setting_id': 'nextep.method', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Last Aired', '1': 'Last Watched'}},
 {'setting_id': 'nextep.sort_type', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Recently Watched', '1': 'Airdate', '2': 'Title'}},
@@ -267,13 +280,14 @@ def default_settings():
 {'setting_id': 'nextep.airing_today', 'setting_type': 'boolean', 'setting_default': 'false'},
 {'setting_id': 'nextep.include_unaired', 'setting_type': 'boolean', 'setting_default': 'false'},
 #======+============= Trakt Calendar
+{'setting_id': 'trakt.flatten_episodes', 'setting_type': 'boolean', 'setting_default': 'false'},
 {'setting_id': 'trakt.calendar_sort_order', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Descending', '1': 'Ascending'}},
 {'setting_id': 'trakt.calendar_previous_days', 'setting_type': 'action', 'setting_default': '7', 'min_value': '0', 'max_value': '14'},
 {'setting_id': 'trakt.calendar_future_days', 'setting_type': 'action', 'setting_default': '7', 'min_value': '0', 'max_value': '14'},
 
 
 #=====================================================================================#
-#====================================META ACCOUNTS====================================#
+#====================================ACCOUNTS====================================#
 #=====================================================================================#
 #==================== Trakt
 {'setting_id': 'trakt.user', 'setting_type': 'string', 'setting_default': 'empty_setting'},
@@ -283,11 +297,6 @@ def default_settings():
 {'setting_id': 'tmdb_api', 'setting_type': 'string', 'setting_default': tmdb_default_api},
 #==================== OMDb
 {'setting_id': 'omdb_api', 'setting_type': 'string', 'setting_default': 'empty_setting'},
-
-
-#=========================================================================================#
-#====================================PROVIDER ACCOUNTS====================================#
-#=========================================================================================#
 #==================== External
 {'setting_id': 'provider.external', 'setting_type': 'boolean', 'setting_default': 'false'},
 {'setting_id': 'external_scraper.name', 'setting_type': 'string', 'setting_default': 'empty_setting'},
@@ -346,6 +355,7 @@ def default_settings():
 {'setting_id': 'results.list_format', 'setting_type': 'string', 'setting_default': 'List'},
 #==================== General
 {'setting_id': 'results.auto_rescrape_with_all', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Off', '1': 'Auto', '2': 'Prompt'}},
+{'setting_id': 'results.auto_episode_group', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Off', '1': 'Auto', '2': 'Prompt'}},
 {'setting_id': 'results.ignore_filter', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Off', '1': 'Auto', '2': 'Prompt'}},
 #==================== Sorting and Filtering
 {'setting_id': 'results.sort_order_display', 'setting_type': 'string', 'setting_default': 'Quality, Size, Provider'},
@@ -359,13 +369,15 @@ def default_settings():
 {'setting_id': 'results.size_unknown', 'setting_type': 'boolean', 'setting_default': 'true'},
 {'setting_id': 'results.include.unknown.size', 'setting_type': 'boolean', 'setting_default': 'true'},
 {'setting_id': 'include_prerelease_results', 'setting_type': 'boolean', 'setting_default': 'true'},
-{'setting_id': 'include_3d_results', 'setting_type': 'boolean', 'setting_default': 'true'},
-{'setting_id': 'filter_hevc', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Include', '1': 'Exclude', '2': 'Prefer (Autoplay)'}},
-{'setting_id': 'filter_hevc.max_quality', 'setting_type': 'action', 'setting_default': '4K', 'settings_options': {'4K': '4K', '1080p': '1080p', '720p': '720p', 'SD': 'SD'}},
-{'setting_id': 'filter_hevc.max_autoplay_quality', 'setting_type': 'action', 'setting_default': '4K', 'settings_options': {'4K': '4K', '1080p': '1080p', '720p': '720p', 'SD': 'SD'}},
-{'setting_id': 'filter_hdr', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Include', '1': 'Exclude', '2': 'Prefer (Autoplay)'}},
-{'setting_id': 'filter_dv', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Include', '1': 'Exclude', '2': 'Prefer (Autoplay)'}},
-{'setting_id': 'filter_av1', 'setting_type': 'action', 'setting_default': '0', 'settings_options':{'0': 'Include', '1': 'Exclude', '2': 'Prefer (Autoplay)'}},
+{'setting_id': 'filter.hevc', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Include', '1': 'Exclude'}},
+{'setting_id': 'filter.hevc.max_quality', 'setting_type': 'action', 'setting_default': '4K', 'settings_options': {'4K': '4K', '1080p': '1080p', '720p': '720p', 'SD': 'SD'}},
+{'setting_id': 'filter.hevc.max_autoplay_quality', 'setting_type': 'action', 'setting_default': '4K', 'settings_options': {'4K': '4K', '1080p': '1080p', '720p': '720p', 'SD': 'SD'}},
+{'setting_id': 'filter.3d', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Include', '1': 'Exclude'}},
+{'setting_id': 'filter.hdr', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Include', '1': 'Exclude'}},
+{'setting_id': 'filter.dv', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Include', '1': 'Exclude'}},
+{'setting_id': 'filter.av1', 'setting_type': 'action', 'setting_default': '0', 'settings_options':{'0': 'Include', '1': 'Exclude'}},
+{'setting_id': 'filter_enhanced_upscaled', 'setting_type': 'action', 'setting_default': '0', 'settings_options':{'0': 'Include', '1': 'Exclude'}},
+{'setting_id': 'preferred_autoplay', 'setting_type': 'string', 'setting_default': 'empty_setting'},
 {'setting_id': 'filter_audio', 'setting_type': 'string', 'setting_default': 'empty_setting'},
 #==================== Results Color Highlights
 {'setting_id': 'highlight.type', 'setting_type': 'action', 'setting_default': '0', 'settings_options': {'0': 'Provider', '1': 'Quality', '2': 'Single Color'}},
@@ -454,12 +466,5 @@ def default_settings():
 {'setting_id': 'extras.movie.button14', 'setting_type': 'string', 'setting_default': 'show_extrainfo'},
 {'setting_id': 'extras.movie.button15', 'setting_type': 'string', 'setting_default': 'show_genres'},
 {'setting_id': 'extras.movie.button16', 'setting_type': 'string', 'setting_default': 'show_director'},
-{'setting_id': 'extras.movie.button17', 'setting_type': 'string', 'setting_default': 'show_options'},
-{'setting_id': 'view.main', 'setting_type': 'string', 'setting_default': '55'},
-{'setting_id': 'view.movies', 'setting_type': 'string', 'setting_default': '500'},
-{'setting_id': 'view.tvshows', 'setting_type': 'string', 'setting_default': '500'},
-{'setting_id': 'view.seasons', 'setting_type': 'string', 'setting_default': '55'},
-{'setting_id': 'view.episodes', 'setting_type': 'string', 'setting_default': '55'},
-{'setting_id': 'view.episodes_single', 'setting_type': 'string', 'setting_default': '55'},
-{'setting_id': 'view.premium', 'setting_type': 'string', 'setting_default': '55'}
+{'setting_id': 'extras.movie.button17', 'setting_type': 'string', 'setting_default': 'show_options'}
 	]

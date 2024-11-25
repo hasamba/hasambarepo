@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
+from threading import Thread
 from apis.trakt_api import trakt_watched_status_mark, trakt_official_status, trakt_progress, trakt_get_hidden_items
 from caches.base_cache import connect_database, database, get_timestamp
 from caches.main_cache import main_cache, cache_object
@@ -9,9 +10,11 @@ from modules.utils import get_datetime, adjust_premiered_date, sort_for_article,
 # logger = kodi_utils.logger
 
 watched_indicators_function, lists_sort_order, date_offset, nextep_method = settings.watched_indicators, settings.lists_sort_order, settings.date_offset, settings.nextep_method
-sleep, progressDialogBG, Thread, get_video_database_path = kodi_utils.sleep, kodi_utils.progressDialogBG, kodi_utils.Thread, kodi_utils.get_video_database_path
+sleep, progressDialogBG, get_video_database_path = kodi_utils.sleep, kodi_utils.progressDialogBG, kodi_utils.get_video_database_path
 notification, kodi_refresh, tmdb_api_key, mpaa_region = kodi_utils.notification, kodi_utils.kodi_refresh, settings.tmdb_api_key, settings.mpaa_region
+tv_progress_location = settings.tv_progress_location
 progress_db_string, indicators_dict = 'fenlight_hidden_progress_items', {0: 'watched_db', 1: 'trakt_db'}
+finished_show_check = ('Ended', 'Canceled')
 
 def get_database(watched_indicators=None):
 	return connect_database(indicators_dict[watched_indicators or watched_indicators_function()])
@@ -60,16 +63,24 @@ def active_tvshows_information(status_type):
 	def _process(item):
 		media_id = item['media_id']
 		meta = metadata.tvshow_meta('tmdb_id', media_id, api_key, mpaa_region_value, get_datetime())
-		watched_status = get_watched_status_tvshow(watched_info[media_id], meta.get('total_aired_eps'))
-		if watched_status[0] == status_check: results_append(item)
+		watched_status = get_watched_status_tvshow(watched_info[media_id], meta.get('total_aired_eps'))[0]
+		airing_status = meta.get('status', '')
+		if status_type == 'watched':
+			if watched_status == 1:
+				if not include_other and airing_status not in finished_show_check: return
+				results_append(item)
+		else:
+			if watched_status == 0: results_append(item)
+			elif include_other and airing_status not in finished_show_check: results_append(item)
 	results = []
 	results_append = results.append
 	watched_indicators = watched_indicators_function()
 	watched_info = watched_info_tvshow()
 	api_key, mpaa_region_value = tmdb_api_key(), mpaa_region()
 	data = [v for k, v in watched_info.items()]
-	if status_type == 'progress': status_check = 0
-	else: status_check = 1
+	progress_location = tv_progress_location()
+	if status_type == 'watched': include_other = progress_location in (0, 2)
+	else: include_other = progress_location in (1, 2)
 	threads = list(make_thread_list(_process, data))
 	[i.join() for i in threads]
 	return results
@@ -160,13 +171,28 @@ def get_bookmarks_episode(media_id, season, watched_db=None):
 	if not watched_db: watched_db = get_database()
 	try:
 		info = watched_db.execute('SELECT resume_point, curr_time, resume_id, episode FROM progress WHERE db_type = ? AND media_id = ? AND season = ?',
-			('episode', str(media_id), season)).fetchall()
+			('episode', str(media_id), int(season))).fetchall()
 		info = dict([(i[3], {'resume_point': i[0], 'curr_time': i[1], 'resume_id': i[2]}) for i in info])
 	except: info = {}
 	return info
 
+def get_bookmarks_all_episode(media_id, total_seasons, watched_db=None):
+	if not watched_db: watched_db = get_database()
+	all_seasons_info = {}
+	for season in range(1, total_seasons + 1):
+		try:
+			season_info = get_bookmarks_episode(media_id, season, watched_db)
+			all_seasons_info[season] = season_info
+		except: pass
+	return all_seasons_info
+
 def get_progress_status_episode(progress_info, episode):
 	try: percent = str(round(float(progress_info[episode]['resume_point'])))
+	except: percent = None
+	return percent
+
+def get_progress_status_all_episode(progress_info, season, episode):
+	try: percent = str(round(float(progress_info[season][episode]['resume_point'])))
 	except: percent = None
 	return percent
 
@@ -248,7 +274,8 @@ def mark_tvshow(params):
 	try: tvdb_id = int(params.get('tvdb_id', '0'))
 	except: tvdb_id = 0
 	watched_indicators = watched_indicators_function()
-	progressDialogBG.create('[B]Please Wait..[/B]', '')
+	progress_backround = progressDialogBG()
+	progress_backround.create('[B]Please Wait..[/B]', '')
 	if watched_indicators == 1:
 		if not trakt_watched_status_mark(action, 'shows', tmdb_id, tvdb_id): return notification('Error')
 		clear_trakt_collection_watchlist_data('watchlist', 'tvshow')
@@ -267,12 +294,12 @@ def mark_tvshow(params):
 			season_number = ep['season']
 			ep_number = ep['episode']
 			display = '%s - S%.2dE%.2d' % (title, int(season_number), int(ep_number))
-			progressDialogBG.update(int(float(count)/float(total)*100), '[B]Please Wait..[/B]', display)
+			progress_backround.update(int(float(count)/float(total)*100), '[B]Please Wait..[/B]', display)
 			episode_date, premiered = adjust_premiered_date(ep['premiered'], date_offset())
 			if episode_date and current_date < episode_date: continue
 			insert_append(make_batch_insert(action, 'episode', tmdb_id, season_number, ep_number, last_played, title))
 	batch_watched_status_mark(watched_indicators, insert_list, action)
-	progressDialogBG.close()
+	progress_backround.close()
 	refresh_container()
 
 def mark_season(params):
@@ -288,7 +315,8 @@ def mark_season(params):
 	if watched_indicators == 1:
 		if not trakt_watched_status_mark(action, 'season', tmdb_id, tvdb_id, season): return notification('Error')
 		clear_trakt_collection_watchlist_data('watchlist', 'tvshow')
-	progressDialogBG.create('[B]Please Wait..[/B]', '')
+	progress_backround = progressDialogBG()
+	progress_backround.create('[B]Please Wait..[/B]', '')
 	current_date = get_datetime()
 	meta = metadata.tvshow_meta('tmdb_id', tmdb_id, tmdb_api_key(), mpaa_region(), get_datetime())
 	ep_data = metadata.episodes_meta(season, meta)
@@ -299,10 +327,10 @@ def mark_season(params):
 		display = '%s - S%.2dE%.2d' % (title, season_number, ep_number)
 		episode_date, premiered = adjust_premiered_date(item['premiered'], date_offset())
 		if episode_date and current_date < episode_date: continue
-		progressDialogBG.update(int(float(count) / float(len(ep_data)) * 100), '[B]Please Wait..[/B]', display)
+		progress_backround.update(int(float(count) / float(len(ep_data)) * 100), '[B]Please Wait..[/B]', display)
 		insert_append(make_batch_insert(action, 'episode', tmdb_id, season_number, ep_number, last_played, title))
 	batch_watched_status_mark(watched_indicators, insert_list, action)
-	progressDialogBG.close()
+	progress_backround.close()
 	refresh_container()
 
 def mark_episode(params):

@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
 import re
+import json
+from urllib.parse import unquote, unquote_plus
 from modules import kodi_utils
 from modules.metadata import episodes_meta
 from modules.settings import date_offset
 from modules.utils import adjust_premiered_date, get_datetime, jsondate_to_datetime, subtract_dates
 # logger = kodi_utils.logger
 
-unquote, unquote_plus, supported_media, string, int_window_prop = kodi_utils.unquote, kodi_utils.unquote_plus, kodi_utils.supported_media, str, kodi_utils.int_window_prop
-json, set_property, notification = kodi_utils.json, kodi_utils.set_property, kodi_utils.notification
+supported_media, string = kodi_utils.supported_media, str
+set_property, notification = kodi_utils.set_property, kodi_utils.notification
 expiry_3hrs, expiry_1day, expiry_2days, expiry_3days, expiry_4days, expiry_7days, expiry_10days, expiry_14days, expiry_30days = 3, 24, 48, 72, 96, 168, 240, 336, 720
+int_window_prop = 'fenlight.internal_results.%s'
 RES_4K = ('.4k', 'hd4k', '4khd', '.uhd', 'ultrahd', 'ultra.hd', 'hd2160', '2160hd', '2160', '2160p', '216o', '216op')
 RES_1080 = ('1080', '1080p', '1080i', 'hd1080', '1080hd', 'hd1080p', 'm1080p', 'fullhd', 'full.hd', '1o8o', '1o8op', '108o', '108op', '1o80', '1o80p')
 RES_720 = ('720', '720p', '720i', 'hd720', '720hd', 'hd720p', '72o', '72op')
@@ -19,7 +22,8 @@ VIDEO_3D = ('.3d.', '.sbs.', '.hsbs', 'sidebyside', 'side.by.side', 'stereoscopi
 DOLBY_VISION = ('dolby.vision', 'dolbyvision', '.dovi.', '.dv.')
 HDR = ('2160p.bluray.hevc.truehd', '2160p.bluray.hevc.dts', '2160p.bluray.hevc.lpcm', '2160p.blu.ray.hevc.truehd', '2160p.blu.ray.hevc.dts', '2160p.uhd.bluray',
 		'2160p.uhd.blu.ray', '2160p.us.bluray.hevc.truehd', '2160p.us.bluray.hevc.dts', '.hdr.', 'hdr10', 'hdr.10', 'uhd.bluray.2160p', 'uhd.blu.ray.2160p')
-HDR_TRUE = ('.hdr.', 'hdr10', 'hdr.10')
+HDR_TRUE = ('.hdr.', '.hdr10.', 'hdr.10')
+ENHANCED_UPSCALED = ('.enhanced.', '.upscaled.', '.enhance.', '.upscale.')
 CODEC_H264 = ('avc', 'h264', 'h.264', 'x264', 'x.264')
 CODEC_H265 = ('h265', 'h.265', 'hevc', 'x265', 'x.265')
 CODEC_XVID = ('xvid', '.x.vid')
@@ -28,6 +32,7 @@ CODEC_MPEG = ('.mpg', '.mp2', '.mpeg', '.mpe', '.mpv', '.mp4', '.m4p', '.m4v', '
 CODEC_MKV = ('.mkv', 'matroska')
 REMUX = ('remux', 'bdremux')
 BLURAY = ('bluray', 'blu.ray', 'bdrip', 'bd.rip')
+IMAX = ('.imax.', '.(imax).', '.(.imax.).')
 DVD = ('dvdrip', 'dvd.rip')
 WEB = ('.web.', 'webdl', 'web.dl', 'web-dl', 'webrip', 'web.rip')
 HDRIP = ('.hdrip', '.hd.rip')
@@ -60,6 +65,12 @@ UNWANTED_TAGS = ('tamilrockers.com', 'www.tamilrockers.com', 'www.tamilrockers.w
 audio_filter_choices = (('DOLBY DIGITAL', 'DD'), ('DOLBY DIGITAL PLUS', 'DD+'), ('DOLBY DIGITAL EX', 'DD-EX'), ('DOLBY ATMOS', 'ATMOS'), ('DOLBY TRUEHD', 'TRUEHD'), 
 					('DTS', 'DTS'), ('DTS-HD MASTER AUDIO', 'DTS-HD MA'), ('DTS-X', 'DTS-X'), ('DTS-HD', 'DTS-HD'), ('AAC', 'AAC'), ('OPUS', 'OPUS'), ('MP3', 'MP3'),
 					('8CH AUDIO', '8CH'), ('7CH AUDIO', '7CH'), ('6CH AUDIO', '6CH'), ('2CH AUDIO', '2CH'))
+source_filters = (('PACK', 'PACK'), ('DOLBY VISION', 'D/VISION'), ('HIGH DYNAMIC RANGE (HDR)', 'HDR'), ('IMAX', 'IMAX'), ('HYBRID', 'HYBRID'), ('AV1', 'AV1'),
+					('HEVC (X265)', 'HEVC'), ('REMUX', 'REMUX'), ('BLURAY', 'BLURAY'), ('AI ENHANCED/UPSCALED', 'AI ENHANCED/UPSCALED'), ('SDR', 'SDR'), ('3D', '3D'),
+					('DOLBY ATMOS', 'ATMOS'), ('DOLBY TRUEHD', 'TRUEHD'), ('DOLBY DIGITAL EX', 'DD-EX'), ('DOLBY DIGITAL PLUS', 'DD+'), ('DOLBY DIGITAL', 'DD'),
+					('DTS-HD MASTER AUDIO', 'DTS-HD MA'), ('DTS-X', 'DTS-X'), ('DTS-HD', 'DTS-HD'), ('DTS', 'DTS'), ('AAC', 'AAC'), ('OPUS', 'OPUS'), ('MP3', 'MP3'),
+					('8CH AUDIO', '8CH'), ('7CH AUDIO', '7CH'), ('6CH AUDIO', '6CH'), ('2CH AUDIO', '2CH'), ('DVD SOURCE', 'DVD'), ('WEB SOURCE', 'WEB'),
+					('MULTIPLE LANGUAGES', 'MULTI-LANG'), ('SUBTITLES', 'SUBS'))
 
 def get_aliases_titles(aliases):
 	try: result = [i['title'] for i in aliases]
@@ -263,6 +274,8 @@ def get_info(title):
 	elif '.av1.' in title: info_append('[B]AV1[/B]')
 	elif any(i in title for i in CODEC_H265): info_append('[B]HEVC[/B]')
 	elif any(i in info for i in ('[B]HDR[/B]', '[B]D/VISION[/B]')): info_append('[B]HEVC[/B]')
+	if any(i in title for i in IMAX): info_append('IMAX')
+	elif any(i in title for i in ENHANCED_UPSCALED): info_append('[B]AI ENHANCED/UPSCALED[/B]')
 	if '.atvp' in title: info_append('APPLETV+')
 	elif any(i in title for i in CODEC_XVID): info_append('XVID')
 	elif any(i in title for i in CODEC_DIVX): info_append('DIVX')
