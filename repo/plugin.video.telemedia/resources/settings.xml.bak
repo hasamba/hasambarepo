@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+	<!--Account-->
+	<category label="32060">
+		<!--Login-->
+		<setting id="files_folder"  type="folder"  label="תקייה לקבצים (יש לרסט את קודי בשינוי)" default="special://userdata/"/>
+		<setting id="num_p"  type="number"  label="מספר עמודים לדף" visible="true" default="1"/>
+		<setting id="order_networks" type="enum" label="סדר סדרות ברשתות השונות" values="פופלריות|הכי חדש|הכי הרבה הצבעות"  default="0" />
+		<setting label="32001" option="close" type="action" action="RunPlugin(plugin://plugin.video.telemedia?mode=5&url=www)"/>
+		<!--LogOut-->
+		<setting label="32002" option="close" type="action" action="RunPlugin(plugin://plugin.video.telemedia?mode=4&url=www)"/>
+		<!--Upload kodi log-->
+		<setting label="32100" option="close" type="action" action="RunPlugin(plugin://plugin.video.telemedia?mode=41&url=www)"/>
+		<!--Backup Telemedia-->
+		<setting label="32116" option="close" type="action" action="RunPlugin(plugin://plugin.video.telemedia?mode=43&url=www)"/>
+		
+		<!--Backup Telemedia-->
+		<setting label="set bot id" option="close" type="action" action="RunPlugin(plugin://plugin.video.telemedia?mode=44&url=www&name=backup)"/>
+		
+		<setting id="bot_id2" type="text" label="bot_id" default="5438105524" />
+		<setting id="use_bot_player3" label="נגן בעזרת בוט" type="bool" default="false" />
+		
+		<!--Login when kodi starts-->
+		<setting id="autologin" label="32003" type="bool" default="false" />
+		
+		<!--Clean Kodi-->
+		<setting label="32130" option="close" type="action" action="RunPlugin(plugin://plugin.video.telemedia?mode=48&url=www)"/>
+		<setting id="first_time" label="first_time" type="bool" visible="false" default="true" />
+	</category >
+	<category label="Apk installer">
+		<setting id="File_Manager"        type="enum"   label="File Explorer" values="Default (Nvidia Shield)|Custom" default="0" />
+		<setting id="Custom_Manager" type="action" label="Select File Explorer" default="" visible="eq(-1,1)" action="RunPlugin(plugin://plugin.video.telemedia?mode=122&url=www&name=backup)" />
+	</category >
+	<!--fast_play-->
+	<category label="32113">
+		<setting id="one_click" label="32111" type="bool" default="false" />
+		<!--show_sources after-->
+		<setting id="sh_one_click" label="32112" type="bool" visible="eq(-1,true)" default="true" />
+	</category >
+	<!--addons update-->
+	<category label="32120">
+		<setting id="auto_update" label="32122" type="bool" default="true" />
+		<setting label="32121" option="close" type="action" action="RunPlugin(plugin://plugin.video.telemedia?mode=44&url=www&name=auto)"/>
+		<setting id="update_chat_id" type="text" label="32123" default="-1001416709781" />
+	</category >
+	<!--Content-->
+	<category label="32007">
+		
+		
+		<!--Remove group name from files-->
+		<setting id="remove_title" label="32004" type="bool" default="true" />
+		<!--Get notification-->
+		<setting id="get_notify" label="32005" type="bool" default="true" />
+		<!--Show login Code-->
+		<setting id="show_login" label="32006" type="bool" default="true" />
+		<!--One click play-->
+
+		
+		<!--Display Files-->
+		<setting id="disp_f" label="32008" type="bool" default="true" />
+		<!--Display files option-->
+		<setting id="files_display_type" type="enum" label="32102" lvalues="32103|32104"  visible="eq(-1,true)" default="1" />
+		
+		<!--Display Videos-->
+		<setting id="disp_v" label="32009" type="bool" default="true" />
+		<!--Display files option-->
+		<setting id="video_display_type" type="enum" label="32102" lvalues="32103|32104"  visible="eq(-1,true)" default="1" />
+		
+		<!--Display Links-->
+		<setting id="disp_l" label="32010" type="bool" default="true" />
+		<!--Display Audio-->
+		<setting id="disp_a2" label="32011" type="bool" default="false" />
+		<!--use repo groups-->
+		
+		<setting id="repo" label="32012" type="bool" default="true" />
+		<setting label="32083" type="lsep" visible="eq(-1,true)"/>
+		<!--use apk groups-->
+		
+		<setting id="install_apk" label="32078" type="bool" default="true" />
+		<setting label="32084" type="lsep" visible="eq(-1,true)"/>
+		<!--use files groups-->
+		
+		<setting id="download_files" label="32086" type="bool" default="true" />
+		<setting id="remote_path" type="folder" label="32087" visible="eq(-1,true)" />
+		<setting label="32085" type="lsep" visible="eq(-2,true)"/>
+		<!--Auto quality in google drive-->
+		<setting id="auto_q" label="32013" type="bool" default="false" />
+		<setting id="order_by" type="enum" label="32095" lvalues="32096|32097"  visible="true" default="1" />
+		
+	</category >
+	<!--Filter-->
+	<category label="32107">
+		<setting id="filter_watched" label="32108" type="bool" default="false" />
+		<setting id="filter_watched_time"  type="number"  label="32109"  visible="eq(-1,true)"  default="90"/>
+		<setting id="dup_links" label="32110" type="bool" default="true" />
+		
+
+		<setting label="32115" type="lsep" />
+		<setting id="filter_text" type="text" label="32114" default="" />
+		<setting id="filter_size"  type="number"  label="32117"    default="20"/>
+	</category >
+	<!--Buffer-->
+	<category label="32014">
+
+		<!--Buffer size-->
+		<setting id="buffer_size_new"  type="number"  label="32015"    default="8"/>
+		<!--Wait for play time (sec)-->
+		<setting id="wait_size"  type="number"  label="32016"  default="500"/>
+		<!--time_buffer (sec)-->
+		<setting id="time_buffer"  type="number"  label="32076"  default="1"/>
+		<!--chunk_size (sec)-->
+		<setting id="chunk_size_new22"  type="number"  label="32098"  default="240"/>
+		<!--chunk_file_size (sec)-->
+		<setting id="chunk_size_file"  type="number"  label="32118"  default="4"/>
+		
+		<!--chunk_size (sec)-->
+		<setting id="advance_buffer" label="32099" type="bool" default="false" />
+		<!--port (sec)-->
+		<setting id="port"  type="number"  label="32077"  visible="false" default="5118"/>
+		
+		<setting id="next_player_option" label="32119" type="bool" default="true" />
+		
+		
+
+		
+	</category >
+	<!--Clear-->
+	<category label="32017">
+	
+		<!--Clear cache-->
+		<setting label="32018" option="close" type="action" action="RunPlugin(plugin://plugin.video.telemedia?mode=17&url=www)"/>
+		<!--Clear All-->
+		<setting label="32019" option="close" type="action" action="RunPlugin(plugin://plugin.video.telemedia?mode=21&url=www)"/>
+	</category >
+	<!--debug-->
+	<category label="32061">
+		<setting id="debug" label="debug" type="bool" default="false" />
+		<setting id="show_debug" type="bool" label="show_debug" default="false" />
+		<setting id="full_debug" label="full event debug" type="bool" default="false" />
+		<setting id="test" type="text" label="test" default="" />
+		<setting label="TDLIB version" option="close" type="action" action="RunPlugin(plugin://plugin.video.telemedia?mode=119&url=www)"/>
+	
+	</category >
+</settings>

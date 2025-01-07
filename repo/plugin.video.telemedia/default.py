@@ -91,7 +91,7 @@ class OverlayText:
         self._window     = xbmcgui.Window(12005)
         self._label      = xbmcgui.ControlLabel(x, y, w, h, '', alignment=0x00000002 | 0x00000004)
         media_path=os.path.join(xbmc_tranlate_path(Addon.getAddonInfo("path")),'resources','media')
-        self._background = xbmcgui.ControlImage(x, y, w, h, os.path.join(media_path, ""))
+        self._background = xbmcgui.ControlImage(x, y, w, h, os.path.join(media_path, "black.png"))
 
         self._background.setColorDiffuse("0xD0000000")
 
@@ -733,8 +733,7 @@ class TelePlayer(xbmc.Player):
             video_data['genre']=imdb_id
             video_data['OriginalTitle']=original_title.replace('.mkv','').replace('.avi','').replace('.mp4','')
             log.warning('New Name Hebrew:'+str(name))
-            if no_subs=='1' or is_hebrew(str(name)):
-                video_data[u'mpaa']=str('heb')
+            video_data[u'mpaa']=('heb')
                 
             info_tag = listItem.getVideoInfoTag()
             info_tag.setMediaType(meta_get(video_data,'mediatype'))
@@ -1316,7 +1315,7 @@ def main_menu():
         return ''
     if event['status']==2 or event['status']=='Needs to log from setting':
         #Movies
-        aa=addDir3('[COLOR]'+Addon.getLocalizedString(32020)+'[/COLOR]',str(id),10,'https://variety.com/wp-content/uploads/2022/12/100-Greatest-Movies-Variety.jpg','https://variety.com/wp-content/uploads/2022/12/100-Greatest-Movies-Variety.jpg','Movies')
+        aa=addDir3('[COLOR]'+Addon.getLocalizedString(32020)+'[/COLOR]',str(id),10,'https://image.tmdb.org/t/p/w500_and_h282_face/jOzrELAzFxtMx2I4uDGHOotdfsS.jpg','https://image.tmdb.org/t/p/w500_and_h282_face/jOzrELAzFxtMx2I4uDGHOotdfsS.jpg','Movies')
         all_d.append(aa)
         #Tv Shows
         aa=addDir3('[COLOR]'+Addon.getLocalizedString(32021)+'[/COLOR]',str(id),11,'https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcQ48ZyMr013iwx2gXtSBm9iAcSkxv5ue5eJ16DEPXLCckXGcVRa','https://www.fanthatracks.com/wp-content/uploads/2019/08/themandalorian_disneyplus_SM_poster_cover.jpg','Tv Shows')
@@ -2345,8 +2344,7 @@ def play_direct(final_link,data,name,no_subs,tmdb,season,episode,original_title,
         video_data['imdb_id']=imdb_id
         video_data['IMDBNumber']=imdb_id
         video_data['genre']=imdb_id
-        if no_subs=='1':
-            video_data[u'mpaa']='heb'
+        video_data[u'mpaa']=('heb')
 
         
         listItem = xbmcgui.ListItem(video_data['title'], path=final_link) 
@@ -3294,8 +3292,7 @@ def play_link(name,url,icon,fan,no_subs,tmdb,season,episode,original_title):
         video_data['imdb_id']=imdb_id
         video_data['IMDBNumber']=imdb_id
         video_data['genre']=imdb_id
-        if no_subs=='1':
-            video_data[u'mpaa']='heb'
+        video_data[u'mpaa']=('heb')
         
         listItem = xbmcgui.ListItem(video_data['title'], path=final_link) 
         listItem.setInfo(type='Video', infoLabels=video_data)
@@ -3373,40 +3370,40 @@ def play_link(name,url,icon,fan,no_subs,tmdb,season,episode,original_title):
     '''
 def movies_menu():
     all_d=[]
-    aa=addDir3(Addon.getLocalizedString(32131),f'http://api.themoviedb.org/3/movie/now_playing?api_key={tmdb_key}&language=%s&page=1'%lang,14,'special://home/addons/plugin.video.telemedia/tele/Movies/cinema.png','https://www.denofgeek.com/wp-content/uploads/2023/02/ant-man-and-the-wasp-quantumania.jpg','Tmdb')
+    aa=addDir3(Addon.getLocalizedString(32131),f'http://api.themoviedb.org/3/movie/now_playing?api_key={tmdb_key}&language=%s&page=1'%lang,14,'special://home/addons/plugin.video.telemedia/tele/Movies/cinema.png','https://images.cdn1.stockunlimited.net/preview1300/cinema-background-with-movie-objects_1823387.jpg','Tmdb')
     all_d.append(aa)
     'Popular Movies'
-    aa=addDir3(Addon.getLocalizedString(32047),f'http://api.themoviedb.org/3/movie/popular?api_key={tmdb_key}&language=%s&page=1'%lang,14,'special://home/addons/plugin.video.telemedia/tele/Movies/popular.png','https://www.denofgeek.com/wp-content/uploads/2023/02/ant-man-and-the-wasp-quantumania.jpg','Tmdb')
+    aa=addDir3(Addon.getLocalizedString(32047),f'http://api.themoviedb.org/3/movie/popular?api_key={tmdb_key}&language=%s&page=1'%lang,14,'special://home/addons/plugin.video.telemedia/tele/Movies/popular.png','https://www.newszii.com/wp-content/uploads/2018/08/Most-Popular-Action-Movies.png','Tmdb')
     all_d.append(aa)
 
     #Genre
     aa=addDir3(Addon.getLocalizedString(32048),f'http://api.themoviedb.org/3/genre/movie/list?api_key={tmdb_key}&language=%s&page=1'%lang,18,'special://home/addons/plugin.video.telemedia/tele/Movies/genre.png','https://s.studiobinder.com/wp-content/uploads/2019/09/Movie-Genres-Types-of-Movies-List-of-Genres-and-Categories-Header-StudioBinder.jpg','Tmdb')
     all_d.append(aa)
     #Years
-    aa=addDir3(Addon.getLocalizedString(32049),'movie_years&page=1',14,'special://home/addons/plugin.video.telemedia/tele/Movies/years.png','https://as2.ftcdn.net/v2/jpg/05/31/30/97/1000_F_531309763_U9XYVTa8lqrBweWDUrZo0VAFCQiJvTB0.jpg','Tmdb')
+    aa=addDir3(Addon.getLocalizedString(32049),'movie_years&page=1',14,'special://home/addons/plugin.video.telemedia/tele/Movies/years.png','https://i.pinimg.com/originals/e4/03/91/e4039182cd17c48c8f9cead44cda7df3.jpg','Tmdb')
     all_d.append(aa)
     aa=addDir3(Addon.getLocalizedString(32132),'movie_years&page=1',112,'https://trailerplayer.com/wp-content/uploads/2023/12/What-is-the-Studio-System-%E2%80%94-Hollywood-s-Studio-Era-Explained-Featured-1024x576.jpg','https://trailerplayer.com/wp-content/uploads/2023/12/What-is-the-Studio-System-%E2%80%94-Hollywood-s-Studio-Era-Explained-Featured-1024x576.jpg','Tmdb')
     all_d.append(aa)
     #DUB World 
-    aa=addDir3('קמיליון מדיה',str(-1001996008548),2,'icon','https://cdn.aspenfilm.org/assets/2023/03/af-2023shortfest-the-social-chameleon-stills-0-1841311-1024x576.jpg','from_plot',data='1',image_master="icon$$$fan")
+    aa=addDir3('קמיליון מדיה',str(-1001996008548),2,'icon','fanart','from_plot',data='1',image_master="icon$$$fan")
     all_d.append(aa)
 
     
     #DUB World
-    aa=addDir3('ציקו סרטים','www',31,'special://home/addons/plugin.video.telemedia/tele/Movies/movie_world.png','https://w0.peakpx.com/wallpaper/121/773/HD-wallpaper-the-flash-movie-fanart-the-flash-movie-the-flash-flash-2023-movies-movies.jpg',Addon.getLocalizedString(32074),data=-1001882443498)
+    aa=addDir3('ציקו סרטים','www',31,'special://home/addons/plugin.video.telemedia/tele/Movies/movie_world.png','https://cdn.hipwallpaper.com/i/14/59/G8mUMK.jpg',Addon.getLocalizedString(32074),data=-1001882443498)
     all_d.append(aa)
     #SHABI_MOVIE
     # aa=addDir3('ציקו סרטים','www',31,'special://home/addons/plugin.video.telemedia/tele/Movies/movie_world.png','https://cdn.hipwallpaper.com/i/14/59/G8mUMK.jpg',Addon.getLocalizedString(32074),data=-1001882443498)
     # all_d.append(aa)    
     #DUB CHICCO    
-    aa=addDir3('[COLOR yellow]'+Addon.getLocalizedString(32174)+'[/COLOR]','www',31,'special://home/addons/plugin.video.telemedia/tele/Movies/israel.png','https://img.buzzfeed.com/buzzfeed-static/static/2017-01/9/14/asset/buzzfeed-prod-fastlane-02/sub-buzz-18310-1483991326-2.jpg',Addon.getLocalizedString(32075),data=-1001942269823)
+    aa=addDir3('[COLOR yellow]'+Addon.getLocalizedString(32174)+'[/COLOR]','www',31,'special://home/addons/plugin.video.telemedia/tele/Movies/israel.png','https://i.ytimg.com/vi/Hq0CZUvuSDs/maxresdefault.jpg',Addon.getLocalizedString(32075),data=-1001942269823)
     all_d.append(aa)    
     
     #ISRAEL NOVIES
     aa=addDir3('[COLOR pink]'+Addon.getLocalizedString(32075)+'[/COLOR]','www',31,'special://home/addons/plugin.video.telemedia/tele/Movies/israel.png','https://i.ytimg.com/vi/Hq0CZUvuSDs/maxresdefault.jpg',Addon.getLocalizedString(32075),data=HEBREW_GROUP)
     all_d.append(aa)
     #Search movie
-    aa=addDir3(Addon.getLocalizedString(32070),f'http://api.themoviedb.org/3/search/movie?api_key={tmdb_key}&query=%s&language=he&append_to_response=origin_country&page=1',14,'special://home/addons/plugin.video.telemedia/tele/Movies/movie_search.png','https://neilpatel.com/wp-content/uploads/2021/01/alternative-search-engines-.jpg','Tmdb')
+    aa=addDir3(Addon.getLocalizedString(32070),f'http://api.themoviedb.org/3/search/movie?api_key={tmdb_key}&query=%s&language=he&append_to_response=origin_country&page=1',14,'special://home/addons/plugin.video.telemedia/tele/Movies/movie_search.png','http://www.videomotion.co.il/wp-content/uploads/whatwedo-Pic-small.jpg','Tmdb')
     all_d.append(aa)
     
     xbmcplugin .addDirectoryItems(int(sys.argv[1]),all_d,len(all_d))
