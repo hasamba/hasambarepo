@@ -1,0 +1,2 @@
+[B]Version 1.1.130[/B]
+- AWM Network - fix provider names
