@@ -5,49 +5,41 @@ import requests
 from urllib.parse import urlencode
 from caches.settings_cache import get_setting, set_setting
 from modules.kodi_utils import make_session, kodi_dialog, notification, ok_dialog, confirm_dialog
-from modules.source_utils import supported_video_extensions, seas_ep_filter, EXTRAS
+from modules.source_utils import supported_video_extensions, seas_ep_filter, extras
 # from modules.kodi_utils import logger
 
-base_url = 'https://easydebrid.com/api/v1/'
-download = 'link/generate'
-stats = 'user/details'
-cache = 'link/lookup'
-timeout = 20.0
-session = make_session(base_url)
-
+session = make_session('https://easydebrid.com/api/v1/')
 
 class EasyDebridAPI:
-
 	def __init__(self):
 		self.token = get_setting('fenlight.ed.token')
+		self.base_url = 'https://easydebrid.com/api/v1/'
 
 	def _get(self, url, data={}):
 		if self.token in ('empty_setting', ''): return None
-		headers = {'Authorization': 'Bearer %s' % self.token}
-		url = base_url + url
-		response = session.get(url, data=data, headers=headers, timeout=timeout)
+		url = self.base_url + url
+		response = session.get(url, data=data, headers=self.headers(), timeout=20)
 		return response.json()
 
 	def _post(self, url, params=None, json=None, data=None):
 		if self.token in ('empty_setting', '') and not 'token' in url: return None
-		headers = {'Authorization': 'Bearer %s' % self.token}
-		url = base_url + url
-		response = session.post(url, params=params, json=json, data=data, headers=headers, timeout=timeout)
+		url = self.base_url + url
+		response = session.post(url, params=params, json=json, data=data, headers=self.headers(), timeout=20)
 		return response.json()
 
 	def account_info(self):
-		return self._get(stats)
+		return self._get('user/details')
 
 	def add_magnet(self, magnet):
 		data = {'url': magnet}
-		return self._post(download, json=data)
+		return self._post('link/generate', json=data)
 
 	def check_cache_single(self, _hash):
-		return self._post(self.cache, json={'urls': [_hash]})
+		return self._post('link/lookup', json={'urls': [_hash]})
 
 	def check_cache(self, hashlist):
 		data = {'urls': hashlist}
-		return self._post(cache, json=data)
+		return self._post('link/lookup', json=data)
 
 	def create_transfer(self, magnet_url):
 		result = self.add_magnet(magnet_url)
@@ -67,10 +59,10 @@ class EasyDebridAPI:
 				if not torrent_files: return None
 			else:
 				if self._m2ts_check(torrent_files): return None
-				torrent_files = [i for i in torrent_files if not any(x in i['filename'] for x in EXTRAS)]
+				torrent_files = [i for i in torrent_files if not any(x in i['filename'] for x in extras())]
 				torrent_files.sort(key=lambda k: k['size'], reverse=True)
 			file_url = torrent_files[0]['url']
-			return file_url
+			return self.add_headers_to_url(file_url)
 		except: return None
 
 	def display_magnet_pack(self, magnet_url, info_hash):
@@ -86,10 +78,7 @@ class EasyDebridAPI:
 		return url + '|' + urlencode(self.headers())
 
 	def headers(self):
-		return {'Authorization': 'Bearer %s' % self.token}
-
-	def add_uncached_torrent(self, magnet_url, pack=False):
-		return ok_dialog(heading='Cloud Transfer', text='Unsupported Action')
+		return {'User-Agent': 'Fen Light for Kodi', 'Authorization': 'Bearer %s' % self.token}
 
 	def _m2ts_check(self, folder_items):
 		for item in folder_items:
@@ -137,3 +126,4 @@ class EasyDebridAPI:
 		if False in (user_cloud_success, hash_cache_status_success): return False
 		return True
 
+EasyDebrid = EasyDebridAPI()

@@ -8,18 +8,9 @@ from urllib.parse import urlencode
 from caches.main_cache import cache_object
 from caches.settings_cache import get_setting, set_setting
 from modules.utils import copy2clip
-from modules.source_utils import supported_video_extensions, seas_ep_filter, EXTRAS
-from modules import kodi_utils
+from modules.source_utils import supported_video_extensions, seas_ep_filter, extras
+from modules.kodi_utils import sleep, ok_dialog, progress_dialog, get_icon, notification
 # logger = kodi_utils.logger
-
-notification = kodi_utils.notification
-xbmc_monitor, progress_dialog, get_icon = kodi_utils.xbmc_monitor, kodi_utils.progress_dialog, kodi_utils.get_icon
-sleep, confirm_dialog, ok_dialog = kodi_utils.sleep, kodi_utils.confirm_dialog, kodi_utils.ok_dialog
-base_url = 'https://www.premiumize.me/api/'
-client_id = '888228107'
-user_agent = 'Fen Light for Kodi'
-timeout = 20.0
-icon = get_icon('premiumize')
 
 class PremiumizeAPI:
 	def __init__(self):
@@ -28,7 +19,7 @@ class PremiumizeAPI:
 	def auth(self):
 		self.token = ''
 		line = '%s[CR]%s[CR]%s'
-		data = {'response_type': 'device_code', 'client_id': client_id}
+		data = {'response_type': 'device_code', 'client_id': '888228107'}
 		url = 'https://www.premiumize.me/token'
 		response = self._post(url, data)
 		user_code = response['user_code']
@@ -41,7 +32,7 @@ class PremiumizeAPI:
 		expires_in = int(response['expires_in'])
 		sleep_interval = int(response['interval'])
 		poll_url = 'https://www.premiumize.me/token'
-		data = {'grant_type': 'device_code', 'client_id': client_id, 'code': device_code}
+		data = {'grant_type': 'device_code', 'client_id': '888228107', 'code': device_code}
 		start, time_passed = time.time(), 0
 		while not progressDialog.iscanceled() and time_passed < expires_in and not self.token:
 			sleep(1000 * sleep_interval)
@@ -112,7 +103,7 @@ class PremiumizeAPI:
 					for i in correct_files:
 						compare_link = seas_ep_filter(season, episode, i['path'], split=True)
 						compare_link = re.sub(episode_title, '', compare_link)
-						if not any(x in compare_link for x in EXTRAS):
+						if not any(x in compare_link for x in extras()):
 							file_url = i['link']
 							break
 			else:
@@ -138,71 +129,6 @@ class PremiumizeAPI:
 					append({'link': item['link'], 'filename': path, 'size': item['size']})
 			return end_results
 		except: return None
-
-	def add_uncached(self, magnet_url, pack=False):
-		from modules.kodi_utils import show_busy_dialog, hide_busy_dialog
-		from modules.source_utils import supported_video_extensions
-		def _transfer_info(transfer_id):
-			info = self.transfers_list()
-			if 'status' in info and info['status'] == 'success':
-				for item in info['transfers']:
-					if item['id'] == transfer_id:
-						return item
-			return {}
-		def _return_failed(message='Error', cancelled=False):
-			try:
-				progressDialog.close()
-			except Exception:
-				pass
-			hide_busy_dialog()
-			sleep(500)
-			if cancelled:
-				if confirm_dialog(heading='Fen Light Cloud Transfer', text='Continue Transfer in Background?'):
-					ok_dialog(heading='Fen Light Cloud Transfer', text='Saving Result to the Premiumize Cloud')
-				else: self.delete_transfer(transfer_id)
-			else: ok_dialog(heading='Fen Light Cloud Transfer', text=message)
-			return False
-		show_busy_dialog()
-		monitor = xbmc_monitor()
-		extensions = supported_video_extensions()
-		transfer_id = self.create_transfer(magnet_url)
-		if not transfer_id['status'] == 'success':
-			return _return_failed(transfer_id.get('message'))
-		transfer_id = transfer_id['id']
-		transfer_info = _transfer_info(transfer_id)
-		if not transfer_info: return _return_failed()
-		if pack:
-			self.clear_cache(clear_hashes=False)
-			hide_busy_dialog()
-			ok_dialog(text='Saving Result to the Premiumize Cloud')
-			return True
-		interval = 5
-		line = '%s[CR]%s[CR]%s'
-		line1 = 'Saving Result to the Premiumize Cloud...'
-		line2 = transfer_info['name']
-		line3 = transfer_info['message']
-		progressDialog = progress_dialog('Fen Light Cloud Transfer', icon)
-		progressDialog.update(line % (line1, line2, line3), 0)
-		while not transfer_info['status'] == 'seeding':
-			sleep(1000 * interval)
-			transfer_info = _transfer_info(transfer_id)
-			line3 = transfer_info['message']
-			progressDialog.update(line % (line1, line2, line3), int(float(transfer_info['progress']) * 100))
-			if monitor.abortRequested() == True: return
-			try:
-				if progressDialog.iscanceled():
-					return _return_failed('Cancelled', cancelled=True)
-			except Exception:
-				pass
-			if transfer_info.get('status') == 'stalled':
-				return _return_failed()
-		sleep(1000 * interval)
-		try:
-			progressDialog.close()
-		except Exception:
-			pass
-		hide_busy_dialog()
-		return True
 
 	def user_cloud(self, folder_id=None):
 		if folder_id:
@@ -261,21 +187,21 @@ class PremiumizeAPI:
 		return url + '|' + urlencode(self.headers())
 
 	def headers(self):
-		return {'User-Agent': user_agent, 'Authorization': 'Bearer %s' % self.token}
+		return {'User-Agent': 'Fen Light for Kodi', 'Authorization': 'Bearer %s' % self.token}
 
 	def _get(self, url, data={}):
 		if self.token in ('empty_setting', ''): return None
-		headers = {'User-Agent': user_agent, 'Authorization': 'Bearer %s' % self.token}
-		url = base_url + url
-		response = requests.get(url, data=data, headers=headers, timeout=timeout).text
+		headers = {'User-Agent': 'Fen Light for Kodi', 'Authorization': 'Bearer %s' % self.token}
+		url = 'https://www.premiumize.me/api/' + url
+		response = requests.get(url, data=data, headers=headers, timeout=20).text
 		try: return json.loads(response)
 		except: return response
 
 	def _post(self, url, data={}):
 		if self.token in ('empty_setting', '') and not 'token' in url: return None
-		headers = {'User-Agent': user_agent, 'Authorization': 'Bearer %s' % self.token}
-		if not 'token' in url: url = base_url + url
-		response = requests.post(url, data=data, headers=headers, timeout=timeout).text
+		headers = {'User-Agent': 'Fen Light for Kodi', 'Authorization': 'Bearer %s' % self.token}
+		if not 'token' in url: url = 'https://www.premiumize.me/api/' + url
+		response = requests.post(url, data=data, headers=headers, timeout=20).text
 		try: return json.loads(response)
 		except: return response
 
@@ -312,3 +238,5 @@ class PremiumizeAPI:
 		except: return False
 		if False in (user_cloud_success, download_links_success, hash_cache_status_success): return False
 		return True
+
+Premiumize = PremiumizeAPI()
