@@ -119,7 +119,7 @@ def show_notification():
                 window.show_notification(msg)
             else:
                 logging.log('[Notifications] No new notifications.', level=xbmc.LOGINFO)
-        elif note_id > CONFIG.NOTEID:
+        elif int(note_id) > int(CONFIG.NOTEID):
             logging.log('[Notifications] Showing notification {0}'
                         .format(note_id))
             CONFIG.set_setting('noteid', note_id)
@@ -129,6 +129,29 @@ def show_notification():
         logging.log('[Notifications] Notifications file at {0} not formatted correctly.'
                     .format(CONFIG.NOTIFICATION),
                     level=xbmc.LOGINFO)
+
+
+# xbmc.executebuiltin(f"RunPlugin(plugin://{CONFIG.ADDON_ID}/?mode=install&action=quick_update&name={quote_plus(CONFIG.BUILDNAME)}&auto_quick_update=true)")
+def auto_quick_update():
+        
+    note_id, msg = window.split_notify(CONFIG.QUICK_UPDATE_NOTIFICATION_URL)
+    
+    if note_id:
+        logging.log(f'[QUICK-UPDATE] note_id={note_id} | CONFIG.QUICK_UPDATE_NOTEID={CONFIG.QUICK_UPDATE_NOTEID}')
+        if note_id == CONFIG.QUICK_UPDATE_NOTEID:
+            if CONFIG.QUICK_UPDATE_NOTEDISMISS == 'false':
+                window.show_notification(msg, source="quick_update_notification")
+        elif int(note_id) > int(CONFIG.QUICK_UPDATE_NOTEID):
+            logging.log('[QUICK-UPDATE] Starting quick update number {0}'
+                        .format(note_id))
+            CONFIG.set_setting('quick_update_noteid', note_id)
+            CONFIG.set_setting('quick_update_notedismiss', 'false')
+            from resources.libs.wizard import Wizard
+            quick_update_status = Wizard().quick_update(name=CONFIG.BUILDNAME, auto_quick_update="true")
+            if not quick_update_status:
+                CONFIG.set_setting('quick_update_notedismiss', 'true')
+                return
+            Wizard().force_close_kodi_in_5_seconds(dialog_header="עדכון מהיר הסתיים בהצלחה")
 
 
 def installed_build_check():
@@ -210,8 +233,8 @@ def build_update_check():
     if not response:
         logging.log("[Build Check] Not a valid URL for Build File: {0}".format(CONFIG.BUILDFILE), level=xbmc.LOGINFO)
     elif not CONFIG.BUILDNAME == '':
-        if CONFIG.SKIN in ['skin.confluence', 'skin.estuary', 'skin.estouchy'] and not CONFIG.DEFAULTIGNORE == 'true':
-            check.check_skin()
+        # if CONFIG.SKIN in ['skin.confluence', 'skin.estuary', 'skin.estouchy'] and not CONFIG.DEFAULTIGNORE == 'true':
+            # check.check_skin()
 
         logging.log("[Build Check] Build Installed: Checking Updates", level=xbmc.LOGINFO)
         check.check_build_update()
@@ -331,52 +354,43 @@ tools.ensure_folders()
     # stop_if_duplicate()
 # Ensure that the wizard's name matches its folder
 check.check_paths()
-
-######################################
-# KODI-RD-IL - COMMENTED - NOT NEEDED:
-# FIRST RUN SETTINGS
-# if CONFIG.get_setting('first_install') == 'true':
-    # logging.log("[First Run] Showing Save Data Settings", level=xbmc.LOGINFO)
-    # window.show_save_data_settings()
-# else:
-    # logging.log("[First Run] Skipping Save Data Settings", level=xbmc.LOGINFO)
-######################################
-
-# KODI-RD-IL - COMMENTED - NOT NEEDED:
-# BUILD INSTALL PROMPT
-# if tools.open_url(CONFIG.BUILDFILE, check=True) and CONFIG.get_setting('installed') == 'false':
-    # logging.log("[Current Build Check] Build Not Installed", level=xbmc.LOGINFO)
-    # window.show_build_prompt()
-# else:
-    # logging.log("[Current Build Check] Build Installed: {0}".format(CONFIG.BUILDNAME), level=xbmc.LOGINFO)
-######################################
-
-# KODI-RD-IL - BUILD INSTALL WINDOW ON STARTUP
-if tools.open_url(CONFIG.BUILDFILE, check=True) and CONFIG.get_setting('installed') == 'false':
-    logging.log("[Current Build Check] Build Not Installed", level=xbmc.LOGINFO)
-    CONFIG.set_setting('nextbuildcheck', tools.get_date(days=CONFIG.UPDATECHECK, formatted=True))
-    CONFIG.set_setting('installed', 'ignored')
-    url = 'plugin://{0}/?mode=builds'.format(CONFIG.ADDON_ID)
-    xbmc.executebuiltin('ActivateWindow(Programs, {0}, return)'.format(url))
+    
+# AUTO UPDATE WIZARD
+if CONFIG.AUTOUPDATE == 'Yes':
+    logging.log("[Auto Update Wizard] Started", level=xbmc.LOGINFO)
+    update.wizard_update()
 else:
-    logging.log("[Current Build Check] Build Installed: {0}".format(CONFIG.BUILDNAME), level=xbmc.LOGINFO)
+    logging.log("[Auto Update Wizard] Not Enabled", level=xbmc.LOGINFO)
 
+# KODI-RD-IL - Auto force addon updates on Kodi startup
+if CONFIG.FORCEUPDATEFAST_ONSTARTUP == "true": db.forceUpdate()
 
-# ENABLE ALL ADDONS AFTER INSTALL
-if CONFIG.get_setting('enable_all') == 'true':
-    logging.log("[Post Install] Enabling all Add-ons", level=xbmc.LOGINFO)
-    from resources.libs.gui import menu
-    menu.enable_addons(all=True)
-    if os.path.exists(os.path.join(CONFIG.USERDATA, '.enableall')):
-    	logging.log("[Post Install] .enableall file found in userdata. Deleting..", level=xbmc.LOGINFO)
-    	import xbmcvfs
-    	xbmcvfs.delete(os.path.join(CONFIG.USERDATA, '.enableall'))
-    xbmc.executebuiltin('UpdateLocalAddons')
-    xbmc.executebuiltin('UpdateAddonRepos')
-    db.force_check_updates(auto=True)
-    CONFIG.set_setting('enable_all', 'false')
-    xbmc.executebuiltin("ReloadSkin()")
-    tools.reload_profile(xbmc.getInfoLabel('System.ProfileName'))
+# SHOW NOTIFICATIONS
+if CONFIG.ENABLE_NOTIFICATION == 'Yes' and CONFIG.get_setting('buildname'):
+    show_notification()
+else:
+    logging.log('[Notifications] Not Enabled', level=xbmc.LOGINFO)
+    
+######################################
+# KODI-RD-IL - FIRST BUILD LAUNCH BUILD SKIN SWITCH NOTIFICATION
+if CONFIG.get_setting('buildname') and CONFIG.get_setting('build_skin_switch_notifcation_dismiss') == 'false':
+    CONFIG.set_setting('build_skin_switch_notifcation_dismiss', 'true')
+    msg = f"על מנת להחליף סקין יש ללחוץ: כפתור כיבוי --> החלף סקין.\nהסקינים הקיימים בבילד:\n1. סקין Estuary\n2. סקין FENtastic"
+    window.show_notification_with_extra_image(msg, 888, CONFIG.BUILD_SKIN_SWITCH_IMAGE_URL)
+#####################################
+
+######################################
+# KODI-RD-IL - AUTO QUICK UPDATE
+if CONFIG.get_setting('buildname'):
+    auto_quick_update()
+######################################
+    
+# KOD-RD-IL - New Kodi ANDROID/WINDOWS version check on startup
+# xbmc.executebuiltin(f"RunPlugin(plugin://{CONFIG.ADDON_ID}/?mode=install&action=kodi_version_update_check&kodi_version_update_check_manual=false)")
+if tools.platform() in ['android', 'windows'] and CONFIG.get_setting('buildname'):
+    from resources.libs.wizard import kodi_version_update_check
+    kodi_version_update_check()
+######################################
 
 # BUILD UPDATE CHECK
 buildcheck = CONFIG.get_setting('nextbuildcheck')
@@ -390,34 +404,33 @@ if CONFIG.get_setting('buildname'):
 else:
     logging.log("[Build Update Check] Next Check: {0}".format(buildcheck), level=xbmc.LOGINFO)
 
-# AUTO INSTALL REPO
-if CONFIG.AUTOINSTALL == 'Yes':
-    logging.log("[Auto Install Repo] Started", level=xbmc.LOGINFO)
-    auto_install_repo()
-else:
-    logging.log("[Auto Install Repo] Not Enabled", level=xbmc.LOGINFO)
-
-# REINSTALL ELIGIBLE BINARIES
-binarytxt = os.path.join(CONFIG.USERDATA, 'build_binaries.txt')
-if os.path.exists(binarytxt):
-    logging.log("[Binary Detection] Reinstalling Eligible Binary Addons", level=xbmc.LOGINFO)
-    from resources.libs import restore
-    restore.restore('binaries')
-else:
-    logging.log("[Binary Detection] Eligible Binary Addons to Reinstall", level=xbmc.LOGINFO)
+# KODI-RD-IL - BUILD INSTALL ON STARTUP
+if tools.open_url(CONFIG.BUILDFILE, check=True) and CONFIG.get_setting('installed') == 'false':
+    logging.log("[Current Build Check] Build Not Installed", level=xbmc.LOGINFO)
+    CONFIG.set_setting('nextbuildcheck', tools.get_date(days=CONFIG.UPDATECHECK, formatted=True))
+    CONFIG.set_setting('installed', 'ignored')
     
-# AUTO UPDATE WIZARD
-if CONFIG.AUTOUPDATE == 'Yes':
-    logging.log("[Auto Update Wizard] Started", level=xbmc.LOGINFO)
-    update.wizard_update()
+    # Taken from build_menu.py - get_listing()
+    import re
+    response = tools.open_url(CONFIG.BUILDFILE)
+    link = tools.clean_text(response.text)
+        
+    total, *_ = check.build_count()
+    match = re.compile('name="(.+?)".+?ersion="(.+?)".+?rl="(.+?)".+?ui="(.+?)".+?odi="(.+?)".+?heme="(.+?)".+?con="(.+?)".+?anart="(.+?)".+?dult="(.+?)".+?escription="(.+?)"').findall(link)
+    
+    # If only one build exists - Auto install build - without manual prompt
+    if total == 1:
+        SINGLE_BUILD_NAME = match[0][0]
+        from resources.libs.wizard import Wizard
+        Wizard().build(SINGLE_BUILD_NAME, over=True)
+        
+    # If more than 1 build - show build menu
+    else:
+        url = 'plugin://{0}/?mode=builds'.format(CONFIG.ADDON_ID)
+        xbmc.executebuiltin('ActivateWindow(Programs, {0}, return)'.format(url))
 else:
-    logging.log("[Auto Update Wizard] Not Enabled", level=xbmc.LOGINFO)
+    logging.log("[Current Build Check] Build Installed: {0}".format(CONFIG.BUILDNAME), level=xbmc.LOGINFO)
 
-# SHOW NOTIFICATIONS
-if CONFIG.ENABLE_NOTIFICATION == 'Yes':
-    show_notification()
-else:
-    logging.log('[Notifications] Not Enabled', level=xbmc.LOGINFO)
 
 # INSTALLED BUILD CHECK
 if CONFIG.get_setting('installed') == 'true':
@@ -439,18 +452,71 @@ if CONFIG.get_setting('keepdebrid') == 'true':
     save_debrid()
 else:
     logging.log("[Debrid Data] Not Enabled", level=xbmc.LOGINFO)
+###############################
+###################UNUSED####################
 
+######################################
+# KODI-RD-IL - COMMENTED - NOT NEEDED:
+# FIRST RUN SETTINGS
+# if CONFIG.get_setting('first_install') == 'true':
+    # logging.log("[First Run] Showing Save Data Settings", level=xbmc.LOGINFO)
+    # window.show_save_data_settings()
+# else:
+    # logging.log("[First Run] Skipping Save Data Settings", level=xbmc.LOGINFO)
+######################################
+
+# KODI-RD-IL - COMMENTED - NOT NEEDED:
+# BUILD INSTALL PROMPT
+# if tools.open_url(CONFIG.BUILDFILE, check=True) and CONFIG.get_setting('installed') == 'false':
+    # logging.log("[Current Build Check] Build Not Installed", level=xbmc.LOGINFO)
+    # window.show_build_prompt()
+# else:
+    # logging.log("[Current Build Check] Build Installed: {0}".format(CONFIG.BUILDNAME), level=xbmc.LOGINFO)
+######################################
+    
 # SAVE LOGIN
-if CONFIG.get_setting('keeplogin') == 'true':
-    logging.log("[Login Info] Started", level=xbmc.LOGINFO)
-    save_login()
-else:
-    logging.log("[Login Info] Not Enabled", level=xbmc.LOGINFO)
+# if CONFIG.get_setting('keeplogin') == 'true':
+    # logging.log("[Login Info] Started", level=xbmc.LOGINFO)
+    # save_login()
+# else:
+    # logging.log("[Login Info] Not Enabled", level=xbmc.LOGINFO)
+
+# AUTO INSTALL REPO
+# if CONFIG.AUTOINSTALL == 'Yes':
+    # logging.log("[Auto Install Repo] Started", level=xbmc.LOGINFO)
+    # auto_install_repo()
+# else:
+    # logging.log("[Auto Install Repo] Not Enabled", level=xbmc.LOGINFO)
+
+# ENABLE ALL ADDONS AFTER INSTALL
+# if CONFIG.get_setting('enable_all') == 'true':
+    # logging.log("[Post Install] Enabling all Add-ons", level=xbmc.LOGINFO)
+    # from resources.libs.gui import menu
+    # menu.enable_addons(all=True)
+    # if os.path.exists(os.path.join(CONFIG.USERDATA, '.enableall')):
+        # logging.log("[Post Install] .enableall file found in userdata. Deleting..", level=xbmc.LOGINFO)
+        # import xbmcvfs
+        # xbmcvfs.delete(os.path.join(CONFIG.USERDATA, '.enableall'))
+    # xbmc.executebuiltin('UpdateLocalAddons')
+    # xbmc.executebuiltin('UpdateAddonRepos')
+    # db.force_check_updates(auto=True)
+    # CONFIG.set_setting('enable_all', 'false')
+    # xbmc.executebuiltin("ReloadSkin()")
+    # tools.reload_profile(xbmc.getInfoLabel('System.ProfileName'))
+
+# REINSTALL ELIGIBLE BINARIES
+# binarytxt = os.path.join(CONFIG.USERDATA, 'build_binaries.txt')
+# if os.path.exists(binarytxt):
+    # logging.log("[Binary Detection] Reinstalling Eligible Binary Addons", level=xbmc.LOGINFO)
+    # from resources.libs import restore
+    # restore.restore('binaries')
+# else:
+    # logging.log("[Binary Detection] Eligible Binary Addons to Reinstall", level=xbmc.LOGINFO)
 
 # AUTO CLEAN
-if CONFIG.get_setting('autoclean') == 'true':
-    logging.log("[Auto Clean Up] Started", level=xbmc.LOGINFO)
-    auto_clean()
-else:
-    logging.log('[Auto Clean Up] Not Enabled', level=xbmc.LOGINFO)
-
+# if CONFIG.get_setting('autoclean') == 'true':
+    # logging.log("[Auto Clean Up] Started", level=xbmc.LOGINFO)
+    # auto_clean()
+# else:
+    # logging.log('[Auto Clean Up] Not Enabled', level=xbmc.LOGINFO)
+    

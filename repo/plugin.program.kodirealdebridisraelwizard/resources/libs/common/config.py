@@ -52,6 +52,18 @@ class Config:
         self.BUILDFILE = uservar.BUILDFILE
         self.UPDATECHECK = uservar.UPDATECHECK
         self.APKFILE = uservar.APKFILE
+        ###################################
+        # KODI-RD-IL - WINDOWS
+        self.LATEST_WINDOWS_VERSION_TEXT_FILE = uservar.LATEST_WINDOWS_VERSION_TEXT_FILE
+        self.WINDOWS_DOWNLOAD_URL = uservar.WINDOWS_DOWNLOAD_URL
+        self.WINDOWS_INSTALLATION_PATH = uservar.WINDOWS_INSTALLATION_PATH
+        # KODI-RD-IL - ANDROID
+        self.LATEST_APK_VERSION_TEXT_FILE = uservar.LATEST_APK_VERSION_TEXT_FILE
+        self.APK_DOWNLOAD_URL = uservar.APK_DOWNLOAD_URL
+        self.APK_PACKAGE_ID = uservar.APK_PACKAGE_ID
+        self.APK_DOWNLOADER_CODE = uservar.APK_DOWNLOADER_CODE
+        self.APK_DOWNLOADER_CODE_IMAGE_URL = uservar.APK_DOWNLOADER_CODE_IMAGE_URL
+        ###################################
         self.YOUTUBETITLE = uservar.YOUTUBETITLE
         self.YOUTUBEFILE = uservar.YOUTUBEFILE
         self.ADDONFILE = uservar.ADDONFILE
@@ -99,6 +111,14 @@ class Config:
         # Notification Window
         self.ENABLE_NOTIFICATION = uservar.ENABLE
         self.NOTIFICATION = uservar.NOTIFICATION
+        
+        #########################################################################################################
+        # KODI-RD-IL - BUILD SKIN SWITCH
+        self.BUILD_SKIN_SWITCH_IMAGE_URL = uservar.BUILD_SKIN_SWITCH_IMAGE_URL
+        # KODI-RD-IL - AUTO QUICK UPDATES
+        self.QUICK_UPDATE_NOTIFICATION_URL = uservar.QUICK_UPDATE_NOTIFICATION_URL
+        #########################################################################################################
+        
         self.HEADERTYPE = uservar.HEADERTYPE
         self.FONTHEADER = uservar.FONTHEADER
         self.HEADERMESSAGE = uservar.HEADERMESSAGE
@@ -209,13 +229,12 @@ class Config:
         self.BUILDVERSION = self.get_setting('buildversion')
         self.BUILDTHEME = self.get_setting('buildtheme')
         self.BUILDLATEST = self.get_setting('latestversion')
-        self.DISABLEUPDATE = self.get_setting('disableupdate')
+        # self.DISABLEUPDATE = self.get_setting('disableupdate')
         self.INSTALLED = self.get_setting('installed')
         self.EXTRACT = self.get_setting('extract')
         self.EXTERROR = self.get_setting('errors')
         
         # View variables
-        self.SHOW19 = self.get_setting('show19')
         self.SHOW20 = self.get_setting('show20')
         self.SHOW21 = self.get_setting('show21')
         self.SHOWADULT = self.get_setting('adult')
@@ -230,6 +249,10 @@ class Config:
         self.AUTOFREQ = self.get_setting('autocleanfreq')
         self.AUTOFREQ = int(float(self.AUTOFREQ)) if self.AUTOFREQ.isdigit() else 0
         self.AUTONEXTRUN = self.get_setting('nextautocleanup')
+        
+        # KODI-RD-IL - Auto force addon updates on Kodi startup
+        self.FORCEUPDATEFAST_ONSTARTUP = self.get_setting('forceupdateFAST_on_startup')
+        self.FORCEUPDATEFAST_ONSTARTUP_NOTIFY = self.get_setting('forceupdateFAST_on_startup_notify')
         
         # Video Cache variables
         self.INCLUDEVIDEO = self.get_setting('includevideo')
@@ -248,8 +271,14 @@ class Config:
         self.NOTEID = self.get_setting('noteid')
         self.NOTEDISMISS = self.get_setting('notedismiss')
         
+        #########################################################################################################
+        # KODI-RD-IL - AUTO QUICK UPDATES
+        self.QUICK_UPDATE_NOTEID = self.get_setting('quick_update_noteid')
+        self.QUICK_UPDATE_NOTEDISMISS = self.get_setting('quick_update_notedismiss')
+        #########################################################################################################
+        
         # Save Data variables
-        self.USE_GITHUB_CUSTOM_SAVE_DATA_CONFIG = self.get_setting('use_github_custom_save_data_config')
+        # self.USE_GITHUB_CUSTOM_SAVE_DATA_CONFIG = self.get_setting('use_github_custom_save_data_config')
         self.TRAKTSAVE = self.get_setting('traktnextsave')
         self.DEBRIDSAVE = self.get_setting('debridnextsave')
         self.LOGINSAVE = self.get_setting('loginnextsave')

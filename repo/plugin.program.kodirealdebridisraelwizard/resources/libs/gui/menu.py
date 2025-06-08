@@ -136,6 +136,12 @@ def youtube_menu(url=None):
 
 
 def net_tools():
+
+    ##############################################################################################
+    # KODI-RD-IL
+    directory.add_dir('Real Debrid בדיקת מהירות', {'mode': 'build_speed_test'}, icon=CONFIG.ICONSPEED, themeit=CONFIG.THEME1)
+    ##############################################################################################
+    
     directory.add_dir('Speed Test', {'mode': 'speedtest'}, icon=CONFIG.ICONSPEED, themeit=CONFIG.THEME1)
     if CONFIG.HIDESPACERS == 'No':
         directory.add_separator()
@@ -310,7 +316,7 @@ def save_menu():
     on = '[COLOR springgreen]ON[/COLOR]'
     off = '[COLOR red]OFF[/COLOR]'
     
-    github_custom_save_data_config = 'true' if CONFIG.USE_GITHUB_CUSTOM_SAVE_DATA_CONFIG == 'true' else 'false'
+    # github_custom_save_data_config = 'true' if CONFIG.USE_GITHUB_CUSTOM_SAVE_DATA_CONFIG == 'true' else 'false'
     trakt = 'true' if CONFIG.KEEPTRAKT == 'true' else 'false'
     debrid = 'true' if CONFIG.KEEPDEBRID == 'true' else 'false'
     login = 'true' if CONFIG.KEEPLOGIN == 'true' else 'false'
@@ -331,7 +337,7 @@ def save_menu():
     directory.add_dir('שמורים Trakt נתוני', {'mode': 'trakt'}, icon=CONFIG.ICONTRAKT, themeit=CONFIG.THEME1)
     directory.add_dir('שמורים Debrid נתוני', {'mode': 'realdebrid'}, icon=CONFIG.ICONDEBRID, themeit=CONFIG.THEME1)
     directory.add_file('- לחץ להפעלה או ביטול של ההגדרה -', themeit=CONFIG.THEME3)
-    directory.add_file('GitHub-קבל הגדרות שמירת נתונים מ: {0}'.format(github_custom_save_data_config.replace('true', on).replace('false', off)), {'mode': 'togglesetting', 'name': 'use_github_custom_save_data_config'}, icon=CONFIG.ICONSAVE, themeit=CONFIG.THEME1)
+    # directory.add_file('GitHub-קבל הגדרות שמירת נתונים מ: {0}'.format(github_custom_save_data_config.replace('true', on).replace('false', off)), {'mode': 'togglesetting', 'name': 'use_github_custom_save_data_config'}, icon=CONFIG.ICONSAVE, themeit=CONFIG.THEME1)
     directory.add_file('Trakt שמירת חשבון: {0}'.format(trakt.replace('true', on).replace('false', off)), {'mode': 'togglesetting', 'name': 'keeptrakt'}, icon=CONFIG.ICONTRAKT, themeit=CONFIG.THEME1)
     directory.add_file('Debrid שמירת חשבון: {0}'.format(debrid.replace('true', on).replace('false', off)), {'mode': 'togglesetting', 'name': 'keepdebrid'}, icon=CONFIG.ICONDEBRID, themeit=CONFIG.THEME1)
     directory.add_file('Twilight שמירת נתוני: {0}'.format(twilightdata.replace('true', on).replace('false', off)), {'mode': 'togglesetting', 'name': 'keeptwilightdata'}, icon=CONFIG.ICONSAVE, themeit=CONFIG.THEME1)

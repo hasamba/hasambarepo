@@ -45,6 +45,11 @@ class Router:
         url = self.params['url'] if 'url' in self.params else None
         name = self.params['name'] if 'name' in self.params else None
         action = self.params['action'] if 'action' in self.params else None
+        #####################################################
+        # KODI-RD-IL
+        auto_quick_update = self.params['auto_quick_update'] if 'auto_quick_update' in self.params else None
+        kodi_version_update_check_manual = self.params['kodi_version_update_check_manual'] if 'kodi_version_update_check_manual' in self.params else None
+        #####################################################
 
         # MAIN MENU
         if mode is None:
@@ -86,6 +91,19 @@ class Router:
                 Wizard().build(name)
             elif action == 'gui':
                 Wizard().gui(name)
+            #####################################################
+            # KODI-RD-IL
+            elif action == 'quick_update':
+                Wizard().quick_update(name, auto_quick_update)
+            # KODI-RD-IL
+            elif action == 'build_switch_skin':
+                from resources.libs.wizard import build_switch_skin
+                build_switch_skin()
+            # KODI-RD-IL
+            elif action == 'kodi_version_update_check':
+                from resources.libs.wizard import kodi_version_update_check
+                kodi_version_update_check(kodi_version_update_check_manual)
+            #####################################################
             elif action == 'theme':  # Builds -> "Your Build" -> "Your Theme"
                 Wizard().theme(name, url)
 
@@ -121,6 +139,11 @@ class Router:
         elif mode == 'forceupdate':
             from resources.libs import db
             db.force_check_updates(auto=action)
+        ############KODI-RD-IL##############
+        elif mode == 'forceupdateFAST':
+            from resources.libs import db
+            db.forceUpdate()
+        ####################################
         elif mode == 'togglecache':
             from resources.libs import clear
             clear.toggle_cache(name)
@@ -149,6 +172,11 @@ class Router:
         elif mode == 'speedtest': 
             xbmc.executebuiltin('InstallAddon("script.speedtester")')
             xbmc.executebuiltin('RunAddon("script.speedtester")')
+        ############KODI-RD-IL##############
+        elif mode == 'build_speed_test': # KODI-RD-IL Real Debrid Speed Test
+            from resources.libs.wizard import build_speed_test
+            build_speed_test()
+        ####################################
         elif mode == 'apk':  # APK Installer
             menu.apk_menu(url)
             self._finish(handle)

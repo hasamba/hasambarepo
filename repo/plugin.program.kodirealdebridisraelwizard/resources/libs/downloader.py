@@ -31,12 +31,17 @@ from resources.libs.common.config import CONFIG
 
 
 class Downloader:
-    def __init__(self):
+    def __init__(self, progress_dialog_bg=False):
         self.dialog = xbmcgui.Dialog()
-        self.progress_dialog = xbmcgui.DialogProgress()
+        #####################################################
+        # KODI-RD-IL
+        # self.progress_dialog = xbmcgui.DialogProgress()
+        self.progress_dialog_bg = progress_dialog_bg
+        self.progress_dialog = xbmcgui.DialogProgressBG() if self.progress_dialog_bg else xbmcgui.DialogProgress()
+        #####################################################
 
     def download(self, url, dest):
-        self.progress_dialog.create(CONFIG.ADDONTITLE, "Downloading Content")
+        self.progress_dialog.create(CONFIG.ADDONTITLE, "מוריד...")
         self.progress_dialog.update(0)
         
         path = os.path.split(dest)[0]
@@ -65,7 +70,14 @@ class Downloader:
                     f.write(chunk)
                     
                     done = int(100 * downloaded / total)
-                    kbps_speed = downloaded / (time.time() - start_time)
+                    #####################################################
+                    # KODI-RD-IL
+                    try:
+                        kbps_speed = downloaded / (time.time() - start_time)
+                    except:
+                        kbps_speed = 0
+                        pass
+                    #####################################################
                     
                     if kbps_speed > 0 and not done >= 100:
                         eta = (total - downloaded) / kbps_speed
@@ -84,4 +96,10 @@ class Downloader:
                     div = divmod(eta, 60)
                     speed += '[B]ETA:[/B] [COLOR %s]%02d:%02d[/COLOR][/COLOR]' % (CONFIG.COLOR1, div[0], div[1])
                     
-                    self.progress_dialog.update(done, '\n' + str(currently_downloaded) + '\n' + str(speed)) 
+                    #####################################################
+                    # KODI-RD-IL
+                    if self.progress_dialog_bg:
+                        self.progress_dialog.update(done)
+                    else:
+                        self.progress_dialog.update(done, '\n' + str(currently_downloaded) + '\n' + str(speed)) 
+                    #####################################################

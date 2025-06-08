@@ -174,7 +174,7 @@ def check_build_update():
         fanart = match[0][2]
         CONFIG.set_setting('latestversion', version)
         if version > CONFIG.BUILDVERSION:
-            if CONFIG.DISABLEUPDATE == 'false':
+            if True:#CONFIG.DISABLEUPDATE == 'false': # KODI-RD-IL
                 logging.log("[Check Updates] [Installed Version: {0}] [Current Version: {1}] Opening Update Window".format(CONFIG.BUILDVERSION, version))
                 window.show_update_window(CONFIG.BUILDNAME, CONFIG.BUILDVERSION, version, icon, fanart)
             else:
@@ -384,14 +384,13 @@ def build_count():
     response = tools.open_url(CONFIG.BUILDFILE)
 
     total = 0
-    count19 = 0
     count20 = 0
     count21 = 0
     hidden = 0
     adultcount = 0
 
     if not response:
-        return total, count19, count20, count21, adultcount, hidden
+        return total, count20, count21, adultcount, hidden
 
     link = response.text.replace('\n', '').replace('\r', '').replace('\t', '')
     match = re.compile('name="(.+?)".+?odi="(.+?)".+?dult="(.+?)"').findall(link)
@@ -407,12 +406,10 @@ def build_count():
                 continue
             kodi = int(float(kodi))
             total += 1
-            if kodi == 19:
-                count19 += 1
             if kodi == 20:
                 count20 += 1
             if kodi == 21:
                 count21 += 1
-    return total, count19, count20, count21, adultcount, hidden
+    return total, count20, count21, adultcount, hidden
 
 

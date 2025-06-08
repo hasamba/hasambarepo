@@ -24,6 +24,25 @@ BUILDFILE = 'https://kodi7rd.github.io/wizard/assets/build.txt'
 UPDATECHECK = 0
 # Text File with apk info in it.  Leave as 'http://' to ignore
 APKFILE = 'http://'
+
+#########################################################
+# KODI-RD-IL - BUILD SKIN SWITCH
+BUILD_SKIN_SWITCH_IMAGE_URL = 'https://kodi7rd.github.io/wizard/assets/build_menu_screenshots/kodirdil21.png'
+# KODI-RD-IL - AUTO QUICK UPDATES
+QUICK_UPDATE_NOTIFICATION_URL = 'https://kodi7rd.github.io/wizard/assets/notification_files/quick_update.txt'
+# KODI-RD-IL - AUTO ANDROID/WINDOWS UPDATE
+# WINDOWS SOFTWARE
+LATEST_WINDOWS_VERSION_TEXT_FILE = 'https://kodi7rd.github.io/wizard/assets/kodi_version_auto_update/windows/latest_windows_version.txt'
+WINDOWS_DOWNLOAD_URL = "https://kodi7rd.github.io/windows"
+WINDOWS_INSTALLATION_PATH = "C:\Kodi + Real Debrid Israel"
+# ANDROID APK
+LATEST_APK_VERSION_TEXT_FILE = 'https://kodi7rd.github.io/wizard/assets/kodi_version_auto_update/apk/latest_apk_version.txt'
+APK_DOWNLOAD_URL = 'https://kodi7rd.github.io/apk'
+APK_PACKAGE_ID = 'org.xbmc.kodirdil'
+APK_DOWNLOADER_CODE = '864332'
+APK_DOWNLOADER_CODE_IMAGE_URL = 'https://kodi7rd.github.io/wizard/assets/kodi_version_auto_update/apk/apk_downloader_code.png'
+#########################################################
+
 # Text File with Youtube Videos urls.  Leave as 'http://' to ignore
 YOUTUBETITLE = ''
 YOUTUBEFILE = 'http://'
@@ -65,6 +84,7 @@ COLOR1 = 'blue'
 COLOR2 = 'yellow'
 COLOR_LIMEGREEN = 'limegreen'
 COLOR_YELLOW = 'yellow'
+COLOR_WHITE = 'white'
 # Primary menu items   / {0} is the menu item and is required
 THEME1 = u'[COLOR {color1}][I][COLOR {color1}][B]Kodi + Real Debrid Israel[/B][/COLOR][COLOR {color2}][COLOR {color1}] - [/I][/COLOR] [COLOR {color2}]{{}}[/COLOR]'.format(color1=COLOR1, color2=COLOR2)
 # Build Names          / {0} is the menu item and is required
@@ -79,8 +99,8 @@ THEME_YELLOW = u'[COLOR {color1}]{{}}[/COLOR]'.format(color1=COLOR_YELLOW)
 THEME4 = u'[COLOR {color1}]גרסת בילד נוכחי:[/COLOR] [COLOR {color2}]{{}}[/COLOR]'.format(color1=COLOR1, color2=COLOR2)
 # Current Theme Header / {0} is the menu item and is required
 THEME5 = u'[COLOR {color1}]Current Theme:[/COLOR] [COLOR {color2}]{{}}[/COLOR]'.format(color1=COLOR1, color2=COLOR2)
-# KODI_RD_ISRAEL Custom Theme for COLO2 text usage (window.py - def show_dialog)
-THEME6 = u'[COLOR {color2}]{{}}[/COLOR]'.format(color2=COLOR2)
+# KODI_RD_ISRAEL Custom Theme for COLOR_WHITE text usage (window.py - def show_dialog)
+THEME6 = u'[COLOR {COLOR_WHITE}]{{}}[/COLOR]'.format(COLOR_WHITE=COLOR_WHITE)
 
 # Message for Contact Page
 # Enable 'Contact' menu item 'Yes' hide or 'No' dont hide
@@ -116,16 +136,16 @@ REPOZIPURL = 'https://'
 #        Notification Window                            #
 #########################################################
 # Enable Notification screen Yes or No
-ENABLE = 'No'
+ENABLE = 'Yes'
 # Url to notification file
-NOTIFICATION = 'https://kodi7rd.github.io/wizard/assets/notify.txt'
+NOTIFICATION = 'https://kodi7rd.github.io/wizard/assets/notification_files/build_first_launch.txt'
 # Use either 'Text' or 'Image'
-HEADERTYPE = 'Text'
+HEADERTYPE = 'Image'
 # Font size of header
 FONTHEADER = 'Font14'
-HEADERMESSAGE = '[COLOR blue]Kodi + Real Debrid Israel[/COLOR]'
+HEADERMESSAGE = ''
 # url to image if using Image 424x180
-HEADERIMAGE = 'http://'
+HEADERIMAGE = os.path.join(CUSTOM_ART, 'kodi_rd_il_icon.png')
 # Font for Notification Window
 FONTSETTINGS = 'Font13'
 # Background for Notification Window

@@ -55,13 +55,21 @@ class MainMenu:
         if len(CONFIG.BUILDNAME) > 0:
             version = check.check_build(CONFIG.BUILDNAME, 'version')
             build = '{0} (v{1})'.format(CONFIG.BUILDNAME, CONFIG.BUILDVERSION)
+            ##############################################################################################
+            # KODI-RD-IL
             if not version:
-                build = '{0} [COLOR red][B][שם הבילד השתנה, אנא התקן בילד מחדש][/B][/COLOR]'.format(build, version)
+                build = '{0} [COLOR red][B][הבילד לא קיים יותר, אנא התקן בילד מחדש][/B][/COLOR]'.format(build, version)
                 directory.add_dir(build, {'mode': 'viewbuild', 'name': CONFIG.BUILDNAME}, themeit=CONFIG.THEME4)
+            ##############################################################################################
             else:
                 if version > CONFIG.BUILDVERSION:
                     build = '{0} [COLOR red][B][עדכן לגרסה v{1}][/B][/COLOR]'.format(build, version)
                 directory.add_dir(build, {'mode': 'viewbuild', 'name': CONFIG.BUILDNAME}, themeit=CONFIG.THEME4)
+                
+                ##############################################################################################
+                # KODI-RD-IL BUILD SWITCH SKIN
+                directory.add_dir('החלף סקין בבילד', {'mode': 'install', 'action': 'build_switch_skin'}, icon=CONFIG.ICONBUILDS, themeit=CONFIG.THEME1)
+                ##############################################################################################
                 
             from resources.libs.gui.build_menu import BuildMenu
             themefile = BuildMenu().theme_count(CONFIG.BUILDNAME)
@@ -71,16 +79,22 @@ class MainMenu:
         else:
             directory.add_dir('None', {'mode': 'builds'}, themeit=CONFIG.THEME4)
         directory.add_separator()
-        directory.add_dir('בחירת בילד להתקנה', {'mode': 'builds'}, icon=CONFIG.ICONBUILDS, themeit=CONFIG.THEME1)
-        #if (tools.platform() == 'android' or CONFIG.DEVELOPER == 'true'):
-        #    directory.add_dir('APK Installer', {'mode': 'apk'}, icon=CONFIG.ICONAPK, themeit=CONFIG.THEME1)
+        directory.add_dir('התקן בילד', {'mode': 'builds'}, icon=CONFIG.ICONBUILDS, themeit=CONFIG.THEME1)
         #if tools.open_url(CONFIG.ADDONFILE, check=True) or os.path.exists(os.path.join(CONFIG.ADDON_PATH, 'resources', 'text', 'addons.json')):
         #    directory.add_dir('Addon Installer', {'mode': 'addons'}, icon=CONFIG.ICONADDONS, themeit=CONFIG.THEME1)
-        if tools.open_url(CONFIG.YOUTUBEFILE, check=True) and not CONFIG.YOUTUBETITLE == '':
-            directory.add_dir(CONFIG.YOUTUBETITLE, {'mode': 'youtube'}, icon=CONFIG.ICONYOUTUBE, themeit=CONFIG.THEME1)
+        # if tools.open_url(CONFIG.YOUTUBEFILE, check=True) and not CONFIG.YOUTUBETITLE == '':
+            # directory.add_dir(CONFIG.YOUTUBETITLE, {'mode': 'youtube'}, icon=CONFIG.ICONYOUTUBE, themeit=CONFIG.THEME1)
         directory.add_dir('תפריט שמירת נתונים', {'mode': 'savedata'}, icon=CONFIG.ICONSAVE, themeit=CONFIG.THEME1)
-        if CONFIG.HIDECONTACT == 'No':
-            directory.add_file('Contact', {'mode': 'contact'}, icon=CONFIG.ICONCONTACT, themeit=CONFIG.THEME1)
+        ##############################################################################################
+        # KODI-RD-IL
+        if tools.platform() in ['android', 'windows'] or CONFIG.DEVELOPER == 'true':
+            directory.add_separator('עדכון גרסת קודי')
+            directory.add_file('עדכון גרסת קודי', {'mode': 'install', 'action': 'kodi_version_update_check', 'kodi_version_update_check_manual': 'true'}, icon=CONFIG.ICONBUILDS, themeit=CONFIG.THEME1)
+        ##############################################################################################
+        # if (tools.platform() == 'android' or CONFIG.DEVELOPER == 'true'):
+            # directory.add_dir('APK Installer', {'mode': 'apk'}, icon=CONFIG.ICONAPK, themeit=CONFIG.THEME1)
+        # if CONFIG.HIDECONTACT == 'No':
+            # directory.add_file('Contact', {'mode': 'contact'}, icon=CONFIG.ICONCONTACT, themeit=CONFIG.THEME1)
         directory.add_separator()
         directory.add_dir('תחזוקה', {'mode': 'maint'}, icon=CONFIG.ICONMAINT, themeit=CONFIG.THEME1)
         #directory.add_file('Upload Log File', {'mode': 'uploadlog'}, icon=CONFIG.ICONMAINT, themeit=CONFIG.THEME1)

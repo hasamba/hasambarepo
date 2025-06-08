@@ -7,9 +7,15 @@
         <setting id="buildtheme" type="text" label="ערכה נוכחית:" enable="false" default=""/>
         <setting id="latestversion" type="text" label="גרסת בילד אחרונה:" enable="false" default=""/>
         <setting id="nextbuildcheck" type="text" label="בדיקת עדכון גרסה מתוזמנת ל:" enable="false" default="2019-01-01 00:00:00" />
-        <setting id="disableupdate" type="bool" label="כבה הודעות עדכון בילד" default="false"/>
+        <!-- <setting id="disableupdate" type="bool" label="כבה הודעות עדכון גרסה לבילד" default="false"/> -->
+        <setting type="lsep" label="חלון התראות בהפעלה:"/>
+        <setting id="notify" type="bool" label="כבה התראות בהפעלה" default="false" visible="false"/>
+        <setting id="noteid" type="number" label="התראה אחרונה" visible="true" default="0" enable="false"/>
+        <setting id="notedismiss" type="bool" label="הזכר מאוחר יותר" visible="false" />
+        <setting id="quick_update_noteid" type="number" label="עדכון מהיר אחרון" visible="true" default="0" enable="false"/>
+        <setting id="quick_update_notedismiss" type="bool" label="הזכר מאוחר יותר" visible="false" />
+		<setting id="build_skin_switch_notifcation_dismiss" type="bool" label="הצגת חלון מידע על החלפת סקין לאחר התקנה ראשונית של הבילד" default="false" visible="false" />
         <setting type="lsep" label="הצג בילדים:"/>
-        <setting id="show19" type="bool" label="הצג בילדים לקודי 19 (Matrix)" default="true"/>
         <setting id="show20" type="bool" label="הצג בילדים לקודי 20 (Nexus)" default="true"/>
         <setting id="show21" type="bool" label="הצג בילדים לקודי 21 (Omega)" default="true"/>
         <setting id="separate" type="bool" label="בטל הפרדה לפי גרסה" default="false"/>
@@ -37,6 +43,9 @@
     </category>
 
     <category label="תחזוקה">
+        <setting type="lsep" label="הרחבות"/>
+        <setting id="forceupdateFAST_on_startup" type="bool" label="חפש עדכוני הרחבות בהפעלה" default="true"/>
+        <setting id="forceupdateFAST_on_startup_notify" type="bool" label="הצג הודעה של חיפוש העדכונים" default="false" visible="eq(-1,true)"/>
         <setting type="lsep" label="העלאת לוג"/>
         <setting id="oldlog" type="bool" label="כלול Kodi.Old.Log" default="false"/>
         <setting id="wizlog" type="bool" label="כלול לוג Wizard" default="false"/>
@@ -164,7 +173,7 @@
         <setting type="action" label="Open Kodi Android Updater Settings" action="RunPlugin(plugin://plugin.program.openwizard/?mode=fmchoose)" option="close" />
         <setting id="apk_path" type="folder" label="בחר מיקום הורדה" default="/storage/emulated/0/Download/"/>
         <setting type="lsep" label="שמירת נתונים בזמן התקנת בילד:"/>
-        <setting id="use_github_custom_save_data_config" type="bool" label="קבל הגדרות שמירת נתונים מ-GitHub" default="true"/>
+        <!-- <setting id="use_github_custom_save_data_config" type="bool" label="קבל הגדרות שמירת נתונים מ-GitHub" default="true"/> -->
         <setting id="keeptrakt" type="bool" label="Trakt שמירת חשבון" default="true"/>
         <setting id="traktnextsave" type="text" label="נשמר לאחרונה - Trakt" visible="!eq(-1, false)" enable="false" default="2019-01-01 00:00:00"/>
         <setting id="keepdebrid" type="bool" label="Debrid שמירת חשבון" default="true"/>
@@ -192,10 +201,6 @@
         <setting id="adult" type="bool" label="הצג הרחבות למבוגרים" enable="true" default="false"/>
         <setting id="auto-view" type="bool" label="הפעל Auto View" default="false"/>
         <setting id="viewType" type="number" label="סוג View" default="50" visible="!eq(-1, false)" enable="!eq(-1,false)"/>
-        <setting type="lsep" label="חלון התראות בהפעלה:"/>
-        <setting id="notify" type="bool" label="כבה התראות בהפעלה" default="false" />
-        <setting id="noteid" type="number" label="התראה אחרונה" visible="false" default="0" />
-        <setting id="notedismiss" type="bool" label="הזכר מאוחר יותר" visible="false" />
     </category>
 
     <category label="הגדרות לוג">
