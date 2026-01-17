@@ -1,0 +1,5 @@
+<settings>
+    <category label="Advanced">
+        <setting id="debug_log" type="bool" label="Enable Debug Logging" default="false" />
+    </category>
+</settings>
