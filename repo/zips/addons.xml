@@ -2380,25 +2380,52 @@
         <description lang="sv_SE">Skrobbla automatiskt alla TV-serie avsnitt och filmer du tittar på till Trakt.tv! Samla en innehållsrik historik om allt du tittar på och var en del av ett globalt kollektiv av TV och film entusiaster. Skapa ett gratis konto på http://trakt.tv och ta del av massor av funktioner.[CR][CR]- Skrobbla automatiskt vad du tittar på[CR]- Appar för iPhone, iPad, Android och Windows Phone[CR]- Dela vad du tittar på (i realtid) samt dina betyg på Facebook och Twitter[CR]- Personlig kalender så du aldrig missar en TV serie[CR]- Följ dina vänner och andra intressanta personer[CR]- Använd att se listor så du inte glömmer vad du skall se[CR]- Spåra dina media samlingar och imponera på dina vänner[CR]- Skapa listor för olika ämnen som du väljer[CR]- Spåra lätt hur mycket av en TV serie du sett, över alla säsonger och avsnitt[CR]- Jämför hur mycket film du har sett mot flera viktiga listor inom industrin, t.ex. IMDb Top 250[CR]- Upptäck nya TV serier och filmer baserat på din historik[CR]- Widgets för din forum signatur[CR][CR]Vad kan detta addon göra?[CR][CR]- Skrobbla automatiskt alla TV-serie avsnitt och filmer du tittar på[CR]- Synkronisera dina samlingar av film och Tv-serier till Trakt (startas efter en uppdatering av ditt bibliotek i Kodi)[CR]- Städa automatiskt din Trakt samling så den stämmer med Kodi.[CR]- Synkronisera sedd/osedd status mellan Kodi och Trakt[CR]- Betygsätt filmer och TV-serier avsnitt efter du har sett dem[CR][CR]Ett stort tack till alla som bidragit till detta plugin! Se loggen för tillägg och ändringar för att se vilka dessa talangfulla utvecklare är.</description>
         <description lang="zh_CN">自动录制您正在观看的所有电视剧和电影到Trakt.tv！全面记录你看过的一切，成为全球电视和电影爱好者社区的一部分。在http://trakt.tv注册一个免费帐户，即可获得大量功能：[CR]；[CR]；-自动滚动您正在观看的内容[CR]；-iPhone、iPad、Android和Windows phone上的移动应用程序[CR]；-(实时)分享您正在观看的内容，并将其评分到Facebook和Twitter&amp;10；-个性化日历，让您永远不会错过任何电视节目[CR]；-关注您的朋友和您感兴趣的人&amp;使用观看列表，这样您就不会忘记要看什么。-跟踪您的媒体收藏并打动您的朋友[CR]；-围绕您选择的任何主题创建自定义列表[CR]；-轻松跟踪您的电视节目在所有季节和剧集中的进度-对照行业列表(如IMDB排名前250&amp;10；)跟踪您的进度-根据您的观看习惯发现新的剧集和电影[CR]；-用于论坛签名的小工具[CR]；[CR]；[CR]；[CR]；-自动滚动所有电视剧和电影。-将您的电视剧集和电影集同步到Trakt(在库更新后触发)[CR]；-自动清理您的Trakt集，以便它与Kodi&amp;10；匹配-保持在Kodi和Trakt&amp;10；之间同步的观看状态-在观看电影和集之后对它们进行评级[CR]；[CR]；特别感谢所有对此插件做出贡献的人！查看提交历史记录和更改日志，查看这些有才华的开发人员。</description>
     </extension>
-</addon><addon id="service.subtitles.All_Subs" name="All Subs Flash" version="2.5.3a" provider-name="Sbs">
+</addon><addon id="service.subtitles.All_Subs" name="DarkSubs" version="4.7.5" provider-name="Sbs">
   <requires>
-    
-	<import addon="script.module.requests" version="2.9.1" />
-	<import addon="script.common.plugin.cache" version="2.5.5" />
-    <import addon="script.subskeys" version="1.0.1" />
-	<import addon="script.module.chardet" />
+    <import addon="script.module.requests" version="2.9.1" />
+    <import addon="script.module.chardet" />
   </requires>
-  <extension point="xbmc.service" library="autosub.py" start="startup" /> 
-  <extension point="xbmc.subtitle.module" library="service.py" />
+  <extension point="xbmc.subtitle.module" library="start.py" start="startup" />
+  <extension point="xbmc.service" library="autosub.py" />
   <extension point="xbmc.addon.metadata">
-        <assets>
+    <reuselanguageinvoker>true</reuselanguageinvoker>
+    <summary lang="en">Collect Subs From sites</summary>
+    <description lang="en">Enjoy Hebrew subtitles from all the top websites.</description>
+    <assets>
             <icon>icon.png</icon>
-        </assets>
-    <summary lang="en">All sites Subs Super Speed</summary>
-    <description lang="en">All sites Subs. Subcenter.wizdom,subcene,opensubtitles. Thanks to:Catz,wizdom,manacker,amet</description>
+            <fanart>fanart.jpg</fanart>
+    </assets>
     <language>en</language>
     <license>GNU GENERAL PUBLIC LICENSE. Version 2, June 1991</license>
   </extension>
+  <extension point="kodi.context.item" library="check_sub.py">
+        <item>
+            <label>[COLOR yellow][B]חפש כתוביות (DarkSubs)[/B][/COLOR]</label>
+            <visible>true</visible>
+        </item>
+    </extension>
+</addon><addon id="service.subtitles.all_subs_plus" name="All Subs Plus" version="2.3.1" provider-name="burekas">
+    <requires>
+        <import addon="script.module.requests" version="2.9.1" />
+        <import addon="script.module.beautifulsoup4" version="4.8.2" />
+        <import addon="script.common.plugin.cache" version="2.5.5" />
+        <import addon="script.module.chardet" />
+        
+    </requires>
+    <extension point="xbmc.service" library="autosub.py" />
+    <extension point="xbmc.subtitle.module" library="service.py" />
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Searching subtitles from several providers in one place</summary>
+        <summary lang="en_GB">Searching subtitles from several providers in one place</summary>
+        <summary lang="he">חיפוש כתוביות ממספר מקורות במקום אחד</summary>
+        <summary lang="he_IL">חיפוש כתוביות ממספר מקורות במקום אחד</summary>
+        <description lang="en">[CR]Providers included: Wizdom, Ktuvit, OpenSubtitles, Subscene and Local Storage.[CR][CR]Made by Burekas[CR]Thanks to: Sbs, Catz, wizdom, manacker, amet, drorba, rafi_d[CR][CR]For news, updates and more info - Visit: https://bit.ly/3DaU7JT[CR][CR]Burekas Repo: https://bit.ly/49mJge3</description>
+        <language>en</language>
+        <license>GNU GENERAL PUBLIC LICENSE. Version 2, June 1991</license>
+        <assets>
+            <icon>icon.png</icon>
+        </assets>
+    </extension>
 </addon><addon id="xbmc.python" version="2.26.0" provider-name="Team Kodi">
   <backwards-compatibility abi="2.1.0" />
   <requires>

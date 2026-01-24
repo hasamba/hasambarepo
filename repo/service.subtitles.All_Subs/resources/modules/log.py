@@ -1,6 +1,7 @@
 import xbmcaddon,xbmc,os
-Addon = xbmcaddon.Addon()
+
 def warning(msg):
+    Addon = xbmcaddon.Addon()
     msg=str(msg)
     import inspect
     if Addon.getSetting('show_debug')=='true':
@@ -10,6 +11,7 @@ def warning(msg):
        
         xbmc.log('/*'+Addon.getAddonInfo('name')+'*/'+' Line: %s-> '%(str(info.lineno)+','+os.path.basename(info.filename))+msg,level=xbmc.LOGWARNING)
 def error(msg):
+    Addon = xbmcaddon.Addon()
     msg=str(msg)
     import inspect
     callerframerecord = inspect.stack()[1] 
