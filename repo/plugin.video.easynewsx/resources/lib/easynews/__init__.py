@@ -1,0 +1,1 @@
+# EasyNews plugin package.

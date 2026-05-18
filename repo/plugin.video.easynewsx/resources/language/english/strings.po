@@ -1,0 +1,253 @@
+# Addon Name: EasyNews
+# Addon id: plugin.video.easynewsx
+# Addon Provider: Tetsuo
+msgid ""
+msgstr ""
+
+msgctxt "#33000"
+msgid "General Settings"
+msgstr ""
+
+msgctxt "#33001"
+msgid "EasyNews Account Details"
+msgstr ""
+
+msgctxt "#33002"
+msgid "Active"
+msgstr ""
+
+msgctxt "#33003"
+msgid "Username"
+msgstr ""
+
+msgctxt "#33004"
+msgid "Password"
+msgstr ""
+
+msgctxt "#33005"
+msgid "Search Results Options"
+msgstr ""
+
+msgctxt "#33006"
+msgid "Results Per Page"
+msgstr ""
+
+msgctxt "#33007"
+msgid "Post Date Sort Order"
+msgstr ""
+
+msgctxt "#33008"
+msgid "Descending (latest first)"
+msgstr ""
+
+msgctxt "#33009"
+msgid "Ascending (earliest first)"
+msgstr ""
+
+msgctxt "#33010"
+msgid "Newsgroup Search Results Exclusions"
+msgstr ""
+
+msgctxt "#33011"
+msgid "Exclude naughty groups: *erotica*"
+msgstr ""
+
+msgctxt "#33012"
+msgid "Please bear in mind a lot of naughty stuff gets posted to non *erotica* newsgroups, so setting this will not filter those posts"
+msgstr ""
+
+msgctxt "#33013"
+msgid "Number of Saved Newsgroups"
+msgstr ""
+
+msgctxt "#33014"
+msgid "Downloads"
+msgstr ""
+
+msgctxt "#33015"
+msgid "Context menu Download file and split-file joins save here. Leave empty to use a downloads folder inside the add-on data directory"
+msgstr ""
+
+msgctxt "#33016"
+msgid "Download folder"
+msgstr ""
+
+msgctxt "#33017"
+msgid "The Movie Database (TMDB)"
+msgstr ""
+
+msgctxt "#33018"
+msgid "Required: create a free API v3 key at themoviedb.org (Settings - API) and paste it here. TMDB features do not work without a key."
+msgstr ""
+
+msgctxt "#33019"
+msgid "TMDB API key"
+msgstr ""
+
+msgctxt "#33020"
+msgid "Slow streaming (Kodi)"
+msgstr ""
+
+msgctxt "#33021"
+msgid "Optional: write network timeouts into Kodi userdata advancedsettings.xml so large HTTPS streams can wait longer before failing. Use the Tools & info menu to apply after changing values here."
+msgstr ""
+
+msgctxt "#33022"
+msgid "Kodi network timeouts"
+msgstr ""
+
+msgctxt "#33023"
+msgid "Seconds (libcurl HTTP timeout). Kodi default is 10; try 300 for slow CDN streams. Applied when you use Tools & info → Apply Kodi network timeouts."
+msgstr ""
+
+msgctxt "#33024"
+msgid "HTTP timeout (seconds)"
+msgstr ""
+
+msgctxt "#33025"
+msgid "Seconds before libcurl treats the connection as slow. Kodi default is 20; raise if playback stalls before data arrives. Applied together with HTTP timeout."
+msgstr ""
+
+msgctxt "#33026"
+msgid "Low-speed time (seconds)"
+msgstr ""
+
+msgctxt "#33027"
+msgid "Tools & info"
+msgstr ""
+
+msgctxt "#33028"
+msgid "Apply Kodi network timeouts…"
+msgstr ""
+
+msgctxt "#33029"
+msgid "Writes your chosen values into userdata advancedsettings.xml (network / curlclienttimeout and curllowspeedtime). Other advanced settings are left as they are. A backup is created if the file already existed. You must restart Kodi for it to take effect."
+msgstr ""
+
+msgctxt "#33030"
+msgid "Remove Kodi network timeouts…"
+msgstr ""
+
+msgctxt "#33031"
+msgid "Removes curlclienttimeout and curllowspeedtime from advancedsettings.xml so Kodi uses its built-in defaults (10 s and 20 s). Other tags in that file are left alone. If those were the only two settings, the empty file may be deleted. A backup is created first. Restart Kodi afterward."
+msgstr ""
+
+msgctxt "#33032"
+msgid "Search History"
+msgstr ""
+
+msgctxt "#33033"
+msgid "No search history yet"
+msgstr ""
+
+msgctxt "#33034"
+msgid "Remove"
+msgstr ""
+
+msgctxt "#33035"
+msgid "Clear all"
+msgstr ""
+
+msgctxt "#33036"
+msgid "Recent global searches (last 10). Use the context menu on an entry to remove it, or clear the whole list."
+msgstr ""
+
+msgctxt "#33037"
+msgid "Play History"
+msgstr ""
+
+msgctxt "#33038"
+msgid "No play history yet"
+msgstr ""
+
+msgctxt "#33039"
+msgid "Recently played streams (last 10). Use the context menu to remove one entry or clear all."
+msgstr ""
+
+msgctxt "#33040"
+msgid "EasyNews account"
+msgstr ""
+
+msgctxt "#33041"
+msgid "Enter your EasyNews member username and password under Add-on settings → General before accessing Easynews."
+msgstr ""
+
+msgctxt "#33059"
+msgid "Show EasyNews plan and available gigs"
+msgstr ""
+
+msgctxt "#33060"
+msgid "Set your EasyNews username and password in add-on settings."
+msgstr ""
+
+msgctxt "#33061"
+msgid "Select this row to fetch the latest plan and download gigs remaining from EasyNews."
+msgstr ""
+
+msgctxt "#33042"
+msgid "Read Me First / Userguide"
+msgstr ""
+
+msgctxt "#33043"
+msgid "Read Me First for important information about how Kodi accesses EasyNews and some gotchas."
+msgstr ""
+
+msgctxt "#33044"
+msgid "Video size"
+msgstr ""
+
+msgctxt "#33045"
+msgid "Default for all text searches. Appends 720, 1080, or 2160 to your search terms (or nothing for All). Change anytime from the main menu or from search results."
+msgstr ""
+
+msgctxt "#33046"
+msgid "All resolutions"
+msgstr ""
+
+msgctxt "#33047"
+msgid "4K / 2160p"
+msgstr ""
+
+msgctxt "#33048"
+msgid "1080p"
+msgstr ""
+
+msgctxt "#33049"
+msgid "720p"
+msgstr ""
+
+msgctxt "#33050"
+msgid "Browse The Movie Database for movies or TV series. Search by title, browse genres, popular and top-rated lists.\n\nThis add-on uses the TMDB API but is not endorsed or certified by TMDB. More info at www.themoviedb.org"
+msgstr ""
+
+msgctxt "#33051"
+msgid "Search again for %s (%s)"
+msgstr ""
+
+msgctxt "#33052"
+msgid "Re-run your Easynews search with the current video size (page 1). Pick a tier below to change it and search automatically."
+msgstr ""
+
+msgctxt "#33053"
+msgid "<< Back to search results"
+msgstr ""
+
+msgctxt "#33054"
+msgid "Searching again for %s (%s)"
+msgstr ""
+
+msgctxt "#33055"
+msgid "Sets this video size (adds 720, 1080, or 2160 to the search) and runs your search again from page 1."
+msgstr ""
+
+msgctxt "#33056"
+msgid "What's new"
+msgstr ""
+
+msgctxt "#33057"
+msgid "Show latest news"
+msgstr ""
+
+msgctxt "#33058"
+msgid "Open the release notes from addon.xml (same text as Add-on information → News)."
+msgstr ""

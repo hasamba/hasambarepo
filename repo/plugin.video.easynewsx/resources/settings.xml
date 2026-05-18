@@ -1,0 +1,131 @@
+<?xml version="1.0" ?>
+<settings version="1">
+	<section id="plugin.video.easynewsx">
+        <category id="general" label="33000" help="">
+            <group id="1" label="33001">
+                <setting help="" id="general.username" label="33003" type="string">
+                    <level>0</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control format="string" type="edit">
+                        <heading>33003</heading>
+                    </control>
+                </setting>
+                <setting help="" id="general.password" label="33004" type="string">
+                    <level>0</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control format="string" type="edit">
+                        <heading>33004</heading>
+                        <hidden>true</hidden>
+                    </control>
+                </setting>
+            </group>
+            <group id="2" label="33005">
+                <setting help="" id="general.results_per_page" label="33006" type="integer">
+                    <level>0</level>
+                    <default>50</default>
+                    <control format="integer" type="edit">
+                            <heading>33006</heading>
+                    </control>
+                </setting>
+                <setting help="" id="general.date_sort_order" label="33007" type="integer">
+                    <level>0</level>
+                    <default>0</default>
+                    <constraints>
+                        <options>
+                            <option label="33008">0</option>
+                            <option label="33009">1</option>
+                        </options>
+                    </constraints>
+                    <control format="integer" type="list">
+                            <heading>33007</heading>
+                    </control>
+                </setting>
+                <setting help="33045" id="general.search_resolution" label="33044" type="string">
+                    <level>0</level>
+                    <default>all</default>
+                    <constraints>
+                        <options>
+                            <option label="33046">all</option>
+                            <option label="33047">2160</option>
+                            <option label="33048">1080</option>
+                            <option label="33049">720</option>
+                        </options>
+                    </constraints>
+                    <control format="string" type="list">
+                        <heading>33044</heading>
+                    </control>
+                </setting>
+                <setting id="browse.saved_newsgroups_max" type="string" label="33013" help="">
+                    <level>0</level>
+                    <default>10</default>
+                    <constraints>
+                        <options>
+                            <option>0</option>
+                            <option>5</option>
+                            <option>10</option>
+                            <option >15</option>
+                            <option>20</option>
+                            <option>30</option>
+                            <option>50</option>
+                        </options>
+                    </constraints>
+                    <control type="spinner" format="string"/>
+                </setting>
+            </group>
+            <group id="3" label="33010">
+                <setting help="33012" id="general.newsgroup_exclusions.erotica" label="33011" type="boolean">
+                    <level>0</level>
+                    <default>false</default>
+                    <control type="toggle"/>
+                </setting>
+            </group>
+            <group id="4" label="33014">
+                <setting help="33015" id="general.download_folder" label="33016" type="path">
+                    <level>0</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                        <writable>true</writable>
+                    </constraints>
+                    <control type="button" format="path">
+                        <heading>33016</heading>
+                    </control>
+                </setting>
+            </group>
+        </category>
+        <category id="tools" label="33020" help="33021">
+            <group id="1" label="33022">
+                <setting help="33023" id="tools.kodi_curlclienttimeout" label="33024" type="integer">
+                    <level>0</level>
+                    <default>300</default>
+                    <constraints>
+                        <minimum>10</minimum>
+                        <step>10</step>
+                        <maximum>600</maximum>
+                    </constraints>
+                    <control format="integer" type="edit">
+                        <heading>33024</heading>
+                    </control>
+                </setting>
+                <setting help="33025" id="tools.kodi_curllowspeedtime" label="33026" type="integer">
+                    <level>0</level>
+                    <default>120</default>
+                    <constraints>
+                        <minimum>20</minimum>
+                        <step>10</step>
+                        <maximum>600</maximum>
+                    </constraints>
+                    <control format="integer" type="edit">
+                        <heading>33026</heading>
+                    </control>
+                </setting>
+            </group>
+        </category>
+    </section>
+</settings>

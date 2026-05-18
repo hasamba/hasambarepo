@@ -1,0 +1,22 @@
+[
+  {
+    "title": "Welcome to the EasyNews Add-on (v6.5.1) by [COLOR yellow]Tetsuo[/COLOR]",
+    "body": "This add-on searches EasyNews and plays members-only streams.\n\nBy popular demand I have rewritten the original Add-on from scratch, if you spot any issues please report them on the Github repo.\n\nhttps://github.com/tetsuosoft/EasyNewsKodi\n\nThere you can also Buy Me A Coffee!"
+  },
+  {
+    "title": "[COLOR yellow]IMPORTANT NOTE[/COLOR]",
+    "body": "A majority of streams will work quickly and well, but occasionally the Kodi Player might show a spinner for a few seconds then drop. This is to do with how some video files are encoded. If this happens it's always worth trying the stream again, often it will spool right away on 2nd attempt.\n\nSometimes Kodi will take a long time (30+ seconds) in starting up a stream and you will see the spinner. This is also to do with how some rips (especially large MKVs from Blu-ray) are encoded, as they are not designed for web streaming, and EasyNews is just serving the file uploaded to Usenet.\n\nIf this happens you can either wait it out, hit back / escape, try another rip, or choose to download the file for local playback.\n\nSometimes the wait will exceed the Kodi player default timeouts, if this happens the stream will often start quickly on a second try. If not you can set your own higher timeout values using the provided options in the Tools menu. The add-on options allow you to configure these and they are supplied with some default higher values to try. Be aware this sets the timeouts for all of Kodi. The overrides can also be removed with the tools provided."
+  },
+  {
+    "title": "Search & account",
+    "body": "Use Search EasyNews from the main menu to type a query. If your account is not configured yet, you’ll be prompted to open settings.\n\nSearch History keeps your last 10 global searches; Play History keeps the last 10 streams you started from search results."
+  },
+  {
+    "title": "Newsgroups & browse",
+    "body": "Browse Saved Newsgroups stores shortcuts to groups you care about. From any result, use the context menu to add a newsgroup.\n\nSearch within group narrows results inside one newsgroup."
+  },
+  {
+    "title": "Playback & tools",
+    "body": "Selecting a result resolves the stream in Kodi’s player. File download and split-file features live in the item's context menu. If you find an oldskool .001 .002 .003 etc. split file posting, opening the context menu on file .001 will offer a \"find and download split files\" feature. Cool eh?\n\nVLC (experimental): if VLC is installed on your device, you can open a stream externally via the context menu option \"Open in VLC (experimental)\" (available on search results and play history items).\n\nOptional Tools can write network timeouts into the add-ons advanced settings as described above (restart Kodi after to take effect)."
+  }
+]
