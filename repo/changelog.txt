@@ -1,0 +1,1383 @@
+v0.2.131
+- AI subtitles: Gemini thinking now supports Gemini 3.x thinking levels
+  (Minimal/Low/Medium/High) and keeps numeric budgets for compatible
+  models. Old Disabled/0 installs remain valid.
+- AI subtitles: whole-subtitle single-request mode now shows an immediate
+  Hebrew start notification and uses a longer Gemini timeout so paid users
+  do not get a silent stalled-looking picker on long files.
+
+v0.2.129
+- Added explicit canonical tiles for "סרטים פופולריים" and "סדרות חדשות"
+  using POV's tmdb_movies_popular and tmdb_tv_premieres actions.
+
+v0.2.127
+- Fixed the advanced Gemini settings UI for Kodi 19/20/21 settings format:
+  whole-subtitle single-request mode now disables the chunk-size,
+  parallel-request, and fast-subtitles controls through proper Kodi
+  dependencies instead of ignored inline enable attributes.
+- Top-P, Temperature, Thinking Budget, whole-subtitle mode, chunk size,
+  parallel requests, and fast subtitles are now visible at normal settings
+  level inside Advanced, so Thinking Budget can be selected without changing
+  Kodi's settings-level filter.
+- Runtime behavior remains protected too: whole-subtitle mode still forces
+  one request, one worker, max output tokens 65,535, and no fast subtitle
+  flow even if an older profile has stale setting values.
+
+v0.2.123
+- Whole-subtitle single-request mode now disables the dependent chunk UI
+  controls too: SRT lines per chunk, parallel chunk requests, and fast
+  subtitles. Runtime already forced one chunk and one worker; the settings
+  screen now reflects that to avoid conflicts.
+
+v0.2.120
+- Added advanced Gemini controls for paid/stronger API setups: Top-P,
+  Thinking Budget, and an optional whole-subtitle single-request mode.
+- Whole-subtitle mode raises Gemini max output tokens to 65,535 and
+  automatically disables fast subtitles so the two translation flows do
+  not conflict.
+- Temperature slider now uses 0.01 steps so values such as 0.15 can be
+  selected directly.
+
+v0.2.118
+- DarkSubs OpenSubtitles reliability: updates the OpenSubtitles provider
+  to try title/year or title/episode fallback searches when IMDb search
+  returns no results, and clears DarkSubs subtitle result cache once when
+  the provider is patched so old pre-fix results do not hide OpenSubtitles.
+
+v0.2.105
+- DarkSubs hook diagnostics are less misleading after Kodi restarts: the
+  hook now persists its last-fire heartbeat/outcome in this addon's settings,
+  not only in a volatile Window property. If the hook is correctly installed
+  and configured but has not yet been exercised on this device, the "fired
+  in practice" line no longer marks the whole integration as broken.
+
+v0.2.103
+- RTL reverse-mode dialogue dash fix: dashed dialogue lines now move the
+  leading "- " marker to the logical line end so Kodi renders the dash on
+  the right side, while preserving the existing reverse punctuation behavior.
+  Mixed Hebrew/English lines are now treated as RTL whenever they contain
+  Hebrew anywhere in the line, so punctuation is also fixed when the final
+  token is English or a number (for example: Hebrew text + Netflix.). The
+  post-processor still works line-by-line and does not swap stacked subtitle
+  line order. The prompt now explicitly tells the model not to swap physical
+  line order inside two-line entries. Bumped the RTL cache repair marker to
+  v4 so existing cached translations are reprocessed once.
+
+v0.2.86
+- Embedded English now sinks to the BOTTOM OF THE ENGLISH GROUP only,
+  not below other languages. v0.2.84 inserted it at len(f_result) (very
+  end, under French/Spanish/etc); v2 of the insert patcher places it
+  right after the last 'English' row instead -- so order is Hebrew,
+  English subs, embedded English, then other languages. The patcher now
+  also re-patches a device that already had v1 applied (regex tolerates
+  the v1 marker comment between `index = 0` and the `if`). Verified vs
+  the original AND a v1-patched autosub.py: both match, compile, and the
+  runtime test confirms embedded English lands at the bottom of English,
+  above other langs.
+
+v0.2.85
+- THE reason every DarkSubs source patch "didn't apply": DarkSubs
+  (service.subtitles.All_Subs) declares reuselanguageinvoker=true and
+  runs autosub.py as a persistent xbmc.service. Its Python interpreter
+  loads autosub.py/engine.py/sub_window.py into memory at boot and stays
+  alive all session, so rewriting those files on disk + dropping the .pyc
+  never takes effect this session (and a restart races and loses). That's
+  why the embedded-subtitle demote/insert (and other DarkSubs patches)
+  appeared to do nothing.
+  * New darksubs_reload: after any DarkSubs source patch actually changes
+    a file, disable+enable the DarkSubs addon via JSON-RPC so its
+    interpreter is torn down and re-imports the PATCHED source. Debounced
+    to once per startup; only cycles when something changed (no churn on
+    steady-state boots). Wired so the embedded-insert / embedded-demote /
+    subwindow-demote patches trigger it. This is what makes the
+    embedded-English-at-the-bottom fix finally take effect.
+
+v0.2.80
+- ROOT CAUSE FOUND + FIXED. The instrumented outer except (v0.2.79)
+  finally logged it on the device:
+    POV_RUN_ERROR: tmdb_favorites() takes 2 positional arguments but 3
+      were given | action='tmdb_favorites'
+    POV_RUN_ERROR: trakt_collection() takes 2 ... but 3 were given
+    POV_RUN_ERROR: get_favorites() takes 3 ... but 4 were given
+  Our pov_menus_patcher force-syncs movies.py/tvshows.py onto the device,
+  but POV auto-updates its OWN indexers/caches independently. The device
+  ended up with a NEWER POV core whose read functions take fewer args
+  (the trailing `letter` was dropped) than our synced movies.py passes ->
+  every personal list (TMDB/Trakt/POV favorites, movies AND shows) raised
+  TypeError in run() and came back empty. "Continue Watching" survived
+  only because get_in_progress_items(watched_info, mediatype, *args) has
+  *args that swallows the extra arg.
+  Fix: new _flex_call(function, *args) wrapper in movies.py/tvshows.py
+  (and episodes.py for marker consistency). It calls the read function
+  with the full args and, ONLY on a "takes N positional arguments but M
+  were given" TypeError, retries with one fewer trailing arg until it
+  fits -- so it works against ANY POV arity, present or future. All
+  personal-list call sites (tmdb_personal/trakt_personal/mdblist_personal/
+  personal_dict) now go through it. Unrelated TypeErrors still propagate.
+  pov_menus_patcher freshness MARKER bumped to `_flex_call` so existing
+  installs re-sync the fixed menu files once.
+
+v0.2.76
+- DIAGNOSTIC v3 (decisive): the v0.2.75 fix ran on-device (log confirms
+  "blank_entry purge ran: deleted 0" + "widened timeout") yet lists are
+  still empty -- which DISPROVES the poisoned-cache theory (there were 0
+  blank rows) and the timeout theory (favorites_movies returned in
+  ~218ms with ZERO network calls). Offline replay of get_favorites
+  against the user's real watched.db returns all 6 rows, so the read
+  layer is fine too. Three unknowns remain and v3 checks all three on
+  the device, once (silent -- written to log + POV_FAV_DIAGNOSTIC.txt,
+  no popup):
+  * tmdb_read_token presence (the token movie_details/tvshow_details
+    actually use for per-item meta -- never inspected before; empty =>
+    every favorite resolves blank while popular lists still work since
+    they use tmdb.token).
+  * the EXACT watched.db path POV resolves + its movie-row count (in
+    case adds land in one db and the list reads another/empty one).
+  * a LIVE GET /3/movie/<fav id> with Bearer <tmdb_read_token> -> prints
+    HTTP status (200 success vs 401 unauthorized vs timeout). This single
+    call definitively separates token/fetch failure from a render bug.
+  No behaviour change to favorites; read-only.
+
+v0.2.75
+- ACTUALLY apply the favorites fix (v0.2.74 shipped the right idea but
+  didn't take effect on devices). On-device proof: watched.db held 6
+  valid favorite rows, yet the POV-local favorites list returned in
+  212ms with ZERO network calls and rendered empty -- i.e. all 6 ids
+  were served from the per-item meta cache as blank_entry and dropped,
+  and kodi.log showed the patcher never logged at all. Root problem:
+  v0.2.74 tied the poisoned-row purge to the SUCCESS of rewriting
+  metadata.py, so if that rewrite path was skipped the purge never ran
+  and the cache stayed poisoned forever.
+  * pov_meta_blank_patcher v2: the metacache.db blank_entry purge now
+    runs UNCONDITIONALLY and FIRST on every startup, independent of the
+    metadata.py rewrite, and ALWAYS logs how many rows it deleted (v1's
+    silence is what hid the skip). This makes existing favorites
+    reappear immediately.
+  * Also widen tmdb_api's aggressive per-item timeout 3.05s -> 15.05s --
+    the actual reason a /movie/{id} detail fetch failed and got cached
+    blank in the first place on mobile/slow links. With the wider
+    timeout the re-fetch succeeds and posters fill in instead of
+    re-poisoning.
+
+v0.2.73
+- Make the favorites diagnostic SILENT: the v0.2.72 diagnostic popped a
+  full-screen textviewer on every device that applied it, which is fine
+  for one debugging session but annoying as a general rollout. The
+  popup is removed; the diagnostic still writes its report to kodi.log
+  and to <POV profile>/POV_FAV_DIAGNOSTIC.txt so we can still read the
+  on-device state when needed, with zero on-screen interruption. No
+  behaviour change to favorites themselves.
+
+v0.2.69
+- Follow-up fix: POV's TRAKT cache is in a separate DB
+  (trakt.db) and uses a separate function (cache_trakt_object) that
+  v0.2.68 did NOT patch. Critically, that cache has NO expiration --
+  empty results cached there stay forever until an explicit
+  clear_trakt_collection_watchlist_data() call. End-user report: the
+  "My Movies (Trakt)" tile stayed empty even after v0.2.68 landed,
+  because the trakt.db row was still poisoned with a stuck empty.
+  New pov_trakt_cache_empty_patcher mirrors v0.2.68's main_cache fix
+  for trakt_cache.py: inserts `if not result: return result` before
+  the `dbcur.execute(TC_BASE_SET, ...)` line so empty results are
+  no longer persisted, and one-shot-clears any
+  trakt_collection_* / trakt_watchlist_* / trakt_favorites_* /
+  trakt_user_lists* / trakt_lists_* rows currently sitting in
+  trakt.db so existing victims don't have to wait for an explicit
+  clear. Marker-gated (AI_SUBS_POV_TRAKT_CACHE_EMPTY_v1),
+  idempotent, no-op on installs without POV.
+
+v0.2.65
+- Fix: the embedded-demote re-sort is now scoped to the English group
+  ONLY. The 0.2.64 cut re-sorted the combined list by site_id '[LOC]',
+  which DarkSubs also stamps on the embedded HEBREW entry -- that would
+  have sunk native Hebrew embedded subs below English. Hebrew (embedded
+  or not) is now never touched and stays first, as it must.
+
+v0.2.61
+- Plot text now uses a real textbox with autoscroll enabled, so long
+  Hebrew plots can continue scrolling instead of being cut after a few
+  lines.
+
+v0.2.49
+- Diagnostic detail for the "won't fire" case now tells the user
+  the immediate workaround: turn ON auto_translate in DarkSubs.
+  The main hook (machine_translate_subs) is verified installed,
+  so auto_translate=ON routes manual picks through it -> AI. No
+  Google fallback because the v3 hook returns Hebrew before
+  Google is ever reached.
+- CRITICAL fix: Gemini's new "AQ.Ab..." API key format (rolled
+  out late 2025) was being silently corrupted by our paste
+  sanitizer. The allow-list regex only kept A-Z, a-z, 0-9, `_`
+  and `-` -- the PERIODS in the new format were being stripped,
+  so what we sent Google was `AQAb...` instead of `AQ.Ab...`,
+  and Google rejected the key with a 400 "API key not valid".
+  Existing users on the legacy AIza... format were unaffected
+  because that format has no periods. Fix: add `.` to the
+  sanitizer's allow-list. New-format keys now pass through
+  intact while the iOS Safari smart-quote / NBSP / dash-variant
+  protection stays in place.
+- HTML form placeholder updated to show both formats so users
+  aren't surprised when their new key doesn't start with AIza.
+
+- fast_first_chunk now default ON. New users get the fast
+  experience out of the box. service.py includes a one-shot
+  migration (gated by _fast_first_chunk_default_v2 marker)
+  that flips existing users currently on the old default 'false'
+  to 'true' once. Users who later turn it off intentionally
+  won't be re-flipped on subsequent startups.
+- Setting label dropped "(experimental)" since the feature is
+  no longer behind an opt-in flag.
+
+- Final-canonical swap when translation completes: on success the
+  `done` callback now calls Player().setSubtitles() with the
+  CANONICAL Hebrew cache file -- not the last in-flight .vN. User
+  report: subtitles Hebrew at start of file, but seeking 20 min
+  ahead -> no subtitles at all. Root cause: each chunk_ready
+  ADDS a subtitle stream in Kodi (screenshot showed "(10/10)").
+  The user was stranded on the last mid-translation .vN, which
+  had English placeholders for chunks completed AFTER that .vN
+  was written. The final-canonical swap eliminates that window.
+- Progressive .vN cleanup: on `done` (success or failure) we now
+  remove all progressive_<source_id>_v*.he.srt files for this
+  translation. Without it, every translation left ~5-10 stale
+  files on disk for the 180-day TTL prune to handle, AND every
+  setSubtitles call accumulated a subtitle stream in Kodi's UI
+  ("10/10" instead of "1/1"). Now we end clean.
+- Subtitle-display safety net: after our hook returns the English
+  fallback to DarkSubs we now ALSO load it as the active subtitle
+  via xbmc.Player().setSubtitles() + showSubtitles(True). User
+  reports showed the picker closing + our toast firing but NO
+  subtitle ever appearing on screen -- consistent with DarkSubs's
+  caller either filtering on Hebrew chars or relying on a code
+  path that doesn't fire on the fast return. We now drive Kodi's
+  subtitle player directly rather than trusting the handoff. Same
+  showSubtitles(True) added after each chunk_ready setSubtitles
+  swap (DarkSubs + native picker paths).
+- Brief 3-second poll at first_ready to wait for the player to
+  flip isPlayingVideo() -> True before calling setSubtitles, so
+  the call doesn't no-op when DarkSubs's hook returns slightly
+  before Kodi finishes its own handoff.
+- New opt-in `fast_first_chunk` setting (Advanced > default OFF).
+  Only the DarkSubs auto-translate flow uses it; the regular
+  subtitle picker is unchanged in this version.
+- What it does: when DarkSubs hands an English SRT to translate,
+  resolve() now emits a `first_ready` callback the moment the
+  source is in memory (~3 seconds in). default.py uses that to
+  write the English fallback to DarkSubs's output path and touch
+  the `.ai_done` sentinel so DarkSubs releases immediately --
+  Kodi shows English subtitles in seconds instead of 1-3 minutes.
+- The same RunScript subprocess keeps translating (existing
+  parallel chunked Gemini flow). As each chunk lands, resolve()
+  emits a `chunk_ready` callback with a Hebrew-where-done /
+  English-where-pending merged SRT; default.py writes that to a
+  versioned `progressive_<id>_vN.he.srt` file in cache_dir and
+  calls `xbmc.Player().setSubtitles(new_path)` to swap subtitles
+  in flight. By the time the user is 1-2 minutes into the movie,
+  all Hebrew has arrived.
+- Quality preserved: NOT a fork of resolve(). Same chunks, same
+  prompt, same model, same bisection, same final stitch. The
+  callback is invoked AFTER `out_blocks_by_index[idx] =
+  srt.parse_blocks(response); completed += 1` -- it only OBSERVES
+  the existing translation pipeline. The canonical Hebrew bytes
+  saved via `cache.save_text(translated, final)` at the end are
+  byte-identical to v0.2.48 for the same source SRT. Only the
+  timing of delivery differs.
+- Edge cases handled: if the user stops playback / picks a
+  different subtitle / reopens the dialog mid-translation, the
+  `ai_subs.live_translate_active` Window(10000) property is
+  cleared (or never set) so chunk_ready stops calling
+  setSubtitles and stops writing .vN files. The translation
+  itself still runs to completion (and lands in the canonical
+  cache) so the NEXT pick of that same source shows `[CACHE]`
+  and resolves instantly.
+- Abort path: a partial Hebrew translation never lands in the
+  canonical cache. The .vN files are left on disk for the
+  existing TTL prune to clean up.
+- Also wired into the native subtitle picker -- click an AI
+  entry there and you get the same fast experience.
+- English-source only. The fast path briefly shows the SOURCE SRT
+  to the user (until Hebrew chunks land) -- that's fine for
+  English (broadly readable in our user base) but disorienting
+  for Spanish / Portuguese / German / French sources where the
+  user can't read the placeholder text. For non-English sources
+  the addon transparently falls through to the legacy slow path
+  (1-3 min wait, Hebrew only). DarkSubs path detects via
+  language_detect.detect() on the source bytes (the AI payload
+  hardcodes source_lang='en' for prompt-robustness, so we can't
+  trust the label here); native-picker path uses the configured
+  source_lang in the link payload directly.
+
+v0.2.48
+- Fix cache collision: every distinct source SRT for the same
+  movie/episode/source-language now gets its OWN cache slot.
+  User report: "אם לחצתי על כתוביות מסוימות וזה תרגם עם ai ואז
+  אני מנסה כתוביות אחרות לתרגם עם ai (שלא נמצאות עכשיו בcache)
+  זה כותב לי שיש כבר כתוביות בcache". Root cause: cache._key()
+  only mixed `source_id` into the digest when imdb_id was MISSING,
+  so two different SRTs for the same movie collided on one cache
+  filename and the second click was served the first SRT's
+  translation. Now source_id is ALWAYS part of the digest.
+- Cache hits are surfaced in the subtitle picker list: any AI
+  entry whose translation is already cached is sorted to the top
+  of the AI section (just under Hebrew passthrough, if any) AND
+  labeled with `[CACHE]` so the user can spot the instant pick
+  at a glance.
+- Two-tier cache strategy:
+   * Early lookup uses the input source identity (Wyzie URL or
+     sha1 of local file content). Same key the [CACHE] marker in
+     the list uses, so a list-time `[CACHE]` mark is honoured by
+     resolve() without any redundant work.
+   * After the SRT is in memory we ALSO check (and store at) a
+     content-hash slot, catching the rare case where two
+     different Wyzie URLs / local paths point to byte-identical
+     SRTs (so the same translation answers both).
+- Notification wording unified: "AI: כתוביות מ-cache (תרגום קודם)"
+  for an early-source-id hit, "AI: כתוביות מ-cache (זהה לתרגום
+  קיים)" for the content-hash hit.
+- Cache TTL stays at 180 days (default unchanged). The eviction
+  pass refreshes atime+mtime on every read AND every cache hit
+  in resolve(), so a file that gets used regularly never ages
+  out -- only genuinely abandoned translations get pruned.
+
+v0.2.47
+- Fix: shortened every long notification so it fits on one
+  screen without scrolling at all. Kodi only scrolls text past
+  ~50 visible chars; staying under that ceiling sidesteps the
+  scroll-direction problem entirely.
+- Three messages cropped:
+    * Kickoff: 118 -> 44 chars. "AI מתרגם (כדקה-שתיים). תתעלם
+      משגיאות ביניים." -- dropped the obsolete "התקדמות תופיע
+      בפינה" line (replaced by 25/50/75 % milestone toasts in
+      0.2.45) and the verbose "Kodi might show download failed"
+      explanation (kept just the "תתעלם משגיאות" bottom line).
+    * Cache hit (by IMDB): 70 -> 30 chars. "AI: תרגום מ-cache
+      (כבר תורגם)". Dropped the "click Clear Cache in settings"
+      pointer; that's documented in settings UI anyway.
+    * Cache hit (by content hash): 83 -> 32 chars. Same
+      treatment: "AI: תרגום מ-cache (זהה לסרט אחר)".
+    * Missing source: 67 -> 30 chars. "מקור הכתוביות לא נמצא
+      — בחר שוב".
+- The RLE/PDF wrap from 0.2.46 stays in place. Combined: short
+  text + forced RTL paragraph direction = the toast both
+  RENDERS in correct Hebrew order AND doesn't scroll at all.
+- Other toasts (Wyzie download fail, save fail, end-of-job
+  success, milestone toasts, etc.) were already under 50 chars
+  and unchanged.
+
+v0.2.46
+- Fix Hebrew toast notifications reading left-to-right (visually
+  reversed for Hebrew readers). User report: "ההודעה של התוסף
+  שקופץ במסך בזמן תרגום, הפוך. הוא מקריא מהסוף להתחלה (משמאל
+  לימין)."
+- Previous attempt used U+200F (RIGHT-TO-LEFT MARK) as a prefix.
+  RLM is just a strong-RTL invisible character that BIASES the
+  BiDi algorithm's first-strong heuristic but doesn't OVERRIDE
+  the paragraph direction. When messages like "AI: 25% תורגם
+  (5/20 chunks)" have more LTR character weight than RTL, RLM
+  loses to first-strong from "AI:" and Kodi renders the toast
+  left-to-right -- which to a Hebrew reader looks reversed.
+- Switched to U+202B (RIGHT-TO-LEFT EMBEDDING) + U+202C (POP
+  DIRECTIONAL FORMATTING) wrap. RLE/PDF is the proper Unicode
+  mechanism to FORCE a paragraph's base direction to RTL while
+  still letting embedded Latin/digit runs ("AI: 25%", "(5/20
+  chunks)") read left-to-right within the RTL paragraph. The
+  whole toast now scrolls and aligns from the right as a Hebrew
+  reader expects, with Latin segments rendered in their natural
+  LTR order inside the RTL frame.
+- notify() also strips any existing BiDi-marker prefix from old
+  messages before wrapping, so we don't end up double-wrapped
+  if a caller (or a future re-call) re-passes an already-RTL'd
+  string.
+
+v0.2.45
+- Reverted the custom WindowDialog progress overlay entirely. The
+  v0.2.42-0.2.44 attempts kept breaking in successive ways:
+    * v0.2.42 -- WindowDialog.show() rendered BEHIND DarkSubs's
+      pyxbmct MySubs picker (z-order issue, invisible to user)
+    * v0.2.42 doModal() -- finally rendered on top, but ...
+    * v0.2.43 -- the card came up as a solid BLACK BOX because
+      dark_bg.png * dark colorDiffuse = unreadable
+    * v0.2.43 white_pixel.png fix -- card looked right, but ...
+    * v0.2.44 -- percent / chunks labels never updated, stuck at
+      "0% / מתחיל תרגום..." while translation proceeded silently
+      in the background. Cross-thread xbmcgui control updates
+      apparently don't land reliably even via Window properties
+      and $INFO[] binding on this Kodi configuration.
+- Stripped the _AITranslateProgressWindow class, the
+  _resolve_with_progress_window helper, the doModal+worker
+  architecture, the heartbeat ticker, and the white_pixel.png
+  asset. _handle_download and _handle_translate_file now use the
+  simple inline DialogProgressBG (bottom-right banner) + 25/50/75 %
+  milestone toast notifications -- the exact pattern from v0.2.41
+  that the user confirmed worked in their first screenshot.
+- Toasts always layer above any window (DarkSubs MySubs, video OSD,
+  Kodi standard dialogs). The user sees:
+    - The existing "AI: מתחיל תרגום..." kickoff toast
+    - DialogProgressBG bottom-right banner when no full-screen
+      window covers it
+    - 25/50/75 % milestone toasts -- guaranteed visible regardless
+    - The existing "AI: תרגום הסתיים בהצלחה" completion toast
+
+v0.2.44
+- v0.2.43 finally rendered the modal correctly (white_pixel.png as
+  the colorDiffuse base fixed the all-black box). User screenshot
+  confirmed: the card LOOKS right -- yellow title, navy panel,
+  branded subtitle, status text. But the percent number stayed at
+  "0%" and the status at "מתחיל תרגום..." for 3 minutes while
+  translation actually progressed in the background. The labels
+  were never updating.
+
+- Root cause: xbmcgui control updates (setLabel, setPercent) called
+  from a non-UI thread don't reliably land on screen. The doModal()
+  architecture in v0.2.42 moved translate.resolve into a daemon
+  worker thread; that thread's calls to window.update_progress()
+  hit the controls but Kodi's UI thread, busy rendering doModal,
+  apparently didn't pick the changes up.
+
+- Fix: switch to Kodi's canonical cross-thread UI pattern --
+  Window(10000) properties + $INFO[] binding in the label text.
+  setProperty is documented thread-safe; the UI thread re-reads
+  $INFO[Window(10000).Property(...)] on every render tick so
+  updates land within ~50 ms regardless of which thread wrote them.
+
+  Properties used:
+    ai_subs.progress_pct        -- current %
+    ai_subs.progress_chunks     -- "chunk X / Y" or status text
+    ai_subs.progress_heartbeat  -- "מתרגם... Ns" elapsed-seconds ticker
+
+  Labels in the modal now contain literal $INFO[...] markers that
+  Kodi auto-expands; update_progress() and update_heartbeat()
+  just call setProperty.
+
+- NEW heartbeat ticker thread updates `progress_heartbeat` every
+  second with the elapsed-seconds count + an animated dots glyph
+  ("מתרגם... 12ש"). Critical for the Gemini-overload-retry case:
+  the first chunk can take up to 230 s before completing if Google
+  is rate-limiting (5 backoff steps of up to 120 s each). With the
+  heartbeat, the user sees the elapsed counter advancing the whole
+  time -- the modal feels alive, not frozen.
+
+- Dropped the visible ControlProgress bar in this revision. It
+  can't bind to a Window property the way ControlLabel can, so it
+  would still need cross-thread setPercent() calls. The big
+  percent number + chunk text + heartbeat counter convey the same
+  information and DO auto-update correctly.
+
+v0.2.43
+- v0.2.42's doModal() switch fixed z-order -- the progress overlay
+  finally renders on top of DarkSubs's MySubs picker. But a new
+  screenshot revealed it renders as a SOLID BLACK BOX: title,
+  percent, chunks counter, all invisible. The card looks broken
+  rather than busy.
+
+- Root cause: ControlImage uses colorDiffuse as a MULTIPLIER on
+  the base texture. The previous code used dark_bg.png (already
+  dark) as both backdrop and card, then multiplied by more dark
+  colors (DD000000, F0172635). Dark * dark = black. The yellow
+  title, the percent number, the chunk counter were all there but
+  invisible against the unintentionally-black card.
+
+- Fix: ship a 16x16 fully-opaque WHITE pixel PNG
+  (resources/lib/icons/white_pixel.png, 79 bytes) and use it as
+  the base texture for every colorDiffuse fill in the modal.
+  White * navy = navy. White * yellow stripe = yellow. Colors
+  finally come through.
+
+- Bonus polish while we were already in the file:
+  * Card widened 800 -> 900, repositioned to better center.
+  * Added a soft shadow (4px offset, semi-opaque black) behind
+    the card for depth.
+  * Top accent stripe (yellow, 6px tall) marks the title area.
+  * Title moved to textColor on the ControlLabel (instead of a
+    [COLOR=...] BBCode wrap inside the label string), same for
+    all other text controls. Cleaner; same render.
+  * Progress bar widened 600 -> 640 and made taller (26 -> 32 px)
+    for TV-viewing-distance visibility.
+  * "Back תסגור את החלון; התרגום ממשיך ברקע" copy at the bottom
+    now explicit about the early-dismiss behaviour added in v0.2.42.
+
+v0.2.42
+- v0.2.41 introduced _AITranslateProgressWindow but a user screenshot
+  confirmed it STILL doesn't show on top of DarkSubs's MySubs picker.
+  The previous WindowDialog.show() approach left our window as a
+  non-modal child window -- pyxbmct's AddonDialogWindow is itself
+  modal and captures z-order, so our overlay rendered BEHIND it
+  (invisible to the user).
+
+- Switched the progress overlay from `show()` to `doModal()` +
+  worker-thread translation. doModal() forces the window above
+  every other window unconditionally because it IS modal. The
+  trade-off: doModal blocks the calling thread, so translate.resolve
+  now runs in a daemon thread; when it finishes, the worker calls
+  window.close() which un-blocks doModal and lets the helper return
+  the translated path.
+
+- User can dismiss the modal early via Back / Esc -- new onAction
+  override on _AITranslateProgressWindow catches the two
+  Kodi action codes (10 and 92) and calls self.close(). Translation
+  continues in the background thread even after the user dismisses
+  the modal; the final SRT is still written to disk so DarkSubs
+  picks it up via its normal trans_file path. Early-dismiss costs
+  only the visual, not the translation.
+
+- worker.join() has a 10-minute cap (covers the worst-case Gemini
+  retry chain: 5 backoff steps of up to 120s each). If translation
+  somehow takes longer than that, we return None and the user falls
+  through to DarkSubs's standard behaviour for an empty trans_file
+  -- same as if our hook had timed out.
+
+- The 25 / 50 / 75 % toast milestones remain in place as a backup,
+  primarily for the early-dismiss case (modal closed, translation
+  still running, toasts surface the ongoing progress).
+
+v0.2.41
+- v0.2.40 added DialogProgressBG to the DarkSubs-triggered path, but
+  a user screenshot confirmed the dialog isn't visible in practice:
+  DarkSubs's MySubs picker is a full-screen pyxbmct AddonDialogWindow
+  that completely covers the bottom-right corner where
+  DialogProgressBG normally appears. The dialog was being updated but
+  hidden behind the picker -- user saw the start toast and then
+  silence until translation finished.
+
+- Both _handle_download (direct AI Subs path) and
+  _handle_translate_file (DarkSubs hook path) now route through a
+  shared `_resolve_with_progress_window(link, info)` helper that
+  creates the overlay, wires the progress callback, and closes
+  the overlay in `finally`. Identical visual UX regardless of
+  which entry point triggered the translation.
+
+- The existing start toast ("AI: מתחיל תרגום...") and end toast
+  ("AI: תרגום הסתיים בהצלחה") in translate.resolve are unchanged.
+
+v0.2.40
+- User report: didn't see ANY progress feedback when DarkSubs picks
+  a subtitle and the AI translation runs. AI works (translated SRT
+  appears) but during the 30-90s wait there's nothing on screen and
+  the user can't tell if the hook even fired.
+- Root cause: `_handle_download` (when the user picks our AI Subs
+  service directly) creates a DialogProgressBG and passes its
+  updater as `progress_cb` to `translate.resolve`. But
+  `_handle_translate_file` (the entry point DarkSubs's hook
+  RunScripts into) called `translate.resolve(link, info)` with NO
+  progress_cb, so no UI update path existed. Translation ran
+  silently end-to-end.
+- Fix: `_handle_translate_file` now creates its own
+  DialogProgressBG ("Kodi POV IL - AI Subtitles") and passes a
+  matching `report` callback to `translate.resolve`. The
+  background progress bar at the bottom-right of Kodi now ticks
+  through "מתרגם chunk X/Y..." for the DarkSubs path too. Closes
+  cleanly on completion, error, or crash via a finally block;
+  if DialogProgressBG creation itself fails, translation
+  proceeds silently (no regression vs. v0.2.39 behaviour).
+- The existing initial "AI: מתחיל תרגום..." toast and the final
+  "AI: תרגום הסתיים בהצלחה" toast are both already in place from
+  earlier versions -- this PR is purely about the missing
+  MID-translation progress feedback.
+
+v0.2.39
+- AI translation is now the DEFAULT whenever a Gemini API key is
+  set -- no second toggle to find. Users had been hitting the
+  "two-toggle confusion": one toggle in DarkSubs ("Enable machine
+  translation"), one in our addon ("Translate via AI even when
+  DarkSubs auto_translate is OFF"). If the second wasn't on, the
+  hook never fired for users who deliberately keep DarkSubs's
+  auto_translate off, and they wondered why they got Google
+  output sometimes.
+
+- Two changes that together fix the default:
+  * settings.xml ships `force_ai_when_auto_translate_off=true`
+    by default for new installs.
+  * dark_subs_integration auto-flips the toggle ON for existing
+    users (one-shot, marker-gated as _force_ai_autoenable_done).
+    Users who explicitly turn the toggle OFF later are respected:
+    the migration marker stays set, we never re-flip.
+
+- DarkSubs settings.xml is also rebranded to make clear the whole
+  "machine translation" section runs via Gemini AI when a key is
+  connected -- prior versions only relabelled the toggle, leaving
+  the section heading "תרגום מכונה" and the source dropdown "מקור
+  תרגום: Google Translate" looking like Google was still in
+  charge. Three label rewrites now applied (each independent,
+  idempotent, surgical):
+  * Section heading -> "תרגום מכונה — דרך Gemini AI (POV IL)
+    כשמפתח מחובר"
+  * Toggle -> "(Gemini AI)" suffix (unchanged from v0.2.x)
+  * Source dropdown -> "מקור fallback (לא בשימוש כש-Gemini AI
+    מחובר)"
+  The dropdown VALUES (Google Translate | Bing Web | Yandex) are
+  left untouched -- those describe the true fallback path that
+  runs when no AI key is configured, so they remain honest.
+
+v0.2.38
+- Four targeted improvements to Hebrew gender (זכר/נקבה) accuracy
+  in AI translation. Today the gender form is right ~90% of the
+  time; the remaining 10% mostly traces to four specific failure
+  modes that these changes address. No behavioural change for any
+  non-Hebrew code path.
+
+- (a) Cross-chunk context carry-over: we translate in parallel
+  chunks (default 250 entries each). Until now, each chunk was
+  translated INDEPENDENTLY: the AI saw the cast block but no
+  recent conversational thread, so a character finishing a line
+  at the end of chunk N would sometimes get a different gender
+  the moment they spoke at the start of chunk N+1. We now feed
+  the last 5 SOURCE-text lines of chunk N-1 into chunk N's
+  prompt as a "PREVIOUS DIALOGUE CONTEXT" section -- AI sees the
+  thread, picks up the gender consistently. The previous chunk's
+  source is precomputed up-front (deterministic per index) so
+  parallel dispatch still works -- no inter-chunk dependency.
+  Tunable via the `prev_context_lines` setting (default 5;
+  0 disables the feature).
+
+- (b) Speaker-prefix hints: SRT entries that start with an
+  ALL-CAPS speaker tag like "MABEL:" or "DR. SMITH:" used to be
+  dropped on instruction ("do NOT include speaker prefixes in
+  the Hebrew"). The prompt now tells the AI to MATCH the prefix
+  name against the cast block, use that person's gender for
+  first-person forms in the line, then drop only the prefix
+  from the output. Speaker prefixes are common in SDH /
+  Telegram SRTs and were previously thrown away even though
+  they're the strongest gender signal we ever get.
+
+- (c) Reply heuristic: in two-character dialogues, short
+  follow-up lines ("Right.", "No way.", "You sure?", "I told
+  you.") are almost always REPLIES from the OTHER speaker.
+  New explicit prompt rule: "speakers alternate unless context
+  says otherwise; apply alternation before falling back to a
+  gender guess." Catches the most common single-line gender
+  flip in dialogue.
+
+- (d) Cast list widened from top-12 to top-25 (`tmdb_helper`
+  default). Minor characters (waiters, partners, one-scene
+  parents) whose gender mattered for the line they spoke were
+  often outside the top-12 cut and defaulted to the AI's
+  best guess. Existing cached cast lookups with fewer than
+  20 entries are treated as cache misses and re-fetched on
+  next translation, so users with prior watches get the
+  expanded list automatically without manual cache clear.
+
+v0.2.37
+- User report: Android phone says "address not found" when opening
+  the pair URL, even though the phone is on the same WiFi as Kodi
+  and the user typed the URL with the port. Multiple Android devices
+  fail the same way; the user's iPhone on the same network works.
+  Not an HTTPS-cleartext issue (we'd see a different error) -- the
+  phone genuinely can't reach the IP we displayed.
+
+- Root cause: `get_lan_ip()` only ever returned ONE IP -- whichever
+  the default route happened to bind to. On any device with multiple
+  network interfaces (Android TV with WiFi + Ethernet, laptop with
+  WiFi + VPN, PC with Docker bridge active) that single IP can be
+  on a subnet the user's phone is NOT on. Phone tries to reach it,
+  fails silently, user blames the addon.
+
+- `gemini_pair` now enumerates ALL plausible LAN IPv4 addresses:
+  * The 8.8.8.8-probe trick (default-route interface)
+  * `ip -4 addr` / `ifconfig` via subprocess (works on Android,
+    Linux, BSD -- catches non-default-route interfaces)
+  * Per-private-range probes (sometimes routing tables bind
+    different ranges to different NICs)
+  * Hostname lookup as final fallback
+  All results are filtered through `_is_private_lan_ip()` (RFC 1918
+  + 100.64/10 CGNAT, excluding 127.x and 169.254.x) so VPN
+  tunnel IPs etc. don't pollute the list.
+
+- The pair dialog now renders every detected LAN URL. With two or
+  more interfaces, the text says "מטלפון אחר ב-WiFi (נסה כל אחת עד
+  שאחת תיפתח):" and lists them as bullets so the user can try each.
+
+- Better Gemini error surfacing: when Google returns 400/403,
+  `gemini.test_key()` now parses the JSON `error.message` (e.g.
+  "API key not valid. Please pass a valid API key.") and includes
+  it in the user-facing dialog. Previously the user only saw
+  "Key rejected by Gemini (400)" with no clue WHY -- typo'd vs
+  revoked vs quota vs project-not-enabled all looked identical.
+
+- Pair dialog text now includes explicit troubleshooting for the
+  two known phone-side failure modes:
+  * Chrome on Android refusing HTTP: pointer to "Always use secure
+    connections" toggle + Firefox/Brave alternatives.
+  * iPhone 400 from Gemini after paste: compare the fingerprint
+    against AI Studio's key, regenerate if it matches.
+
+- Pair confirmation fingerprint widened from first-4/last-4 to
+  first-8/last-8 chars (still hides the middle 23 of a 39-char
+  Gemini key for shoulder-surf safety). Easier eyeball-compare
+  against the AI Studio source.
+
+v0.2.36
+- Fix (a): iOS Smart Punctuation replaces ASCII hyphen-minus
+  (U+002D) with em-dash (U+2014) for `--` and en-dash (U+2013) for
+  a lone `-`. NFKC does NOT collapse these back to ASCII -- they're
+  distinct Unicode codepoints. v0.2.34's allow-list regex stripped
+  them entirely, so an iPhone-pasted `AIza...XYZ-ABC` arrived at
+  our server as `AIza...XYZABC`, two characters short, and Google
+  rejected the truncated string with 400.
+  `_sanitize_key()` now coerces every dash-shaped Unicode codepoint
+  back to ASCII `-` BEFORE the allow-list runs. Covers 11 variants:
+  em-dash, en-dash, minus sign, unicode hyphen, non-breaking
+  hyphen, figure dash, horizontal bar, hyphen bullet, full-width
+  hyphen-minus, and the small-form variants. Verified against an
+  end-to-end PairServer POST with em-dash corruption.
+
+v0.2.35
+- Make the port number in the Gemini pair-from-phone URL visually
+  unmissable so users can manually type the right URL even when
+  their phone's QR scanner truncates the displayed result.
+- Background: I verified end-to-end that our QR API call already
+  encodes the full URL including the port (decoded the actual
+  generated QR with pyzbar) -- so the QR itself is correct. But
+  Android OEM camera apps (Samsung Bixby Vision, Xiaomi MIUI
+  scanner, etc.) sometimes display the URL truncated at the colon,
+  so users see "http://10.0.0.5" and type that into their browser,
+  missing the ":8765" suffix that we actually need them to use.
+- The text below the QR now:
+  * Renders the `:port` portion in bright yellow (#ffd166), the
+    same accent colour as the page title -- visually impossible to
+    miss.
+  * Increases the body font from font13 to font14 and widens the
+    text region so it doesn't wrap awkwardly.
+  * The "or open one of the URLs in a browser" header is now bold
+    red (#bf7f7f) and explicitly says "חובה כולל החלק הצהוב — הפורט"
+    ("must include the yellow part — the port") so users who type
+    the URL manually after a truncated scan know exactly which
+    piece they're missing.
+
+v0.2.34
+- Fix the Gemini pair form returning a 400 from Google's API on
+  every iPhone Safari paste. Symptom: pair-from-phone flow works
+  perfectly on Android, Mac, Windows -- but iOS users always see
+  "ה-key נדחה ע"י Gemini" right after the page accepts their key.
+  The form HTML had autocomplete/autocapitalize/spellcheck off but
+  was missing the iOS-only `autocorrect="off"` attribute. Without
+  it, Safari quietly mutates the pasted string -- smart quotes
+  around it, non-breaking spaces inserted mid-key, zero-width
+  marks from text direction inference -- and Google's API
+  rejects the corrupted result.
+- Three layers of fix:
+  * gemini_pair.py form: adds `autocorrect="off"` and
+    `inputmode="verbatim"` to the API-key input. These together
+    disable Safari's pasted-text rewrites and the iOS keyboard's
+    word-suggestion bar.
+  * gemini_pair.py server: new `_sanitize_key()` runs NFKC unicode
+    normalisation then keeps only the ASCII alphanumeric +
+    dash/underscore charset Gemini keys actually use. Strips out
+    NBSP, ZWSP, BOM, RTL/LTR marks, smart quotes, full-width
+    characters -- every byte iOS has been observed to insert.
+    Sanitised against 11 known iOS-corruption patterns
+    end-to-end.
+  * The "key sent" confirmation page now echoes a fingerprint
+    (first 4 chars … last 4 chars (length)) so the iPhone user can
+    eyeball-compare against the key they copied from AI Studio.
+    If sanitisation dropped the wrong thing or Safari mangled the
+    inner characters somehow, the fingerprint mismatch makes it
+    obvious -- no need to wait for the Gemini API call to fail.
+
+v0.2.33
+- A CoreELEC user reported: passes the diagnostic but AI still
+  doesn't translate his manual subtitle picks. Reason: he keeps
+  DarkSubs's auto_translate setting OFF (so DarkSubs doesn't auto-
+  translate with Google) and expected AI to take over instead.
+  But the hook lives inside machine_translate_subs, which DarkSubs
+  only calls when auto_translate=true. With auto_translate=false
+  the hook never fires -- English subs go straight to the screen.
+
+- Two complementary changes resolve this without breaking users
+  who deliberately want subs in the source language (e.g. language
+  learners watching English-with-English-subs):
+
+  * Hook bumped to v3. When AI is configured (api_key set), the
+    hook NO LONGER falls back to Google on AI timeout/crash/empty
+    output. Instead, on any AI failure it copies the original
+    English subtitle to the output path and short-circuits -- the
+    user sees the English subs on screen instead of being silently
+    "rescued" by Google Translate. Google fallback is preserved
+    ONLY when no AI key is configured (so non-AI users behave
+    identically to upstream DarkSubs).
+
+  * New patcher (darksubs_download_sub_patcher) widens the elif in
+    download_sub so it ALSO fires when the user has explicitly
+    opted in via a new toggle. The toggle lives in our addon
+    settings:
+        "Translate via AI even when DarkSubs auto_translate is OFF"
+        (id: force_ai_when_auto_translate_off, default: false)
+    With this on, picking a non-Hebrew subtitle while
+    auto_translate=false routes through machine_translate_subs (and
+    thus through our hook). With it off (default), behaviour is
+    identical to upstream DarkSubs for users who deliberately keep
+    auto_translate off.
+
+- Bug fix: the existing hook patcher silently rewrote DarkSubs's
+  engine.py from CRLF to LF on every Kodi startup. Text-mode read
+  with universal newlines + text-mode write with default newline=
+  was doing the conversion. Hook patcher now uses BINARY read/write
+  end-to-end, preserves original line endings, and detects the EOL
+  style of the source file when writing the injected hook body.
+
+- Diagnostic checklist now has 10 rows. New rows:
+  * "פאצ' download_sub פעיל" -- whether the elif rewrite is on disk.
+  * "הוק AI יפעל על כתוביות לא-עבריות" -- the TRUTHFUL "does this
+    setup actually translate anything?" check. Considers
+    auto_translate + force_ai toggle + download_sub marker to give
+    a concrete yes/no plus an explanation of which lever to flip
+    if the user wants different behaviour.
+
+v0.2.32
+- 0.2.31's diagnostic surfaced a real failure mode: a CoreELEC user
+  reported all 8 checks green BUT the hook still doesn't fire --
+  picking an English subtitle in DarkSubs with auto_translate ON
+  still routes through Google Translate, never reaches our AI.
+  Root cause boils down to one of:
+
+  * Python bytecode cache (.pyc): DarkSubs declares
+    <reuselanguageinvoker>true</...> so its interpreter caches the
+    OLD engine.py bytecode -- even though we wrote a new engine.py
+    to disk, the running process keeps executing pre-patch code.
+  * Silent fall-through inside the hook (key check returns empty
+    inside DarkSubs's process, RunScript times out, hook crashes).
+
+  Both look identical from the user's side: AI subs settings show
+  the key is set, the file on disk has the marker, but Google
+  Translate text appears anyway.
+
+- Three fixes in 0.2.32:
+
+  1. Patcher now invalidates engine's __pycache__ on every successful
+     write. Wipes engine.cpython-*.pyc so Python is forced to
+     re-compile from the new .py the next time DarkSubs imports it.
+     Without this, reuselanguageinvoker + an existing stale .pyc
+     means the patch lives on disk but never reaches RAM.
+
+  2. Hook v2 (HOOK_VERSION = 2) is loud. Every fire writes:
+       * Window(10000).Property('ai_subs.hook_last_fire')  = timestamp
+       * Window(10000).Property('ai_subs.hook_last_key_len') = key len
+       * Window(10000).Property('ai_subs.hook_last_outcome') =
+         ok | timeout | no_key | crash:<msg>
+     Plus xbmc.log lines at each branch and a visible Kodi
+     Notification toast whenever the hook fires but falls back
+     (timeout / no key / crash) -- so the user SEES why instead of
+     just getting Google Translate output silently. Marker bumped
+     to v2; v1 → v2 migration handled by the existing OLD_MARKERS
+     mechanism (the patcher strips v1 block before injecting v2).
+
+  3. Diagnostic checklist gained a 9th row: "הוק AI ירה בפועל
+     מ-DarkSubs". Reads the heartbeat Window property and reports
+     when the hook last fired and what the outcome was. If row 4
+     (marker in engine.py) is ✓ but row 9 (heartbeat) is ✗, that's
+     the smoking gun for the .pyc caching issue -- the patch is on
+     disk but the hook never executed in DarkSubs's process.
+
+v0.2.31
+- Add visible diagnostics for the DarkSubs hook integration. CoreELEC
+  reports surfaced that the hook can silently fail to inject (engine.py
+  not writable, signature mismatch from an upstream DarkSubs update,
+  etc.) and the user has no signal -- they see Google Translate output
+  and assume "AI subs not working" with no idea why. Two new entry
+  points fix that:
+
+  * Automatic startup toast: surface_status_if_problem() runs once per
+    Kodi launch from service.py. If the integration has an actionable
+    problem (engine missing/unreadable, signature changed, read-only
+    filesystem, no API key, auto_translate off), pops a Hebrew toast
+    explaining the specific failure class. Only once per failure-class
+    + nag-version, so it doesn't spam on every boot.
+
+  * Manual "Test DarkSubs integration" button: new entry in the
+    addon's settings (under the Gemini API category, next to "Test
+    connection"). Triggers RunScript -> default.py action
+    `darksubs_status` -> a textviewer dialog with an 8-point
+    checklist (DarkSubs installed, engine.py reachable/readable,
+    hook marker present, signature matches, file writable, API key
+    set, auto_translate on). Each line is green-✓ or red-✗ with a
+    one-line explanation, so when a user reports "AI subs not
+    working" we get an exact failure mode instead of guessing.
+
+- Why this matters more than any silent fix: the previous releases
+  added several patchers without any way for the user to verify the
+  end-to-end chain. When ONE link silently broke (read-only fs on
+  CoreELEC, an upstream signature change in DarkSubs, etc.), the
+  whole feature silently regressed. From 0.2.31 forward, any such
+  break is immediately visible.
+
+v0.2.29
+- v2 of pov_source_name_patcher now also writes
+  `subs.player_filename` (the property DarkSubs natively reads into
+  Tagline_From_Fen, intended for FEN-family scrapers to expose the
+  picked release name). Setting it gives DarkSubs:
+    * the real release name in the dialog HEADER (no more UUID)
+    * the same name fed to the Tagline percentage branch, which
+      engine.py:197 takes the max of with the file_original_path
+      branch -- so matches climb from 30-50% to 70-95% routinely
+- v2 of darksubs_filename_fallback_patcher clears
+  `subs.player_filename` (plus pov_picked_source_name/url) when the
+  URL guard fails. Prevents a stale property from a previous POV
+  play leaking into a later non-POV play (e.g. the next time the
+  user plays a video from a different addon).
+- Migration: both patchers detect the v0.2.28 injection state on
+  disk, revert it back to the original, then apply the v2 form.
+  Idempotent across reboots; safe to re-apply.
+
+v0.2.28
+- Self-healing: both patchers re-apply on every Kodi startup. If
+  POV or DarkSubs upstream restructures the patched function in a
+  way our pattern doesn't match, we skip with a log warning -- the
+  affected playback path goes back to its pre-patch behaviour but
+  nothing else breaks.
+
+v0.2.27
+- Gemini "Pair from phone" flow now shows an actual scannable QR
+  image instead of printing the qrserver.com URL as text. The
+  previous DialogProgress-based UI only had a text body, so the
+  QR URL was useless to anyone who wasn't going to manually
+  type a 80-char qrserver.com URL into a browser.
+- Replaced the DialogProgress with a custom WindowDialog
+  (_PairWindow in default.py) that programmatically lays out:
+    1. Title bar at the top
+    2. Real 380x380 QR image (fetched from qrserver.com on
+       first display, Kodi caches the PNG)
+    3. The two URLs as text below the QR for fallback (the
+       user can type them manually if their phone camera
+       doesn't pick up the QR)
+    4. A live countdown + Back-to-cancel hint
+  Same poll loop semantics as before: 5 minute deadline, polled
+  every 500ms, closes on key arrival or user cancel.
+- Tiny `dark_bg.png` bundled in resources/lib/icons/ as the
+  semi-opaque overlay background. 78 bytes.
+- The QR encodes ps.url_lan when available (accessible both
+  from other phones on the same WiFi AND from the local
+  device's own browser since the pair server binds 0.0.0.0)
+  or falls back to ps.url_local when LAN detection failed.
+
+v0.2.25
+- Smooth out the DarkSubs <-> AI integration so users don't have
+  to know that DarkSubs's "Enable machine translation" toggle is
+  the on/off switch for the AI hook. Three changes, all inside
+  dark_subs_integration.py and run from
+  service.py's _maybe_patch_darksubs() startup hook:
+
+  (1) Auto-enable DarkSubs's auto_translate on first run.
+      When the user has a Gemini key but the toggle is currently
+      off, the patcher flips it to true exactly once and remembers
+      having done so (marker `_darksubs_autoenable_done` in our
+      addon's settings). After that we respect any subsequent
+      explicit user choice -- if they later turn it off, we
+      don't fight them. Skipped entirely when no Gemini key is
+      set (we don't want to wake up Google Translate fallback
+      for users who haven't opted in to AI).
+
+  (2) Relabel the toggle so the AI hook is visible in DarkSubs's
+      own settings UI. Patches resources/settings.xml: the
+      shipped baseline
+          label="הפעל תרגום מכונה"
+      becomes
+          label="הפעל תרגום מכונה (Gemini AI)"
+      Surgical: only replaces the exact baseline string, so any
+      user/upstream edit is left alone. Idempotent via a marker
+      substring in the new label. Self-healing across DarkSubs
+      updates (if upstream rewrites settings.xml, we re-apply
+      on the next Kodi startup).
+
+  (3) One-time toast on the auto-enable. Shows "תרגום AI הופעל
+      ב-DarkSubs" so the user knows what changed without
+      having to dig into DarkSubs's settings.
+
+  None of this changes the actual translation flow -- the
+  existing engine.py hook from v0.2.x still intercepts the
+  call before DarkSubs would fall through to Google Translate.
+  These changes just make the integration self-configuring
+  instead of requiring the user to know to flip a toggle.
+
+v0.2.24
+- Personal-area widget header now spells out the recommended
+  workflow explicitly. Previously the subtitle said only
+  "connect TMDB + Trakt" -- which left newer users wondering
+  what to do after connecting. The new subtitle says to ADD
+  items in TMDB / Trakt before falling back to POV-local:
+      איזור אישי
+      · מומלץ להוסיף ב-TMDB + Trakt לפני POV-מקומי
+- fentastic_widget_patcher pattern extended to recognise three
+  earlier states (A: original "(חובה...)", B: v0.2.18+ plain
+  "איזור אישי", C: v0.2.20+ with "מומלץ לחבר TMDB + Trakt")
+  and migrate any of them to the new D state. NEW_TOKEN bumped
+  to 'לפני POV-מקומי' so idempotency check keys off the v0.2.24
+  text. Sandbox tested with all three legacy headers; each
+  migrates cleanly and re-runs as 'unchanged'.
+
+v0.2.23
+- Context menu on movies / tvshows / episodes: each list-manager
+  entry is now shown independently based on whether its service
+  is connected. Previously TMDB and Trakt were mutually exclusive
+  (Trakt hidden when TMDB connected). Now a user with all four
+  services connected (TMDB + Trakt + MDBList + POV-local) sees
+  four "Manager" entries in the context menu, one per service.
+  Users with only the services they care about see exactly those.
+- All context-menu labels translated to Hebrew (service names
+  TRAKT / TMDB / MDBLIST / POV stay in English -- they're brand
+  names). Changes apply to movies.py, tvshows.py, episodes.py
+  in the pov_overrides bundle:
+    [B]Options...[/B]                 -> [B]אפשרויות...[/B]
+    [B]Extras...[/B]                  -> [B]אקסטרות...[/B]
+    [B]Mark Watched %s[/B]            -> [B]סמן כנצפה (%s)[/B]
+    [B]Mark Unwatched %s[/B]          -> [B]סמן כלא נצפה (%s)[/B]
+    [B]TMDB Lists Manager[/B]         -> [B]ניהול רשימות (TMDB)[/B]
+    [B]Trakt Lists Manager[/B]        -> [B]ניהול רשימות (Trakt)[/B]
+    [B]MDBList Manager[/B]            -> [B]ניהול רשימות (MDBList)[/B]
+    [B]Favorites Manager[/B]          -> [B]ניהול מועדפים (POV)[/B]
+
+v0.2.22
+- pov_navigator_patcher migration table extended:
+    V1 = baseline (Continue + Trakt)
+    V2 = v0.2.18+ (Continue + TMDB + Trakt)
+    V3 = target (Continue + TMDB + Trakt + POV)
+  Rows in either V1 or V2 are rewritten to V3 directly. V3
+  passes through unchanged. Anything else is treated as user
+  customization and left alone.
+
+v0.2.20
+- Personal-area widget header on the Movies / TV Shows pages now
+  carries a visible recommendation to connect both TMDB and Trakt:
+      איזור אישי   · מומלץ לחבר TMDB + Trakt
+  (main label yellow bold, recommendation gray italic.)
+  Rationale: TMDB handles Favorites / Watchlist / custom lists
+  cleanly with no rate limits and a working mobile app; Trakt is
+  the only service with a /sync/playback API that powers cross-
+  device Continue Watching / Next Episode -- TMDB doesn't expose
+  that. Combining the two gives the user the best of both.
+- fentastic_widget_patcher upgraded to recognise BOTH legacy
+  headers and migrate them to the new one:
+    State A: "...איזור אישי (חובה להתחבר לTrakt)..." (very
+             original baseline)
+    State B: "...איזור אישי..." (what v0.2.18 wrote)
+  Either matches the regex, both rewrite to State C with the
+  recommendation. Re-run is unchanged (idempotent). Custom user
+  headers don't match the pattern and are left alone.
+
+v0.2.19
+- Every patcher now logs explicit INFO/WARNING entries to the
+  Kodi log so the next "patcher didn't work" report can be
+  diagnosed from the log file alone. Look for
+      kodipovilai: <patcher>: <event>
+  in xbmc.log -- entries cover not just successes but also
+  no_match, no_file, write_failed, etc.
+
+v0.2.17
+- Fix: clicking "Replace key" in the Gemini menu no longer wipes
+  the existing key before the new one is confirmed. v0.2.16 and
+  earlier called set_setting('api_key', '') the moment the user
+  picked Replace, so any cancel mid-flow (closing the QR dialog,
+  dismissing the on-screen keyboard, tapping outside) destroyed
+  the working key with nothing to replace it. Now we leave the
+  current key in place; the new one overwrites atomically when
+  validation succeeds, and the original survives any cancel.
+- Defensive: kodi_utils.set_setting() now reads the value back
+  after writing and returns False if Kodi didn't actually
+  persist the change. _test_save_or_retry uses this to surface
+  a "Kodi didn't save the key" dialog instead of a false
+  "Connection succeeded" dialog when the underlying
+  addon().setSetting() call silently fails (reported on certain
+  Kodi 21 / Android combinations). Caller-side change only --
+  the set_setting signature stays backward compatible because
+  the previous implementation implicitly returned None.
+
+v0.2.14
+- TMDB out of the box. The addon now ships with a public TMDB v3
+  key copied from jurialmunkey's script.module.tmdbhelper (an
+  open-source addon that publishes the same key to tens of
+  thousands of installs). With it, gender-aware translation
+  works for every user the moment they connect Gemini -- no
+  more "next step: connect TMDB" tutorial.
+- Resolution order in tmdb_helper._get_tmdb_key():
+    1. The user's own key, if tmdbhelper has one set in its
+       settings (candidate fields: api_key, tmdb_apikey,
+       tmdb_api_key). Personal keys still win, both for users
+       who already connected and for users who connect later --
+       we re-read on every lookup.
+    2. The bundled fallback. Only used when no personal key
+       is configured.
+  We NEVER write the bundled key into tmdbhelper's settings,
+  so tmdbhelper itself is untouched and behaves exactly as
+  before.
+- New helper tmdb_helper.using_bundled_key() exposes the state
+  so the settings UI can render an accurate status line.
+- The "🛈 TMDB" notice button (and Gemini-connect success
+  dialog) was rewritten to reflect the new reality: TMDB is
+  no longer a required setup step, just an optional override
+  for power users who want to use their own quota.
+
+v0.2.13
+- Daily Gemini quota display. Free-tier gemini-3.1-flash-lite is
+  capped at ~500 requests/day and resets at UTC midnight. We now
+  surface today's usage in two places:
+    A) appended to the end-of-translation toast --
+       "AI: תרגום הסתיים בהצלחה (5 chunks · 47/500 ביום)"
+    B) a new "📊 ניצול היום" entry in the POV My Services ->
+       Gemini chooser menu (shown only when a key is already set).
+       Opens a Dialog().ok() with model, count, percentage,
+       remaining, and the reset boundary.
+- Scope is intentionally narrow: ONLY gemini-3.1-flash-lite is
+  counted. Other models (3.1 flash, 2.5 variants) silently
+  no-op through note_request() so the displayed number stays
+  meaningful. Per-device count (not synced across machines).
+- Storage: two new hidden settings, _usage_count and
+  _usage_date_utc. The counter is reset automatically the first
+  time note_request runs after the UTC date changes.
+- Hook point is inside gemini.generate() just before the success
+  return -- catches every counted request regardless of caller
+  (parallel translation, DarkSubs hook, future entry points).
+  Wrapped in try/except at every call site so a bug in the
+  quota module can never break translation.
+- No new dependencies; stdlib-only datetime + the existing
+  kodi_utils get/set_setting shims.
+
+v0.2.12
+- "Pair from another device" Gemini onboarding. New action
+  `connect_gemini` in default.py spins up a tiny localhost HTTP
+  server on a free port (8765-8769 preferred, OS-allocated
+  fallback), binds 0.0.0.0 so both LAN AND localhost work, and
+  shows the user a QR code + clickable URLs in a Kodi
+  DialogProgress. The user scans on their phone (or types
+  http://localhost:<port> if Kodi is on the phone with cellular
+  only), pastes the key into a small RTL Hebrew web form, and
+  hits submit. The addon polls the server's shared state for the
+  submitted key, then runs the same gemini.test_key validation
+  the typed-input flow uses -- if Gemini rejects the key, we
+  show the specific reason and DO NOT save.
+- Two onboarding paths now offered when the user clicks Gemini
+  in POV's My Services with no existing key:
+    📱 Pair from another device  (new)
+    ⌨️ Type the key here          (the existing flow)
+- For users WITH an existing key the menu stays: Test / Replace
+  / Remove. Replace re-runs the chooser (Pair or Type), so
+  switching keys via QR is just two clicks.
+- All the Gemini UX lives in default.py now; the POV
+  myservices.py patcher just shells out via
+  RunScript(...action=connect_gemini) so future UX iteration
+  doesn't require a patcher bump. INJECT_VERSION 5 -> 6 to roll
+  the simpler injected forwarder into existing installs.
+- New module resources/lib/gemini_pair.py owns the HTTP server,
+  LAN-IP detection, and the form HTML. Stdlib-only (http.server
+  + threading + socket), no new dependencies.
+- Pair server end-to-end-tested in sandbox: bind ok, GET form
+  serves RTL Hebrew + key field, POST empty key returns the
+  "field empty" page without saving, POST with key returns the
+  "sent to Kodi" page and stashes the key into the polling
+  dict, 404 for bogus paths, shutdown frees the port cleanly.
+
+v0.2.6
+- RTL punctuation fix now runs on EVERY cache hit, not just on
+  first translation. The v0.2.5 migration (re-running the fix
+  over the cached-translation pool) only fires once on Kodi
+  startup; users who didn't restart -- or whose cache was
+  written between two migration versions -- could still see
+  files with the old, broken layout. resolve() now re-applies
+  fix_rtl_punctuation in-place on every cache hit (idempotent
+  -- if the file is already clean, no write happens), and
+  _handle_translate_file applies it once more at the final
+  delivery to DarkSubs as belt-and-suspenders. This means the
+  user no longer needs to restart Kodi for the fix to roll out
+  -- the next time they play a previously-translated subtitle,
+  it gets cleaned up on the spot.
+
+v0.2.5
+- RTL punctuation fix now handles HTML-wrapped lines. Gemini
+  often emits italicised speech as "<i>.לעזאזל</i>" -- the
+  previous regex couldn't see past the opening tag and left the
+  period at the start. The screenshot the user kept hitting was
+  exactly this case. Also covers:
+    - period BEFORE the tag: ".<i>לעזאזל</i>" -> "<i>לעזאזל.</i>"
+    - dialogue dash + punct + tag: "- <i>.שלום</i>" -> "- <i>שלום.</i>"
+    - bold and other tag types (<b>, <font>, ...) -- any tag of
+      the shape <name...> at line start.
+  Ellipsis still respected (left at start as a continuation
+  marker). Existing tests + 16-case unit suite all green.
+- CACHE_RTL_FIX_VERSION 1 -> 2 so the migration re-runs over the
+  whole cached-translation pool on next startup, applying the
+  updated regex to already-saved files that were affected.
+
+v0.2.4
+- Toast notifications now scroll right-to-left as Hebrew should.
+  Kodi's notification widget infers paragraph direction from the
+  first strong character in the message body. Most of our
+  notifications start with "AI: ..." (Latin 'A' = strong LTR),
+  so the widget set paragraph direction to LTR and scrolled
+  left-to-right when the text overflowed. Prepending an invisible
+  RIGHT-TO-LEFT MARK (U+200F) in kodi_utils.notify() flips the
+  inference to RTL. Single point of fix; applies to every notify
+  call site in the addon automatically.
+
+v0.2.3
+- Display-name fix: the bundled subtitle addon's ID is
+  service.subtitles.All_Subs but its visible name in the UI is
+  "DarkSubs". User-facing strings now say "DarkSubs" everywhere
+  so users aren't confused by an addon name they don't recognise
+  in the menu. Internal Python references still use the addon ID
+  (that's what xbmcaddon.Addon() and the patcher path resolution
+  need).
+- POV myservices INJECT_VERSION 3 -> 4 to roll the renamed
+  dialog text into existing patched installs.
+
+v0.2.2
+- Wyzie is now clearly labelled as OPTIONAL across the UI. The
+  setting category, field label, and help text all say so. When
+  the user clicks "Claim a free Wyzie key" or opens the Wyzie
+  row in POV's My Services, the dialog first checks whether
+  All_Subs (DarkSubs) is installed -- if it is, the dialog tells
+  the user up front that Wyzie is redundant for them (clicking a
+  non-Hebrew subtitle in All_Subs already triggers AI translation
+  via the hook). Users without All_Subs see the original flow.
+- POV myservices INJECT_VERSION bumped 2 -> 3 to re-roll the
+  Wyzie auth dialog into existing patched installs.
+
+v0.2.1
+- RTL punctuation: strip invisible BiDi / direction-control / BOM
+  characters (U+200E/F, U+202A-E, U+2066-9, U+FEFF) from line
+  starts and ends BEFORE the leading-punct regex runs. Gemini and
+  similar LLMs occasionally insert U+200F (RLM) before a Hebrew
+  line, which used to hide the trailing period from our matcher
+  -- the user observed this on a freshly-translated subtitle where
+  the period stayed on the wrong side despite the post-processor.
+  Also: tightened the post-processor. Now also handles
+  "punct at both start AND end of line" -> drop the leading
+  duplicate (was previously leaving it untouched). Ellipsis at
+  start of line ("..." -- a legitimate continuation marker) is
+  explicitly excluded so we don't shift it to the end. 12-case
+  unit suite added.
+- One-shot cache repair: on next Kodi startup the service walks
+  cache/translated/ and re-applies fix_rtl_punctuation() to every
+  cached SRT. Marker-gated (_rtl_fix_done = '1'), so it runs once
+  per profile and doesn't re-run after that. Means existing
+  translations with periods/question-marks in the wrong place get
+  fixed without the user having to clear cache manually.
+
+v0.2.0
+- Force the icon update through. v0.1.9 shipped the new icons
+  and the corrected patcher code, but every existing install
+  already had the v0.1.8 injection block in POV's myservices.py
+  marked as v1, so the patcher saw 'already_patched' and bailed
+  before overwriting the icon names. Bumped INJECT_VERSION to v2
+  and added v1 to OLD_MARKERS, so on next startup the patcher
+  strips the v1 block (with the placeholder icon references) and
+  re-injects v2 (with the gemini.png / wyzie.png references).
+
+v0.1.9
+- Custom icons for the Gemini AI and Wyzie entries in POV's
+  My Services menu (instead of the reused tmdb.png / mdblist.png
+  placeholders that v0.1.8 shipped). 512x512 RGBA, generated to
+  visually distinct: Gemini is a white four-point sparkle on a
+  blue->purple gradient, Wyzie is a stylised "W" with three
+  subtitle bars on a teal gradient. The pov_services_patcher now
+  also copies these icons into POV's media folder whenever it
+  runs (idempotent SHA1 comparison, no copy if already up to
+  date).
+
+v0.1.8
+- POV "My Services" patcher. The user was clicking on
+  plugin.video.pov's own Connect Services menu (entry id 32455 =
+  "My Services"), not the wizard's login_menu -- different menu,
+  same kind of hardcoded service list. v0.1.7 patched only the
+  wizard, so the rows still didn't appear where the user expected
+  them. This release adds a parallel patcher for
+  plugin.video.pov/resources/lib/modules/myservices.py that
+  defines Gemini and Wyzie auth classes and wraps the authorize()
+  function to include them in the My Services dialog. Same
+  pattern: idempotent, marker-gated, runs every Kodi startup.
+
+v0.1.7
+- Self-healing wizard patcher: the wizard's AUTOUPDATE is
+  hardcoded 'No', so existing installs never pull the upstream
+  wizard updates. We patch the installed wizard's loginit.py on
+  disk to add the Gemini AI + Wyzie Connect Services entries.
+  Idempotent + re-injects on every Kodi startup. Now users get
+  the entries WITHOUT having to manually reinstall the wizard.
+- Wyzie timeout resilience: tightened per-request timeout from
+  15s to 8s, added one retry on connection-level failures (with
+  2s delay), and short-circuit the rest of a multi-language
+  search if Wyzie is clearly offline (no response on first call).
+  Prevents the user staring at a 45+ second wait for "no subs
+  found" when Wyzie's Cloudflare frontend is having a bad day.
+- Test connection + empty-result diagnostics now distinguish
+  timeout-vs-other-failure clearly and offer a workaround in
+  Hebrew ("click an English sub from All_Subs - the AI hook
+  will translate it").
+
+v0.1.6
+- RTL punctuation fix. Strengthened the prompt with explicit
+  examples ("מה שלומך?" right, "?מה שלומך" wrong) AND added a
+  defensive post-processor that automatically moves misplaced
+  punctuation from the start of a Hebrew line to the end.
+  Verified with 5 unit cases.
+- Wyzie language-alias fallback. OpenSubtitles (which Wyzie wraps)
+  serves Hebrew under three different codes: 'he', 'heb', and the
+  legacy 'iw'. The search now tries all three for any Hebrew
+  request and unions the results, so titles indexed under the
+  legacy code finally surface. For other languages, no behaviour
+  change.
+- Detailed empty-result diagnostics. Instead of a generic "Wyzie
+  לא מצא כתוביות" the user now sees the actual reason: 0 results
+  across all three Hebrew codes (= title not in index), HTTP 401/
+  403 (= key rejected), 429 (= daily quota), 5xx (= service down),
+  or "no response" (= timeout/network).
+
+v0.1.5
+- Test connection button for Wyzie (mirrors the one for Gemini).
+  Sanity-checks the key against the live Wyzie API and reports a
+  clear Hebrew explanation if quota's exhausted, key's rejected,
+  or the service is down.
+- New "TMDB" group in settings with an info button explaining
+  that gender-aware translation needs TMDB API key wired up via
+  the wizard's "Connect Services" screen. The button checks the
+  current status (TMDB Helper installed + key set) and tells the
+  user what to do next.
+- This addon now shows up in the wizard's "Connect Services"
+  menu as two entries: "Gemini AI" and "Wyzie". Save / restore /
+  display key flow matches the other services there.
+
+v0.1.4
+- CRITICAL FIX: undo the auto_translate=false state that v0.1.1
+  left behind. Without this, the v0.1.3 hook never fires (DarkSubs
+  only calls machine_translate_subs when auto_translate=true) and
+  users who'd been through the v0.1.1 takeover ended up getting
+  plain English subs on every DarkSubs pick -- no AI AND no Google.
+  The restore is gated on the takeover marker, so users who had
+  manually turned auto_translate off themselves (no marker) are
+  untouched.
+
+v0.1.3
+- DarkSubs handshake replaced with proper routing: when the user
+  has a Gemini key, DarkSubs's machine-translate now calls into
+  OUR AI translator instead of Google/Bing/Yandex. No key set ->
+  exactly the same Google flow as upstream (zero regression).
+- Self-healing: a service.py-side patcher injects the hook into
+  DarkSubs's engine.py on every Kodi startup. If a DarkSubs update
+  wipes the hook, it comes back on next launch automatically. If
+  DarkSubs ever renames the function, the patcher silently skips
+  rather than breaking anything.
+- Cache buttons (Clear cache / Clear temp) and the API / Wyzie
+  action buttons now have explicit <control type="button"
+  format="action"> blocks. Kodi 21 v1 settings schema needs that
+  for action-type settings to actually render.
+
+v0.1.2
+- (rolled into v0.1.3 below)
+
+v0.1.1
+- One-shot DarkSubs handshake: when the user sets a Gemini key,
+  flip DarkSubs's auto_translate off so its built-in Google/Bing
+  Hebrew rows stop competing with (and outranking) ours. Gated
+  so we never re-stomp on a user who deliberately toggled it
+  back on.
+- Fix: Clear-cache / Clear-temp buttons were hidden because an
+  empty `label=""` on a sibling visible=false setting bailed Kodi
+  21 out of rendering the rest of the group. Now label="0".
+- Prompt: dedicated GENDER AGREEMENT section with concrete
+  Hebrew examples for 1st/2nd/3rd person, and an explicit
+  "double-check before finalising" instruction. Should reduce
+  the occasional male/female mix-ups.
+
+v0.1.0 (initial)
+- AI-translated Hebrew subtitles via Gemini 3.1 Flash Lite (free tier)
+- Sources from OpenSubtitles (anonymous, 200/day) + local SRT files
+- Cast-aware gender forms via TMDB (script.module.tmdbhelper)
+- Caches translations under userdata/addon_data with TTL + size cap
+- Skips translation when real Hebrew subs already exist
+- Settings UI for API key, model, source language priority, cache
